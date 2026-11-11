@@ -21,7 +21,7 @@ Draft one versioned HTTP contract, `v0.1.0-draft`, expressed as prose in `API.md
 2. **Explicit money representation.** Every monetary field is an integer-cents field named `*Cents`, with `currency` fixed to `USD`. Contribution amounts accept 100–1500 cents inclusive as the drafted range, default 500. The 1500 ceiling comes from the product brief; the 100 floor is a **draft proposal** (PRD D-P01) pending owner decision.
 3. **Derived pot.** No API response or table column stores a mutable pot balance. The pot is computed by summing `ledger_entry.amount_cents` for the circle at read time, and responses label it `potCentsDerived`.
 4. **Payment execution gate.** All payment-executing routes exist in the contract but return `409 payment_gate_blocked` while the gate is closed. (Venue payment now uses Payouts per ADR 0005; the gate and route are unchanged.) The gate is a server-side configuration that only a human can open after YT-006 evidence and money-flow approval. There is no request parameter, header or client flag that opens it, and no simulated success response exists in the contract.
-5. **Suggestion integrity.** A successful suggestion response contains exactly three distinct plans; the schema enforces `minItems: 3, maxItems: 3`. Failure is a distinct explicit response (`suggestionsUnavailable`), never a shorter array.
+5. **Suggestion integrity.** A successful suggestion response contains exactly three distinct plans; the schema enforces `minItems: 3, maxItems: 3, uniqueItems: true` plus a distinct venue per plan. Failure is the same response shape with `outcome: "unavailable"` and an `unavailableReason`, with `outcome` pinned per `oneOf` branch — never a shorter array. (The earlier draft named a `suggestionsUnavailable` response that never existed in the spec; corrected per XR-26.)
 6. **Synthetic-only graph.** Numeric edge values are returned only by `/api/v1/demo/graph`, which reads a labelled fixture and whose responses carry `"synthetic": true` and a `fixtureRevision`. Real-member endpoints expose no numeric tie value, rank or drift flag to anyone. The synthetic boundary is enforced by the route's data source, not by a request flag.
 7. **Idempotency.** Mutating requests accept an `Idempotency-Key` header; the server stores key → first response per actor and operation and replays it. This internal guarantee is independent of any provider's own header semantics, which remain unverified (Q-005).
 8. **Contract-first generation.** `openapi.json` is the source of truth for shared types. `packages/shared` will contain types generated from it after freeze; hand-written duplicate types are not permitted.
@@ -35,6 +35,10 @@ Draft one versioned HTTP contract, `v0.1.0-draft`, expressed as prose in `API.md
 - **Returning fewer than three plans on partial success:** rejected because it would let a degraded result look like success.
 - **Client-selectable demo mode:** rejected because a client flag that switches data sources is exactly how real data leaks into a "synthetic" view.
 
+## Amendments from the Lane A cross-review (RV-001)
+
+Alan's cross-review (`docs/04-behavioral/PHASE1_CONTRACT_CROSS_REVIEW.md`) found 29 issues, 7 of them freeze blockers. Accepted and applied here: a **graph gate** for real-member inference (XR-01); server-chosen `rationaleKey` instead of model prose (XR-02); **verified-only** budget sums (XR-03); mandatory ledger provenance (XR-04); signed pot (XR-05); Q-006 added to the payment-gate preconditions (XR-06); one source of truth for pause with the seat preserved (XR-07). Deferred with named owners rather than guessed: XR-08, XR-09, XR-15, XR-16, XR-17, XR-19, XR-20, XR-25.
+
 ## Consequences
 
 - Frontend and QA can build and test against a stable draft, with blocked paths visible rather than hidden.
@@ -44,5 +48,8 @@ Draft one versioned HTTP contract, `v0.1.0-draft`, expressed as prose in `API.md
 
 ## Verification and rollback
 
-- `openapi.json` must parse and validate as OpenAPI 3.1, and contract tests assert: draft status present, every monetary schema integer with the stated bounds, suggestion array fixed at three, demo graph marked synthetic, and payment routes documenting the blocked response.
+**Verification status, honestly:** `openapi.json` parses as JSON and declares `openapi: 3.1.0`, but it has **not** been validated against the OpenAPI 3.1 metaschema — no validator is installed. That step of this ADR is therefore **unmet**, not satisfied (XR-27). The spec contains **24** operations; earlier handoffs said 21.
+
+Contract tests assert: draft status present, every monetary schema integer with the stated bounds, suggestion array fixed at three, demo graph marked synthetic, and payment routes documenting the blocked response.
+
 - Rollback is a documentation revert: no runtime code depends on this draft yet.

@@ -18,14 +18,14 @@ Sandbox go/no-go YT-006 and residual readiness YT-007 remain BLOCKED. Their unre
 
 Integration branch: `orchestrator/phase-1-contracts`, based on reviewed main.
 
-| Task           | Artifacts                                                                                                                                                                         |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| YT-008, YT-012 | `docs/01-product/PRD.md`; `docs/01-product/USER_STORIES.md` (US-001–US-014 plus the UX research plan)                                                                             |
-| YT-009         | `docs/decisions/0004-phase-1-contracts.md`; `ARCHITECTURE.md`; `DATA_MODEL.md`; `API.md`; `openapi.json` (OpenAPI 3.1, `0.1.0-draft`, 21 operations); `packages/shared/README.md` |
-| YT-010         | `docs/04-behavioral/PHASE1_REVIEW.md` (rule-by-rule review, checks B-01–B-14)                                                                                                     |
-| YT-011         | `docs/02-design/FLOWS.md`; `docs/02-design/DESIGN_SYSTEM.md`                                                                                                                      |
-| YT-013         | `docs/02-design/VOICE_AND_TONE.md`                                                                                                                                                |
-| Tests          | `tests/contract.test.mjs` (9 structural contract tests); human-owner assertions added to `tests/repository.test.mjs`                                                              |
+| Task           | Artifacts                                                                                                                                                                                                                                             |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| YT-008, YT-012 | `docs/01-product/PRD.md`; `docs/01-product/USER_STORIES.md` (US-001–US-014 plus the UX research plan)                                                                                                                                                 |
+| YT-009         | `docs/decisions/0004-phase-1-contracts.md`; `ARCHITECTURE.md`; `DATA_MODEL.md`; `API.md`; `openapi.json` (OpenAPI 3.1, `0.1.0-draft`, **24 operations** — the earlier "21" was wrong, XR-27); `packages/shared/README.md`; `CROSS_REVIEW_RESPONSE.md` |
+| YT-010         | `docs/04-behavioral/PHASE1_REVIEW.md` (rule-by-rule review, checks B-01–B-14)                                                                                                                                                                         |
+| YT-011         | `docs/02-design/FLOWS.md`; `docs/02-design/DESIGN_SYSTEM.md`                                                                                                                                                                                          |
+| YT-013         | `docs/02-design/VOICE_AND_TONE.md`                                                                                                                                                                                                                    |
+| Tests          | `tests/contract.test.mjs` (9 structural contract tests); human-owner assertions added to `tests/repository.test.mjs`                                                                                                                                  |
 
 No product code, framework, database, AI module or payment integration was written. The only running code remains the Phase 0 setup server. YT-014 reconciliation and freeze stays in TODO and blocked.
 
@@ -72,6 +72,16 @@ Only five touchpoints cross the lanes: the YT-014 contract freeze, the YT-018 fi
 | Webhook           | no public HTTPS listener exists                                                   | blocked, YT-032                               |
 
 Three consequences: Payouts moves from the cut list into core scope; every payout writes two ledger entries (amount and provider fee) or the derived pot drifts from the real balance; and `PENDING` must never be shown as success, since settlement took about 25 seconds.
+
+## Cross-review round (T4)
+
+Alan reviewed the Lane S contract drafts and **requested changes**: 29 findings, 7 freeze blockers (PR #1, merged). Architect response: **21 accepted and fixed with contract tests, 8 deferred to named owners, 0 rejected** — `docs/03-architecture/CROSS_REVIEW_RESPONSE.md`, branch `architect/xr-fixes`.
+
+The serious ones were mine: the ledger summed fixture and unverified money into the budget that would gate a real payment (XR-03, XR-04); a non-negative type on a signed sum (XR-05); pause silently freeing a seat and breaking agreement rules (XR-07); and a dependency deadlock where the freeze needed answers from tasks that could not start until after it (XR-29). Three safeguards were prose a test could not check, now closed vocabularies or server-chosen values (XR-02, XR-12, XR-13). Real-member graph inference is now **gated closed** like payments, rather than relying on non-persistence (XR-01).
+
+Contract tests grew from 10 to 17; the full suite is 26. Metaschema validation is still **not** run, and is recorded as unmet rather than claimed.
+
+Owed back: my review of the Lane A drafts, the other half of T4.
 
 ## Next handoff
 
