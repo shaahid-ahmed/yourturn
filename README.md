@@ -2,7 +2,7 @@
 
 Keep existing friend groups connected by sharing the work of hosting. The proposed product combines a rotating friendship fund, private reconnection suggestions and a host-approved venue plan.
 
-**Current state: Phase 0 scaffold only.** No circles API, authentication, database ledger, PayPal integration, AI graph, LLM copilot or booking exists yet. Framework/product work is blocked until setup release and explicit human Phase 1 approval. Agents start at [AGENTS.md](AGENTS.md); humans see [tasks/STATUS.md](tasks/STATUS.md).
+**Current state: Phase 1 documentation authorized; runtime remains scaffold-only.** No circles API, authentication, database ledger, PayPal integration, AI graph, LLM copilot or booking exists yet. Product implementation and final contract freeze remain blocked on sandbox and policy decisions. Agents start at [AGENTS.md](AGENTS.md); humans see [tasks/STATUS.md](tasks/STATUS.md).
 
 ## Run locally
 
@@ -27,7 +27,7 @@ Sandbox demonstration only; not a live financial service, legal assessment or pr
 
 ## Collaborate
 
-The local bootstrap branch is `orchestrator/bootstrap`. No remote has been created or pushed, no main merge is authorized, and no hosted CI run is claimed. Human GitHub handles and protected-branch settings are required before CODEOWNERS can enforce reviews. See BOARD.md for blockers, dependencies and role claims.
+Private GitHub repository: `shaahid-ahmed/yourturn`. The human approved bootstrap `10bc1d7` on `main`; hosted CI passed. Phase 1 drafting uses `orchestrator/phase-1-contracts`, not direct edits to main. CODEOWNERS activation and protected-branch settings remain separate work; no future main merge is authorized by the Phase 1 drafting request. See BOARD.md for blockers, dependencies and role claims.
 
 > Clone the repo, read `AGENTS.md`, take role `<role>`, and claim the next unclaimed task for that role on `tasks/BOARD.md`.
 

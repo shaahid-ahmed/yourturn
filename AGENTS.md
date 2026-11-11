@@ -14,7 +14,7 @@ YourTurn helps existing friend groups share the work of staying connected throug
 
 ## 3. Pick a role
 
-Use the role your human assigned. Otherwise choose an unclaimed, unblocked task on BOARD.md and take its named role. Check ROSTER.md for write boundaries. **Phase 1 and product implementation are not released.** Proposals and synthetic fixtures are not approval of money flow or real-user graph visibility.
+Use the role your human assigned. Otherwise choose an unclaimed, unblocked task on BOARD.md and take its named role. Check ROSTER.md for write boundaries. **Phase 1 documentation is authorized by the human on November 11, 2026; product implementation and final contract freeze remain blocked.** Proposals and synthetic fixtures are not approval of money flow or real-user graph visibility.
 
 ## 4. Claim and hand off
 
@@ -46,7 +46,7 @@ Prerequisites: Node 24 and npm 11; Make is optional. ADR 0002 chooses npm worksp
 - [ ] Reviewer approved
 - [ ] Handoff note written, and the task is moved to DONE
 
-Local checks do not prove hosted CI, independent approval, sandbox payment, behavioral sign-off or production readiness. Keep the initial scaffold IN REVIEW until those required gates actually pass. Money logic additionally requires 100% branch coverage and explicit human money-flow approval; no money logic exists at bootstrap.
+Local checks do not prove hosted CI, independent approval, sandbox payment, behavioral sign-off or production readiness. Bootstrap commit `10bc1d7` is on private GitHub main with independent review and green hosted CI. Phase 1 drafts must pass their own review/CI; sandbox and final-freeze gates remain blocked. Money logic additionally requires 100% branch coverage and explicit human money-flow approval; no money logic exists at bootstrap.
 
 ## 7. Where to ask
 

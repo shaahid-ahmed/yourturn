@@ -4,7 +4,7 @@
 
 Three-day hackathon: production-grade structure, demo-sized implementation. Phase 0 about two hours; Phase 1 contracts on Day 1 morning; Phase 2 build Day 1 afternoon–Day 2; Phase 3 hardening Day 2 evening; Phase 4 demo Day 3. The schedule is relative to human release of the build, not permission to skip gates.
 
-Only setup is authorized now. Docs outside the required complete context/roles/behavioral set may be structured stubs. No product API, AI scoring, payment integration or application screens until Phase 0 is complete and committed and a human authorizes Phase 1. ADR 0002 selects npm workspaces, strict TypeScript, planned Next.js/Tailwind, Fastify, SQLite and TypeScript AI. `make dev` serves a setup page only.
+The human authorized Phase 1 documentation on November 11, 2026 after approving bootstrap main promotion. Draft PRD, API/data-model schema, behavioral review and design flows may proceed while sandbox feasibility remains blocked. No product API implementation, AI scoring, payment integration or application screens are authorized by this limited document release. ADR 0002 selects npm workspaces, strict TypeScript, planned Next.js/Tailwind, Fastify, SQLite and TypeScript AI. `make dev` serves a setup page only.
 
 ## Non-negotiable safety limits
 
@@ -23,7 +23,7 @@ Only setup is authorized now. Docs outside the required complete context/roles/b
 2. If the merchant Order actually fails, Payments/Architect propose ADR 0003 for a clearly labelled simulated venue payment. A missing credential is not an observed failure. No fallback has been approved.
 3. The fallback conflicts with the instruction to never cut real sandbox payment. A human must explicitly resolve that conflict; simulated venue payment cannot silently satisfy the real-payment requirement.
 4. Forfeit, money custody, cancellation, dispute and refund policy require Payments/Legal review; a technical demo is not compliance approval.
-5. Human GitHub owners, remote, green hosted CI and main protection are not configured. Local checks are not hosted CI.
+5. Private GitHub remote `shaahid-ahmed/yourturn`, owner `@shaahid-ahmed`, main at `10bc1d7`, and successful hosted CI run `43058134382` are verified. CODEOWNERS activation and branch protection remain unconfigured; neither is implied by CI success.
 6. Initial RULES.md is the user-requested text; any later modification requires human approval. Bootstrap selects ADRs provisionally, not fabricated approvals.
 
 ## Cuts, in order

@@ -17,4 +17,4 @@
 
 ## Requirement status, not an implemented promise
 
-The preceding product brief is preserved as requested. Phase 0 is scaffold-only. The pot-to-venue money flow, forfeit policy and real-user graph visibility are **unverified requirements**, not approved capabilities. See Q-001, Q-002 and Q-004 in tasks/BOARD.md. No real users or real money may enter this demo. Do not claim a validated measure of friendship or a completed booking.
+The preceding product brief is preserved as requested. Bootstrap is scaffold-only; the human has authorized Phase 1 documentation, not product execution. The pot-to-venue money flow, forfeit policy and real-user graph visibility are **unverified requirements**, not approved capabilities. See Q-001, Q-002 and Q-004 in tasks/BOARD.md. No real users or real money may enter this demo. Do not claim a validated measure of friendship or a completed booking.

@@ -4,9 +4,9 @@ This is the Phase 0 ownership map for all 24 roles named in the setup specificat
 
 ## Phase boundary and authority
 
-- Current work is setup only. Future responsibilities below describe ownership, not permission to implement product features or contracts during Phase 0. Stack: npm workspaces (pnpm unavailable), strict TypeScript, future Next.js/Tailwind, Fastify API, TypeScript graph/copilot, local SQLite; `docs/decisions/0002-stack.md` records the decision.
+- Current work is Phase 1 documentation under the human authorization recorded in BOARD.md; product implementation and final freeze remain blocked. Responsibilities describe ownership, not permission to execute payments or override remaining gates. Stack: npm workspaces (pnpm unavailable), strict TypeScript, future Next.js/Tailwind, Fastify API, TypeScript graph/copilot, local SQLite; `docs/decisions/0002-stack.md` records the decision.
 - YT-004 is claimed by `tech-writer, bootstrap-roles`: its one-time scaffold authorization permits the 24 role files and this roster only. It does not authorize board edits, product code, contracts, commits, or standing cross-path access. Other bootstrap agents retain their own scopes.
-- Phase 0 remains gated on independent review, hosted green CI, human approvals/main merge and real PayPal sandbox go/no-go. No missing gate is considered passed. Phase 1 requires explicit authorization after setup.
+- Bootstrap independent review, hosted CI, private push and main promotion are verified. The human authorized Phase 1 documentation with sandbox go/no-go and residual readiness gates still blocked; no missing payment, policy or freeze gate is considered passed.
 - Q-001: a local ledger is not a PayPal funding instrument. Q-002: use synthetic people for graph demonstrations pending Privacy/Behavioral Scientist resolution; never display real-user numeric friendship scores. Q-003: do not invent human CODEOWNERS or hosted CI. Q-004: fallback requires actual evidence, an Architect ADR and required human decisions; simulation is never presented as a real sandbox pass. Payouts are not authorized.
 
 ## Role map

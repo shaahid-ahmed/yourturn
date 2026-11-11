@@ -231,8 +231,36 @@ test('board has six state tables, 42 unique tasks, valid dependencies and no dep
     for (const dep of deps.get(id) ?? []) visit(dep, next);
   }
   for (const id of ids) visit(id, new Set());
+
+  // Every task names exactly one human owner, or both for a declared touchpoint.
+  const humans = ['Shaahid', 'Alan'];
+  /** @type {Record<string, number>} */
+  const perHuman = { Shaahid: 0, Alan: 0, joint: 0 };
+  for (const cells of parsed) {
+    const claimed = cells[5];
+    assert.match(claimed, /^Human: /, `${cells[0]}: no human owner recorded`);
+    const named = humans.filter((human) => claimed.includes(human));
+    assert.ok(
+      named.length >= 1,
+      `${cells[0]}: unknown human owner "${claimed}"`,
+    );
+    if (named.length === 2) perHuman.joint += 1;
+    else perHuman[named[0]] += 1;
+  }
+  assert.ok(
+    perHuman.Shaahid > 0 && perHuman.Alan > 0,
+    'both humans must own work',
+  );
+  assert.ok(
+    Math.abs(perHuman.Shaahid - perHuman.Alan) <= 4,
+    `lanes are unbalanced: ${JSON.stringify(perHuman)}`,
+  );
+  assert.match(board, /## Two-person split: Shaahid and Alan/);
+  assert.match(board, /Lane S — Shaahid/);
+  assert.match(board, /Lane A — Alan/);
   assert.match(board, /## Open questions/);
-  assert.match(board, /Phase 1 is NOT authorized/);
+  assert.match(board, /Phase 1 documentation authorized/);
+  assert.match(board, /final contract freeze are NOT authorized/);
 });
 
 test('required complete governance/context/behavior documents have no TODO placeholders', () => {

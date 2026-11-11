@@ -1,47 +1,65 @@
-# Day 0 status — November 11, 2026
+# Phase 1 status — November 11, 2026
 
-## State
+## Authorization and boundaries
 
-**Setup artifacts assembled; Phase 0 release BLOCKED. Phase 1 NOT authorized.**
+The human said **"go for phase 1"** after approving private GitHub publication and promotion to main. Phase 1 **documentation** is authorized: PRD/stories, draft API/data model, behavioral review, design flows/system, research plan and content. Product implementation, final contract freeze, real-person research contact, live money, payment execution and subsequent main merges are not authorized by that request.
 
-Local repository: `/Users/shaah/Documents/hermes-agent/yourturn`.
-Branch: `orchestrator/bootstrap`. Requested commit message: `chore: bootstrap multi-agent repo structure and rules`.
-No remote/push/main merge or deployment is authorized or claimed. This status is included in the initial scaffold commit; inspect git history for its actual identifier. Local artifact completion does not clear the remaining release gates.
+Sandbox go/no-go YT-006 and residual readiness YT-007 remain BLOCKED. Their unresolved conditions are not claimed passed; the explicit human request permits document work in parallel with those blockers.
 
-## Delivered scope
+## Verified bootstrap baseline
 
-- All requested scaffold paths, 24 complete role files, roster, rules, handoff protocol, agent entry point and exact one-line pointers.
-- Complete product/glossary/constraints and behavioral principles/checklist/research register; other future deliverables are clearly marked structured stubs.
-- ADR 0001 and ADR 0002 recorded before implementation; provisional npm workspaces/strict TypeScript choice. Next.js/Tailwind/Fastify/SQLite are planned, not implemented.
-- Board covers Phases 0–4 with 42 unique tasks, explicit dependencies, parallel markers, all six state tables, open questions and setup handoffs.
-- Locked dependency installation, Make/npm commands, loopback setup server, strict typecheck, formatting lint, Node infrastructure tests and Secretlint; CI workflow authored but not run remotely.
-- Seed command creates a visibly synthetic four-member bootstrap fixture with no history, scores, provider events or payment evidence. Realistic fading history remains YT-018.
+- Repository: private GitHub `shaahid-ahmed/yourturn`.
+- Default/main commit: `10bc1d726485c4d9d037637892260d01acf2a951`; author and committer Shaahid Ahmed, verified attribution to `@shaahid-ahmed`.
+- Human authorized push and main promotion; GitHub main CI run `43058134382` completed successfully.
+- Independent non-author review `sa-0-910d19d7`: passed for the scaffold. Nine tests, strict typing, formatting, Secretlint and clean staged-export install/check/seed passed; live setup health checked. Original rules and ethical requirements preserved.
+- YT-001–YT-005 artifact tasks are now DONE on that evidence. No product behavioral approval is inferred from scaffold review.
+
+## Phase 1 drafts delivered — IN REVIEW, not frozen
+
+Integration branch: `orchestrator/phase-1-contracts`, based on reviewed main.
+
+| Task           | Artifacts                                                                                                                                                                         |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| YT-008, YT-012 | `docs/01-product/PRD.md`; `docs/01-product/USER_STORIES.md` (US-001–US-014 plus the UX research plan)                                                                             |
+| YT-009         | `docs/decisions/0004-phase-1-contracts.md`; `ARCHITECTURE.md`; `DATA_MODEL.md`; `API.md`; `openapi.json` (OpenAPI 3.1, `0.1.0-draft`, 21 operations); `packages/shared/README.md` |
+| YT-010         | `docs/04-behavioral/PHASE1_REVIEW.md` (rule-by-rule review, checks B-01–B-14)                                                                                                     |
+| YT-011         | `docs/02-design/FLOWS.md`; `docs/02-design/DESIGN_SYSTEM.md`                                                                                                                      |
+| YT-013         | `docs/02-design/VOICE_AND_TONE.md`                                                                                                                                                |
+| Tests          | `tests/contract.test.mjs` (9 structural contract tests); human-owner assertions added to `tests/repository.test.mjs`                                                              |
+
+No product code, framework, database, AI module or payment integration was written. The only running code remains the Phase 0 setup server. YT-014 reconciliation and freeze stays in TODO and blocked.
+
+ADR 0003 remains reserved for an actually observed payment-fallback decision; no failure or fallback has been invented. RULES.md is unchanged.
+
+## Human ownership split
+
+Work is divided into two near-independent lanes, recorded per row in BOARD.md under "Two-person split: Shaahid and Alan":
+
+- **Lane S — Shaahid:** contract, server, money, security and legal, infra, release. 19 tasks.
+- **Lane A — Alan:** product, behavioral, design, AI, frontend, narrative. 19 tasks.
+- **Joint:** 4 tasks.
+
+Only five touchpoints cross the lanes: the YT-014 contract freeze, the YT-018 fixture schema, YT-022 integration, YT-031/YT-037 cross-review (required because an author cannot approve their own work), and YT-036/YT-038 rehearsal and approval. Lane rules fix branch prefixes, forbid cross-lane edits, serialize the few shared files and require each lane to stay green on its own.
 
 ## Verification record
 
-- Server, dev-port validation and seed tests: observed RED before implementation, then GREEN.
-- Initial `npm install --ignore-scripts`: completed; npm reported zero vulnerabilities at install time. This is not a security audit or a guarantee.
-- Initial Secretlint scan: passed.
-- Structural test generated from the original requested tree checks 91 required paths and the additional stack ADR, 24 exact roles/eight headings, rules/pointers, unique task IDs/dependencies, complete-document placeholders and local links.
-- Final `make install`, `make check` and `make seed`: passed locally. Nine tests passed with zero failures; formatting, strict typecheck and Secretlint all passed.
-- Live `make dev` smoke test: GET `/health` returned `{"status":"ok","phase":0,"productReady":false}`; server stopped cleanly after verification.
-- Original 24 rules/global DoD and all eight ethical rules checked against the supplied prompt; original rule text preserved.
-- Secret scanner negative control detected a synthetic private-key-pattern fixture; fixture removed afterward. Local env/generated-data ignore rules verified; `.env.example` remains trackable.
-- Independent review: PASS from non-author Reviewer `sa-0-910d19d7` on November 11, 2026, for the local scaffold commit only. Reviewer independently ran `make check`, staged-only export installation/checks/seed, diff whitespace checks and original-rule comparisons. No blocking security or logic findings. Two documentation suggestions were applied: Metrics ownership now matches the roster, and role files call the stack provisional. No hosted CI or human approval implied.
-- Clean staged export: locked installation, all nine tests, formatting, strict typing, Secretlint and seed passed without untracked workspace files.
+- `make check`: pass — Prettier, strict `tsc --noEmit`, **18 tests**, Secretlint.
+- Contract-test negative control: the committed spec was copied and mutated 8 ways (float money amount, two plans presented as success, pause reason field, numeric tie score on a real circle, removed payment-gate response, approval claiming to be a payment, false `x-frozen`, dangling `$ref`). **All 8 were detected**; the spec was then restored byte-identical and re-verified.
+- Contrast ratios in `DESIGN_SYSTEM.md` were computed from the listed hex values rather than asserted.
+- WCAG references cite the W3C Recommendation only and carry an explicit no-conformance-claim note; no interface exists to audit.
+- Independent agent review of the Phase 1 drafts: **not performed** — the delegation provider was rate-limited (resets about 16:17 local). Drafts stay IN REVIEW; cross-review is Shaahid ↔ Alan per touchpoint T4.
+- Branch CI for `orchestrator/phase-1-contracts`: recorded after push, not claimed in advance.
 
-## Blockers — not fabricated away
+## Remaining decisions
 
-1. **YT-006:** No sandbox credentials or approved merchant/buyer setup have been supplied. No subscription, venue capture or signature-verified webhook was executed. Pot funding feasibility is unverified. Missing credentials are not an observed order failure, so no fallback ADR 0003 has been fabricated.
-2. **YT-007 / Q-003:** No GitHub remote, real human CODEOWNERS, branch protection or green hosted CI. CODEOWNERS deliberately has commented mappings awaiting actual humans.
-3. **Human gates:** No main merge, Phase 1 release, subsequent RULES changes, money-flow change or final build is approved.
-4. **Q-002:** Real-user graph visibility conflicts with private-drift/no-score safeguards. Only a labelled synthetic demonstration is permitted pending owner/human decisions.
-5. **Q-004–Q-006:** Simulated venue fallback versus never-cut real payment, endpoint idempotency semantics, forfeit/pause/privacy questions need explicit decisions. A source-backed research baseline is not a legal or product behavioral approval.
+1. **Money flow (Q-001, Q-005):** no sandbox subscription, venue capture or verified webhook. Source-of-funds feasibility, provider idempotency semantics and human flow approval unresolved. Draft routes must not become working payment behavior.
+2. **Privacy and behavior (Q-002):** synthetic graph only, enforced by route rather than by a flag. No real-user numeric scores or pair warnings. Pair visibility, own-data access, pause consequences and retention need owner decisions. The host-in-the-flagged-pair case is undesigned.
+3. **Policy (Q-006):** forfeit, cancellation, refunds, disputes, pause collection effects and retention are open; drafts use explicit `policy_pending` states instead of inventing rights.
+4. **Product decisions:** rotation exceptions (PRD D-P02) and the minimum contribution amount (D-P01) need owner decisions.
+5. **Repository controls:** GitHub owner, remote, main and CI verified; CODEOWNERS activation and branch protection remain separate work.
+6. **Research:** plans and hypotheses only. No claimed interviews, participant feedback or effectiveness evidence.
+7. **Release:** YT-014 freeze, Phase 2, deployment, final demo and each future main merge each require their own approval.
 
-## First five parallel tasks after release
+## Next handoff
 
-After YT-007 clears: YT-008 Product Manager, YT-009 Architect, YT-010 Behavioral Scientist, YT-011 Product Designer, and YT-012 UX Researcher. UX participant contact additionally needs human research consent. Drafts reconcile in YT-014 before build; none may start merely because setup files exist.
-
-## Next human decision
-
-Review the bootstrap artifacts/commit and supply the sandbox setup and repository/owner details needed to clear Phase 0. Stop here; no product feature work or Phase 1 execution is authorized.
+Shaahid and Alan cross-review their counterpart's lane, then decide Q-001, Q-002 and Q-006 so YT-014 can reconcile and freeze the contract. Bootstrap checks are not Phase 1 acceptance evidence. Do not begin Phase 2 implementation before the freeze and the required risk decisions.

@@ -1,0 +1,1732 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "YourTurn API",
+    "version": "0.1.0-draft",
+    "summary": "Draft contract for a sandbox-only rotating-host demo.",
+    "description": "DRAFT. Not frozen, not implemented, and not approved for money movement. Payment-executing operations are gated closed and return payment_gate_blocked until YT-006 sandbox evidence and human money-flow approval exist. Graph numbers come only from labelled synthetic fixtures. See docs/decisions/0004-phase-1-contracts.md.",
+    "x-contract-status": "draft",
+    "x-frozen": false,
+    "x-owner": "architect",
+    "x-task": "YT-009",
+    "license": { "name": "UNLICENSED", "identifier": "LicenseRef-Proprietary" }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:3000/api/v1",
+      "description": "Local loopback only. No sandbox or production server is defined."
+    }
+  ],
+  "tags": [
+    {
+      "name": "session",
+      "description": "Demo identity and session lifecycle."
+    },
+    {
+      "name": "circle",
+      "description": "Circle membership and contribution agreement."
+    },
+    { "name": "turn", "description": "Host rotation, plans and approval." },
+    { "name": "privacy", "description": "Consent, pause and exit controls." },
+    {
+      "name": "money",
+      "description": "Ledger reads and gated payment operations."
+    },
+    {
+      "name": "demo",
+      "description": "Explicitly synthetic demonstration data."
+    }
+  ],
+  "security": [{ "sessionCookie": [] }],
+  "paths": {
+    "/sessions": {
+      "post": {
+        "tags": ["session"],
+        "operationId": "createSession",
+        "summary": "Start a demo session as a seeded member.",
+        "description": "Demo-only identity selection against seeded synthetic members. No password, email or real identity is accepted. Sets an HttpOnly, SameSite=Strict session cookie and returns a CSRF token that mutating requests must echo.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateSessionRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Session created.",
+            "headers": {
+              "Set-Cookie": { "$ref": "#/components/headers/SetSessionCookie" }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Session" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["session"],
+        "operationId": "endSession",
+        "summary": "End the current session.",
+        "parameters": [{ "$ref": "#/components/parameters/CsrfToken" }],
+        "responses": {
+          "204": { "description": "Session ended." },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/CsrfRejected" }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": ["session"],
+        "operationId": "getCurrentMember",
+        "summary": "Current member, memberships and own consent state.",
+        "description": "Returns only the caller's own record. Never includes another member's consent state, pause state, contact details or any numeric tie value.",
+        "responses": {
+          "200": {
+            "description": "Current member.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CurrentMember" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    },
+    "/venues": {
+      "get": {
+        "tags": ["demo"],
+        "operationId": "listVenues",
+        "summary": "Fixed demo venue list.",
+        "description": "Static approved venues. No live search, no availability lookup, no invented slots.",
+        "responses": {
+          "200": {
+            "description": "Venues.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VenueList" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    },
+    "/circles/{circleId}": {
+      "parameters": [{ "$ref": "#/components/parameters/CircleId" }],
+      "get": {
+        "tags": ["circle"],
+        "operationId": "getCircle",
+        "summary": "Circle state for a member of that circle.",
+        "description": "Non-members receive 404 rather than 403, so existence, size and names are not disclosed.",
+        "responses": {
+          "200": {
+            "description": "Circle.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Circle" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/circles/{circleId}/invitations/{invitationId}/acceptance": {
+      "parameters": [
+        { "$ref": "#/components/parameters/CircleId" },
+        { "$ref": "#/components/parameters/InvitationId" },
+        { "$ref": "#/components/parameters/CsrfToken" },
+        { "$ref": "#/components/parameters/IdempotencyKey" }
+      ],
+      "post": {
+        "tags": ["circle"],
+        "operationId": "acceptInvitation",
+        "summary": "Accept an invitation addressed to the caller.",
+        "description": "Accepting membership never enables connection tracking, never agrees a contribution amount and never creates a charge.",
+        "responses": {
+          "201": {
+            "description": "Membership accepted.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Membership" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/CsrfRejected" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": {
+            "description": "Circle is full at six accepted members, or the invitation is already resolved.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/circles/{circleId}/contribution-proposals": {
+      "parameters": [
+        { "$ref": "#/components/parameters/CircleId" },
+        { "$ref": "#/components/parameters/CsrfToken" },
+        { "$ref": "#/components/parameters/IdempotencyKey" }
+      ],
+      "get": {
+        "tags": ["circle"],
+        "operationId": "listContributionProposals",
+        "summary": "Contribution proposals and aggregate agreement progress.",
+        "description": "Progress is reported as agreed count over required count. Individual dissent is never attributed to a named member.",
+        "responses": {
+          "200": {
+            "description": "Proposals.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributionProposalList"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "post": {
+        "tags": ["circle"],
+        "operationId": "createContributionProposal",
+        "summary": "Propose the monthly contribution amount.",
+        "description": "Amount is integer USD cents within the drafted inclusive range 100-1500; default proposal 500. A new proposal supersedes any unagreed proposal and invalidates agreements to the superseded version.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContributionProposalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Proposal created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributionProposal"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/CsrfRejected" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/circles/{circleId}/contribution-proposals/{proposalId}/agreements": {
+      "parameters": [
+        { "$ref": "#/components/parameters/CircleId" },
+        { "$ref": "#/components/parameters/ProposalId" },
+        { "$ref": "#/components/parameters/CsrfToken" },
+        { "$ref": "#/components/parameters/IdempotencyKey" }
+      ],
+      "post": {
+        "tags": ["circle"],
+        "operationId": "agreeContributionProposal",
+        "summary": "Record the caller's explicit agreement to an exact proposal version.",
+        "description": "Agreement is bound to proposal version and membership version. Silence is never agreement. Repeating the call is idempotent.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgreeContributionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Agreement recorded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributionProposal"
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/CsrfRejected" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": {
+            "description": "Proposal or membership version is stale and must be re-read before agreeing.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/circles/{circleId}/members/me/consent": {
+      "parameters": [
+        { "$ref": "#/components/parameters/CircleId" },
+        { "$ref": "#/components/parameters/CsrfToken" },
+        { "$ref": "#/components/parameters/IdempotencyKey" }
+      ],
+      "put": {
+        "tags": ["privacy"],
+        "operationId": "setOwnTrackingConsent",
+        "summary": "Turn the caller's connection tracking on or off.",
+        "description": "Off is the default. Withdrawal excludes every edge incident to the caller from later computation, including edges reconstructable from other members' records, and invalidates cached graph artifacts before reuse. Own-data access and deletion semantics remain unresolved (Q-006).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SetConsentRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Consent state after the change.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ConsentState" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/CsrfRejected" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/circles/{circleId}/members/me/pause": {
+      "parameters": [
+        { "$ref": "#/components/parameters/CircleId" },
+        { "$ref": "#/components/parameters/CsrfToken" },
+        { "$ref": "#/components/parameters/IdempotencyKey" }
+      ],
+      "post": {
+        "tags": ["privacy"],
+        "operationId": "pauseOwnParticipation",
+        "summary": "Pause the caller's participation without stating a reason.",
+        "description": "No reason field exists, so no reason can be stored or disclosed. Collection and rotation consequences are reported as policy-pending and are not executed.",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PauseRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pause state after the change.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ParticipationState" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/CsrfRejected" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/circles/{circleId}/members/me/leave": {
+      "parameters": [
+        { "$ref": "#/components/parameters/CircleId" },
+        { "$ref": "#/components/parameters/CsrfToken" },
+        { "$ref": "#/components/parameters/IdempotencyKey" }
+      ],
+      "post": {
+        "tags": ["privacy"],
+        "operationId": "leaveCircle",
+        "summary": "Leave the circle after an explicit confirmation.",
+        "description": "Exactly one confirmation step; no reason is required and no retention offer is returned. The response reports participation end only, never a provider cancellation, refund or forfeiture outcome.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LeaveRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Participation ended in the demo.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LeaveResult" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/CsrfRejected" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/circles/{circleId}/turns": {
+      "parameters": [{ "$ref": "#/components/parameters/CircleId" }],
+      "get": {
+        "tags": ["turn"],
+        "operationId": "listTurns",
+        "summary": "Deterministic host rotation for the circle.",
+        "description": "Order derives from accepted-member order with an immutable member-id tie-break and never from closeness, attendance or payment history. Interrupted cycles report suspended advancement instead of guessing a reassignment rule.",
+        "responses": {
+          "200": {
+            "description": "Turns.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TurnList" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/circles/{circleId}/turns/{turnId}/plan-suggestions": {
+      "parameters": [
+        { "$ref": "#/components/parameters/CircleId" },
+        { "$ref": "#/components/parameters/TurnId" },
+        { "$ref": "#/components/parameters/CsrfToken" },
+        { "$ref": "#/components/parameters/IdempotencyKey" }
+      ],
+      "post": {
+        "tags": ["turn"],
+        "operationId": "createPlanSuggestions",
+        "summary": "Request plan suggestions for the caller's own turn.",
+        "description": "Success returns exactly three distinct plans drawn from the fixed venue list and within the conceptual budget. Schema-invalid model output triggers one bounded regeneration, then an explicit unavailable result. A shorter list is never returned as success. Suggestions cannot book or spend.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanSuggestionsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Suggestion set: either exactly three plans or an explicit unavailable outcome.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuggestionSet" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": {
+            "description": "Caller is not the host of this turn, or CSRF validation failed.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": {
+            "description": "Circle is not ready: fewer than three accepted members, or no agreed contribution version.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/circles/{circleId}/turns/{turnId}/approvals": {
+      "parameters": [
+        { "$ref": "#/components/parameters/CircleId" },
+        { "$ref": "#/components/parameters/TurnId" },
+        { "$ref": "#/components/parameters/CsrfToken" },
+        { "$ref": "#/components/parameters/IdempotencyKey" }
+      ],
+      "post": {
+        "tags": ["turn"],
+        "operationId": "approvePlan",
+        "summary": "Host approves one exact immutable plan version.",
+        "description": "Deterministic code records the plan version, venue, total cents and turn. Approval is not a payment and not a reservation. A later change to plan, venue or amount makes the approval stale.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ApprovePlanRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Approval recorded.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PlanApproval" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": {
+            "description": "Caller is not the host of this turn, or CSRF validation failed.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": {
+            "description": "Plan version, venue or amount no longer matches the approved snapshot.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "422": {
+            "description": "Plan total exceeds the derived conceptual budget.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/circles/{circleId}/turns/{turnId}/attendance": {
+      "parameters": [
+        { "$ref": "#/components/parameters/CircleId" },
+        { "$ref": "#/components/parameters/TurnId" },
+        { "$ref": "#/components/parameters/CsrfToken" },
+        { "$ref": "#/components/parameters/IdempotencyKey" }
+      ],
+      "put": {
+        "tags": ["turn"],
+        "operationId": "setOwnAttendance",
+        "summary": "Record the caller's own RSVP or check-in.",
+        "description": "Declining or skipping carries no penalty and produces no shame copy. Attendance is recorded only for the caller, and a check-in is never inferred from a payment event.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SetAttendanceRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Attendance state after the change.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AttendanceState" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/CsrfRejected" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/circles/{circleId}/ledger": {
+      "parameters": [{ "$ref": "#/components/parameters/CircleId" }],
+      "get": {
+        "tags": ["money"],
+        "operationId": "getLedger",
+        "summary": "Append-only ledger entries and the derived pot.",
+        "description": "potCentsDerived is computed by summing entries at read time; no mutable balance is stored or returned. Synthetic entries are flagged and are not provider evidence.",
+        "responses": {
+          "200": {
+            "description": "Ledger.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Ledger" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/circles/{circleId}/subscriptions": {
+      "parameters": [
+        { "$ref": "#/components/parameters/CircleId" },
+        { "$ref": "#/components/parameters/CsrfToken" },
+        { "$ref": "#/components/parameters/IdempotencyKey" }
+      ],
+      "post": {
+        "tags": ["money"],
+        "operationId": "startContributionSubscription",
+        "summary": "Begin the caller's contribution subscription (gated closed).",
+        "description": "Returns payment_gate_blocked while the server-side gate is closed. Only a human may open the gate after YT-006 evidence and money-flow approval. No request field, header or client flag can open it, and no simulated success exists.",
+        "responses": {
+          "202": {
+            "description": "Accepted for provider interaction. Unreachable while the gate is closed.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SubscriptionState" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "$ref": "#/components/responses/CsrfRejected" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/PaymentGateBlocked" }
+        }
+      },
+      "get": {
+        "tags": ["money"],
+        "operationId": "getOwnSubscriptionState",
+        "summary": "The caller's contribution subscription state.",
+        "description": "created, approved, active and payment_received are distinct and never inferred from one another.",
+        "responses": {
+          "200": {
+            "description": "Subscription state.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SubscriptionState" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/circles/{circleId}/turns/{turnId}/venue-payments": {
+      "parameters": [
+        { "$ref": "#/components/parameters/CircleId" },
+        { "$ref": "#/components/parameters/TurnId" },
+        { "$ref": "#/components/parameters/CsrfToken" },
+        { "$ref": "#/components/parameters/IdempotencyKey" }
+      ],
+      "post": {
+        "tags": ["money"],
+        "operationId": "createVenuePayment",
+        "summary": "Create a venue payment from a recorded host approval (gated closed).",
+        "description": "Deterministic code only, from a non-stale approval. Returns payment_gate_blocked while the gate is closed. Capture never implies a reservation; funding feasibility is unverified (Q-001).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVenuePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted for provider interaction. Unreachable while the gate is closed.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaymentState" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": {
+            "description": "Caller is not the host of this turn, or CSRF validation failed.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/PaymentGateBlocked" },
+          "422": {
+            "description": "Approval is stale, or the amount exceeds the derived budget.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["money"],
+        "operationId": "getVenuePaymentState",
+        "summary": "Venue payment state for a turn.",
+        "description": "order_created, payer_approved, captured, failed and blocked are distinct. No state asserts a reservation or attendance.",
+        "responses": {
+          "200": {
+            "description": "Payment state.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaymentState" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/webhooks/paypal": {
+      "post": {
+        "tags": ["money"],
+        "operationId": "receiveProviderWebhook",
+        "summary": "Receive a provider event; verify signature before any effect.",
+        "description": "Unauthenticated endpoint by provider design. The handler verifies the signature before any ledger entry, status change or notification, deduplicates by provider event id, and is safe to run twice. Invalid signatures produce no side effects.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ProviderEvent" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Signature verified; event accepted or recognised as a duplicate with no additional effect.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookAcknowledgement"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed payload. No side effects.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Signature missing or invalid. No side effects.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/demo/graph": {
+      "get": {
+        "tags": ["demo"],
+        "operationId": "getSyntheticDemoGraph",
+        "summary": "Labelled synthetic connection graph for the demo only.",
+        "description": "The only operation that returns numeric edge values. Its data source is a versioned synthetic fixture; no request parameter can point it at real member data. Responses always carry synthetic: true and a fixtureRevision, and include a text equivalent for each edge state.",
+        "parameters": [
+          {
+            "name": "scene",
+            "in": "query",
+            "required": false,
+            "description": "Named scripted scene within the fixture, for example before or after the illustrated hangout.",
+            "schema": {
+              "type": "string",
+              "enum": ["before", "after"],
+              "default": "before"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Synthetic graph scene.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SyntheticGraph" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationFailed" },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "yourturn_session",
+        "description": "HttpOnly, Secure-when-served-over-TLS, SameSite=Strict session cookie. Mutating requests must also send the X-CSRF-Token header."
+      }
+    },
+    "headers": {
+      "SetSessionCookie": {
+        "description": "HttpOnly; SameSite=Strict session cookie.",
+        "schema": { "type": "string" }
+      }
+    },
+    "parameters": {
+      "CircleId": {
+        "name": "circleId",
+        "in": "path",
+        "required": true,
+        "schema": { "$ref": "#/components/schemas/Ulid" }
+      },
+      "InvitationId": {
+        "name": "invitationId",
+        "in": "path",
+        "required": true,
+        "schema": { "$ref": "#/components/schemas/Ulid" }
+      },
+      "ProposalId": {
+        "name": "proposalId",
+        "in": "path",
+        "required": true,
+        "schema": { "$ref": "#/components/schemas/Ulid" }
+      },
+      "TurnId": {
+        "name": "turnId",
+        "in": "path",
+        "required": true,
+        "schema": { "$ref": "#/components/schemas/Ulid" }
+      },
+      "CsrfToken": {
+        "name": "X-CSRF-Token",
+        "in": "header",
+        "required": true,
+        "description": "Token issued with the session; required on every mutating request.",
+        "schema": { "type": "string", "minLength": 20, "maxLength": 200 }
+      },
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": false,
+        "description": "Caller-generated key for one logical operation. The server stores key to first-response per actor and operation and replays the stored response on retry. Independent of any provider's own header semantics, which are unverified (Q-005).",
+        "schema": { "type": "string", "minLength": 8, "maxLength": 128 }
+      }
+    },
+    "responses": {
+      "ValidationFailed": {
+        "description": "Request failed schema or bounds validation. No state changed.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Unauthenticated": {
+        "description": "No valid session.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "CsrfRejected": {
+        "description": "CSRF token missing or invalid. No state changed.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource does not exist, or the caller is not a member of it. Deliberately indistinguishable so membership is not disclosed.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "PaymentGateBlocked": {
+        "description": "Payment execution is blocked pending genuine sandbox evidence (YT-006) and human money-flow approval. No simulated success is returned.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/PaymentGateError" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Ulid": {
+        "type": "string",
+        "description": "Opaque sortable identifier.",
+        "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$"
+      },
+      "AmountCents": {
+        "type": "integer",
+        "description": "USD amount in whole cents. Never a float, never a formatted string.",
+        "minimum": 0
+      },
+      "ContributionAmountCents": {
+        "type": "integer",
+        "description": "Monthly contribution in whole USD cents. Maximum 1500 from the product brief; minimum 100 is a draft proposal pending decision (PRD D-P01).",
+        "minimum": 100,
+        "maximum": 1500,
+        "default": 500
+      },
+      "Currency": { "type": "string", "const": "USD" },
+      "Timestamp": {
+        "type": "string",
+        "format": "date-time",
+        "description": "UTC, ISO 8601."
+      },
+      "FirstName": {
+        "type": "string",
+        "description": "First name only. Emails, phone numbers and payment identifiers are never exposed in these responses.",
+        "minLength": 1,
+        "maxLength": 40
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "validation_failed",
+              "unauthenticated",
+              "csrf_rejected",
+              "not_found",
+              "not_host",
+              "circle_full",
+              "circle_not_ready",
+              "version_stale",
+              "approval_stale",
+              "budget_exceeded",
+              "invitation_resolved",
+              "payment_gate_blocked",
+              "webhook_signature_invalid",
+              "rate_limited",
+              "internal_error"
+            ]
+          },
+          "message": { "type": "string" },
+          "details": {
+            "type": "array",
+            "description": "Field-level problems. Never contains another member's data, a hardship reason or a tie score.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["field", "problem"],
+              "properties": {
+                "field": { "type": "string" },
+                "problem": { "type": "string" }
+              }
+            }
+          },
+          "pendingDecision": {
+            "type": "string",
+            "description": "Open question that blocks this operation, for example Q-001 or Q-006.",
+            "enum": ["Q-001", "Q-002", "Q-004", "Q-005", "Q-006"]
+          }
+        }
+      },
+      "PaymentGateError": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Error" },
+          {
+            "type": "object",
+            "required": ["gate"],
+            "properties": {
+              "gate": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["open", "blockingTasks", "humanApprovalRecorded"],
+                "properties": {
+                  "open": { "type": "boolean", "const": false },
+                  "blockingTasks": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "minItems": 1
+                  },
+                  "humanApprovalRecorded": { "type": "boolean", "const": false }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CreateSessionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["seededMemberId"],
+        "properties": {
+          "seededMemberId": { "$ref": "#/components/schemas/Ulid" }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["memberId", "csrfToken", "expiresAt", "demoSession"],
+        "properties": {
+          "memberId": { "$ref": "#/components/schemas/Ulid" },
+          "csrfToken": { "type": "string", "minLength": 20 },
+          "expiresAt": { "$ref": "#/components/schemas/Timestamp" },
+          "demoSession": { "type": "boolean", "const": true }
+        }
+      },
+      "CurrentMember": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["memberId", "firstName", "memberships"],
+        "properties": {
+          "memberId": { "$ref": "#/components/schemas/Ulid" },
+          "firstName": { "$ref": "#/components/schemas/FirstName" },
+          "memberships": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Membership" }
+          }
+        }
+      },
+      "Membership": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "circleId",
+          "memberId",
+          "state",
+          "joinedAt",
+          "membershipVersion"
+        ],
+        "properties": {
+          "circleId": { "$ref": "#/components/schemas/Ulid" },
+          "memberId": { "$ref": "#/components/schemas/Ulid" },
+          "state": {
+            "type": "string",
+            "enum": ["invited", "accepted", "paused", "left"]
+          },
+          "joinedAt": { "$ref": "#/components/schemas/Timestamp" },
+          "membershipVersion": { "type": "integer", "minimum": 1 },
+          "ownConsent": { "$ref": "#/components/schemas/ConsentState" }
+        }
+      },
+      "Circle": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "circleId",
+          "name",
+          "members",
+          "membershipVersion",
+          "readyForPlanning",
+          "agreedContribution",
+          "potCentsDerived",
+          "currency"
+        ],
+        "properties": {
+          "circleId": { "$ref": "#/components/schemas/Ulid" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "members": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 6,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["memberId", "firstName", "state"],
+              "description": "Peer view. Contains no consent state, no pause reason, no contact details and no tie value.",
+              "properties": {
+                "memberId": { "$ref": "#/components/schemas/Ulid" },
+                "firstName": { "$ref": "#/components/schemas/FirstName" },
+                "state": {
+                  "type": "string",
+                  "enum": ["invited", "accepted", "paused", "left"]
+                }
+              }
+            }
+          },
+          "membershipVersion": { "type": "integer", "minimum": 1 },
+          "readyForPlanning": {
+            "type": "boolean",
+            "description": "True only with at least three accepted members and a complete contribution agreement for the current version."
+          },
+          "agreedContribution": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/ContributionProposal" },
+              { "type": "null" }
+            ]
+          },
+          "potCentsDerived": { "$ref": "#/components/schemas/AmountCents" },
+          "currency": { "$ref": "#/components/schemas/Currency" },
+          "potLabel": {
+            "type": "string",
+            "description": "Human-facing label stating that the pot is a conceptual budget with no verified provider funding."
+          }
+        }
+      },
+      "CreateContributionProposalRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["amountCents", "membershipVersion"],
+        "properties": {
+          "amountCents": {
+            "$ref": "#/components/schemas/ContributionAmountCents"
+          },
+          "membershipVersion": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "AgreeContributionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["proposalVersion", "membershipVersion", "amountCents"],
+        "description": "All three fields are echoed back by the client so a stale agreement cannot bind a changed proposal.",
+        "properties": {
+          "proposalVersion": { "type": "integer", "minimum": 1 },
+          "membershipVersion": { "type": "integer", "minimum": 1 },
+          "amountCents": {
+            "$ref": "#/components/schemas/ContributionAmountCents"
+          }
+        }
+      },
+      "ContributionProposal": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "proposalId",
+          "circleId",
+          "amountCents",
+          "currency",
+          "proposalVersion",
+          "membershipVersion",
+          "state",
+          "agreementProgress",
+          "createdAt"
+        ],
+        "properties": {
+          "proposalId": { "$ref": "#/components/schemas/Ulid" },
+          "circleId": { "$ref": "#/components/schemas/Ulid" },
+          "amountCents": {
+            "$ref": "#/components/schemas/ContributionAmountCents"
+          },
+          "currency": { "$ref": "#/components/schemas/Currency" },
+          "proposalVersion": { "type": "integer", "minimum": 1 },
+          "membershipVersion": { "type": "integer", "minimum": 1 },
+          "state": {
+            "type": "string",
+            "enum": [
+              "awaiting_agreement",
+              "agreed",
+              "superseded",
+              "invalidated"
+            ]
+          },
+          "agreementProgress": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["agreedCount", "requiredCount", "ownAgreement"],
+            "description": "Aggregate only. Which named member has not agreed is never disclosed.",
+            "properties": {
+              "agreedCount": { "type": "integer", "minimum": 0 },
+              "requiredCount": { "type": "integer", "minimum": 1 },
+              "ownAgreement": { "type": "boolean" }
+            }
+          },
+          "createdAt": { "$ref": "#/components/schemas/Timestamp" }
+        }
+      },
+      "ContributionProposalList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["proposals"],
+        "properties": {
+          "proposals": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ContributionProposal" }
+          }
+        }
+      },
+      "SetConsentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["trackingEnabled"],
+        "properties": {
+          "trackingEnabled": { "type": "boolean" }
+        }
+      },
+      "ConsentState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["trackingEnabled", "updatedAt", "incidentEdgesExcluded"],
+        "properties": {
+          "trackingEnabled": { "type": "boolean", "default": false },
+          "updatedAt": { "$ref": "#/components/schemas/Timestamp" },
+          "incidentEdgesExcluded": {
+            "type": "boolean",
+            "description": "True whenever tracking is off, asserting that edges incident to this member are excluded from computation and downstream use, including reconstruction from other members' records."
+          },
+          "ownDataAccess": {
+            "type": "string",
+            "description": "Access and deletion semantics are unresolved (Q-006) and must not be implied as settled.",
+            "enum": ["policy_pending"]
+          }
+        }
+      },
+      "PauseRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Deliberately has no reason field, so no hardship reason can be collected, stored or disclosed.",
+        "properties": {
+          "paused": { "type": "boolean", "default": true }
+        }
+      },
+      "ParticipationState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state",
+          "reasonCollected",
+          "peerVisibleDetail",
+          "collectionEffect"
+        ],
+        "properties": {
+          "state": { "type": "string", "enum": ["active", "paused", "left"] },
+          "reasonCollected": { "type": "boolean", "const": false },
+          "peerVisibleDetail": {
+            "type": "string",
+            "description": "At most a neutral state word; never a reason or a comparison.",
+            "enum": ["neutral_state_only"]
+          },
+          "collectionEffect": {
+            "type": "string",
+            "description": "Provider collection consequences are unresolved (Q-006) and are not executed.",
+            "enum": ["policy_pending"]
+          }
+        }
+      },
+      "LeaveRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["confirm"],
+        "description": "Single explicit confirmation. No reason field exists and none may be required.",
+        "properties": {
+          "confirm": { "type": "boolean", "const": true }
+        }
+      },
+      "LeaveResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state",
+          "forfeitPolicy",
+          "providerCancellationClaimed",
+          "refundClaimed",
+          "rotationEffect"
+        ],
+        "properties": {
+          "state": { "type": "string", "const": "left" },
+          "forfeitPolicy": {
+            "type": "string",
+            "description": "The forfeit text is a disclosed proposal, not an enforceable outcome (Q-006).",
+            "enum": ["disclosed_proposal_pending_review"]
+          },
+          "providerCancellationClaimed": { "type": "boolean", "const": false },
+          "refundClaimed": { "type": "boolean", "const": false },
+          "rotationEffect": {
+            "type": "string",
+            "enum": ["advancement_suspended_pending_rule"]
+          }
+        }
+      },
+      "TurnList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "circleId",
+          "cycleIndex",
+          "orderBasis",
+          "turns",
+          "advancement"
+        ],
+        "properties": {
+          "circleId": { "$ref": "#/components/schemas/Ulid" },
+          "cycleIndex": { "type": "integer", "minimum": 1 },
+          "orderBasis": {
+            "type": "string",
+            "description": "Fixed basis statement; closeness, attendance and payment history are never inputs.",
+            "const": "accepted_member_order_then_member_id"
+          },
+          "turns": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Turn" }
+          },
+          "advancement": {
+            "type": "string",
+            "enum": ["fixture_controlled", "suspended_pending_rule"],
+            "description": "Wall-clock time alone never advances a turn or triggers collection."
+          }
+        }
+      },
+      "Turn": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["turnId", "hostMemberId", "sequence", "state"],
+        "properties": {
+          "turnId": { "$ref": "#/components/schemas/Ulid" },
+          "hostMemberId": { "$ref": "#/components/schemas/Ulid" },
+          "sequence": { "type": "integer", "minimum": 1 },
+          "state": {
+            "type": "string",
+            "enum": ["upcoming", "current", "completed", "skipped", "suspended"]
+          },
+          "approval": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/PlanApproval" },
+              { "type": "null" }
+            ]
+          }
+        }
+      },
+      "VenueList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["fixedList", "venues"],
+        "properties": {
+          "fixedList": { "type": "boolean", "const": true },
+          "venues": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Venue" }
+          }
+        }
+      },
+      "Venue": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "venueId",
+          "name",
+          "category",
+          "estimatedCostCents",
+          "currency"
+        ],
+        "properties": {
+          "venueId": { "$ref": "#/components/schemas/Ulid" },
+          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "category": { "type": "string", "minLength": 1, "maxLength": 40 },
+          "estimatedCostCents": { "$ref": "#/components/schemas/AmountCents" },
+          "currency": { "$ref": "#/components/schemas/Currency" },
+          "availabilityKnown": {
+            "type": "boolean",
+            "const": false,
+            "description": "No availability is looked up or invented in this demo."
+          }
+        }
+      },
+      "CreatePlanSuggestionsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["budgetCents"],
+        "properties": {
+          "budgetCents": { "$ref": "#/components/schemas/AmountCents" },
+          "availabilityNote": { "type": "string", "maxLength": 200 },
+          "preferences": {
+            "type": "array",
+            "maxItems": 10,
+            "description": "Plan-relevant preferences only. Emails, payment data, hardship information and tie scores are never accepted here.",
+            "items": { "type": "string", "minLength": 1, "maxLength": 40 }
+          }
+        }
+      },
+      "SuggestionSet": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["suggestionSetId", "turnId", "outcome", "generatedAt"],
+        "description": "Either exactly three plans, or an explicit unavailable outcome. A shorter list is never a success.",
+        "oneOf": [
+          {
+            "required": ["plans"],
+            "not": { "required": ["unavailableReason"] }
+          },
+          {
+            "required": ["unavailableReason"],
+            "not": { "required": ["plans"] }
+          }
+        ],
+        "properties": {
+          "suggestionSetId": { "$ref": "#/components/schemas/Ulid" },
+          "turnId": { "$ref": "#/components/schemas/Ulid" },
+          "outcome": {
+            "type": "string",
+            "enum": ["three_plans", "unavailable"]
+          },
+          "generatedAt": { "$ref": "#/components/schemas/Timestamp" },
+          "plans": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": { "$ref": "#/components/schemas/Plan" }
+          },
+          "unavailableReason": {
+            "type": "string",
+            "enum": [
+              "schema_invalid_after_retry",
+              "model_unavailable",
+              "no_plan_within_budget"
+            ]
+          },
+          "retriesUsed": { "type": "integer", "minimum": 0, "maximum": 1 },
+          "manualAlternative": {
+            "type": "string",
+            "const": "browse_fixed_venues_or_defer",
+            "description": "Non-AI path always available; the same budget, host and payment gates apply."
+          }
+        }
+      },
+      "Plan": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "planId",
+          "planVersion",
+          "venueId",
+          "title",
+          "totalCents",
+          "currency"
+        ],
+        "description": "Immutable once suggested. Any edit produces a new planVersion and invalidates an approval of the previous one.",
+        "properties": {
+          "planId": { "$ref": "#/components/schemas/Ulid" },
+          "planVersion": { "type": "integer", "minimum": 1 },
+          "venueId": { "$ref": "#/components/schemas/Ulid" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "rationale": {
+            "type": "string",
+            "maxLength": 240,
+            "description": "Positive framing about a shared plan. Never a warning, score or diagnosis about named people."
+          },
+          "totalCents": { "$ref": "#/components/schemas/AmountCents" },
+          "currency": { "$ref": "#/components/schemas/Currency" },
+          "source": {
+            "type": "string",
+            "enum": ["copilot", "manual_fixed_list"]
+          }
+        }
+      },
+      "ApprovePlanRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["planId", "planVersion", "venueId", "totalCents"],
+        "properties": {
+          "planId": { "$ref": "#/components/schemas/Ulid" },
+          "planVersion": { "type": "integer", "minimum": 1 },
+          "venueId": { "$ref": "#/components/schemas/Ulid" },
+          "totalCents": { "$ref": "#/components/schemas/AmountCents" }
+        }
+      },
+      "PlanApproval": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "approvalId",
+          "turnId",
+          "hostMemberId",
+          "planId",
+          "planVersion",
+          "venueId",
+          "totalCents",
+          "currency",
+          "approvedAt",
+          "isPayment",
+          "isReservation"
+        ],
+        "properties": {
+          "approvalId": { "$ref": "#/components/schemas/Ulid" },
+          "turnId": { "$ref": "#/components/schemas/Ulid" },
+          "hostMemberId": { "$ref": "#/components/schemas/Ulid" },
+          "planId": { "$ref": "#/components/schemas/Ulid" },
+          "planVersion": { "type": "integer", "minimum": 1 },
+          "venueId": { "$ref": "#/components/schemas/Ulid" },
+          "totalCents": { "$ref": "#/components/schemas/AmountCents" },
+          "currency": { "$ref": "#/components/schemas/Currency" },
+          "approvedAt": { "$ref": "#/components/schemas/Timestamp" },
+          "approvedBy": {
+            "type": "string",
+            "const": "deterministic_host_action"
+          },
+          "isPayment": { "type": "boolean", "const": false },
+          "isReservation": { "type": "boolean", "const": false },
+          "stale": { "type": "boolean", "default": false }
+        }
+      },
+      "SetAttendanceRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["response"],
+        "properties": {
+          "response": {
+            "type": "string",
+            "enum": ["going", "not_going", "undecided"]
+          },
+          "checkedIn": { "type": "boolean", "default": false }
+        }
+      },
+      "AttendanceState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["turnId", "memberId", "response", "penaltyApplied"],
+        "properties": {
+          "turnId": { "$ref": "#/components/schemas/Ulid" },
+          "memberId": { "$ref": "#/components/schemas/Ulid" },
+          "response": {
+            "type": "string",
+            "enum": ["going", "not_going", "undecided"]
+          },
+          "checkedIn": { "type": "boolean", "default": false },
+          "penaltyApplied": { "type": "boolean", "const": false }
+        }
+      },
+      "Ledger": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "circleId",
+          "currency",
+          "potCentsDerived",
+          "derivedFromEntryCount",
+          "entries"
+        ],
+        "properties": {
+          "circleId": { "$ref": "#/components/schemas/Ulid" },
+          "currency": { "$ref": "#/components/schemas/Currency" },
+          "potCentsDerived": { "$ref": "#/components/schemas/AmountCents" },
+          "derivedFromEntryCount": { "type": "integer", "minimum": 0 },
+          "entries": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/LedgerEntry" }
+          }
+        }
+      },
+      "LedgerEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entryId",
+          "kind",
+          "amountCents",
+          "currency",
+          "occurredAt",
+          "synthetic"
+        ],
+        "description": "Append-only. Corrections are new compensating entries, never edits or deletes.",
+        "properties": {
+          "entryId": { "$ref": "#/components/schemas/Ulid" },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "contribution_received",
+              "venue_payment_captured",
+              "correction"
+            ]
+          },
+          "amountCents": {
+            "type": "integer",
+            "description": "Signed whole cents; outflows are negative."
+          },
+          "currency": { "$ref": "#/components/schemas/Currency" },
+          "occurredAt": { "$ref": "#/components/schemas/Timestamp" },
+          "providerEventId": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "description": "Set only for entries derived from a signature-verified provider event."
+          },
+          "synthetic": {
+            "type": "boolean",
+            "description": "True for fixture data, which is never provider or payment evidence."
+          }
+        }
+      },
+      "SubscriptionState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "memberId",
+          "circleId",
+          "state",
+          "amountCents",
+          "currency",
+          "environment"
+        ],
+        "properties": {
+          "memberId": { "$ref": "#/components/schemas/Ulid" },
+          "circleId": { "$ref": "#/components/schemas/Ulid" },
+          "state": {
+            "type": "string",
+            "description": "Distinct states; none is inferred from another.",
+            "enum": [
+              "blocked",
+              "created",
+              "approved",
+              "active",
+              "payment_received",
+              "failed"
+            ]
+          },
+          "amountCents": {
+            "$ref": "#/components/schemas/ContributionAmountCents"
+          },
+          "currency": { "$ref": "#/components/schemas/Currency" },
+          "environment": { "type": "string", "const": "sandbox" },
+          "providerSubscriptionId": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }]
+          }
+        }
+      },
+      "CreateVenuePaymentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["approvalId"],
+        "properties": {
+          "approvalId": { "$ref": "#/components/schemas/Ulid" }
+        }
+      },
+      "PaymentState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "turnId",
+          "state",
+          "amountCents",
+          "currency",
+          "environment",
+          "reservationConfirmed",
+          "attendanceConfirmed"
+        ],
+        "properties": {
+          "turnId": { "$ref": "#/components/schemas/Ulid" },
+          "state": {
+            "type": "string",
+            "enum": [
+              "blocked",
+              "order_created",
+              "payer_approved",
+              "captured",
+              "failed"
+            ]
+          },
+          "amountCents": { "$ref": "#/components/schemas/AmountCents" },
+          "currency": { "$ref": "#/components/schemas/Currency" },
+          "environment": { "type": "string", "const": "sandbox" },
+          "providerOrderId": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }]
+          },
+          "reservationConfirmed": {
+            "type": "boolean",
+            "const": false,
+            "description": "Capture never implies a venue reservation in this demo."
+          },
+          "attendanceConfirmed": { "type": "boolean", "const": false }
+        }
+      },
+      "ProviderEvent": {
+        "type": "object",
+        "required": ["id", "event_type"],
+        "description": "Provider-shaped envelope. Only signature-verified events may cause effects; fields beyond these are ignored rather than trusted.",
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "event_type": { "type": "string", "minLength": 1 },
+          "create_time": { "type": "string" },
+          "resource": { "type": "object" }
+        }
+      },
+      "WebhookAcknowledgement": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["signatureVerified", "duplicate", "effectsApplied"],
+        "properties": {
+          "signatureVerified": { "type": "boolean", "const": true },
+          "duplicate": { "type": "boolean" },
+          "effectsApplied": {
+            "type": "boolean",
+            "description": "False for a duplicate or for an event recognised but not yet actionable."
+          }
+        }
+      },
+      "SyntheticGraph": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "synthetic",
+          "fixtureRevision",
+          "scene",
+          "notice",
+          "nodes",
+          "edges"
+        ],
+        "properties": {
+          "synthetic": { "type": "boolean", "const": true },
+          "fixtureRevision": { "type": "string", "minLength": 1 },
+          "scene": { "type": "string", "enum": ["before", "after"] },
+          "notice": {
+            "type": "string",
+            "description": "Human-facing statement that the people are fictional and the change is scripted."
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["nodeId", "firstName", "synthetic"],
+              "properties": {
+                "nodeId": { "type": "string", "pattern": "^synthetic-" },
+                "firstName": { "$ref": "#/components/schemas/FirstName" },
+                "synthetic": { "type": "boolean", "const": true }
+              }
+            }
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "from",
+                "to",
+                "strength",
+                "stateLabel",
+                "textEquivalent"
+              ],
+              "description": "Numeric strength exists only here, for fictional people.",
+              "properties": {
+                "from": { "type": "string", "pattern": "^synthetic-" },
+                "to": { "type": "string", "pattern": "^synthetic-" },
+                "strength": { "type": "number", "minimum": 0, "maximum": 1 },
+                "stateLabel": {
+                  "type": "string",
+                  "enum": ["fading", "steady", "reconnected"]
+                },
+                "textEquivalent": {
+                  "type": "string",
+                  "description": "Conveys the same meaning without relying on color."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
