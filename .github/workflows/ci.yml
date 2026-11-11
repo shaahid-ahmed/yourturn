@@ -1,8 +1,10 @@
 name: CI
 on:
   pull_request:
+  # Every branch, not a prefix allowlist: the lane branch names in tasks/BOARD.md
+  # (payments/*, backend/*, frontend/*, ml-engineer/*, ...) must all get CI, and a
+  # branch that silently skips checks is worse than no CI at all.
   push:
-    branches: [main, 'orchestrator/**', 'sre-devops/**']
 permissions:
   contents: read
 concurrency:
