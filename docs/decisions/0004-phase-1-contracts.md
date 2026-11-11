@@ -6,6 +6,7 @@
 - Task: YT-009 (freeze is YT-014)
 - Required approvers: Architect (freeze), Payments and Legal (money boundary), Privacy and Behavioral (graph/consent boundary), human (money flow, main merge)
 - Approval evidence: none yet; this ADR records a proposal only
+- Superseded in part by [ADR 0005](0005-venue-payment-via-payouts.md): the venue is paid with Payouts, not Orders/Checkout. Everything else here stands.
 - Supersedes: none. ADR 0003 remains **reserved** for a decision about an actually observed sandbox venue-payment failure; no such failure has occurred, so no fallback is proposed here.
 
 ## Context
@@ -19,7 +20,7 @@ Draft one versioned HTTP contract, `v0.1.0-draft`, expressed as prose in `API.md
 1. **Single API surface.** One Fastify service exposes all routes under `/api/v1`. The AI modules are in-process libraries called by that service, not separately reachable endpoints, so authorization and consent checks cannot be bypassed by calling the model directly.
 2. **Explicit money representation.** Every monetary field is an integer-cents field named `*Cents`, with `currency` fixed to `USD`. Contribution amounts accept 100–1500 cents inclusive as the drafted range, default 500. The 1500 ceiling comes from the product brief; the 100 floor is a **draft proposal** (PRD D-P01) pending owner decision.
 3. **Derived pot.** No API response or table column stores a mutable pot balance. The pot is computed by summing `ledger_entry.amount_cents` for the circle at read time, and responses label it `potCentsDerived`.
-4. **Payment execution gate.** All payment-executing routes exist in the contract but return `409 payment_gate_blocked` while the gate is closed. The gate is a server-side configuration that only a human can open after YT-006 evidence and money-flow approval. There is no request parameter, header or client flag that opens it, and no simulated success response exists in the contract.
+4. **Payment execution gate.** All payment-executing routes exist in the contract but return `409 payment_gate_blocked` while the gate is closed. (Venue payment now uses Payouts per ADR 0005; the gate and route are unchanged.) The gate is a server-side configuration that only a human can open after YT-006 evidence and money-flow approval. There is no request parameter, header or client flag that opens it, and no simulated success response exists in the contract.
 5. **Suggestion integrity.** A successful suggestion response contains exactly three distinct plans; the schema enforces `minItems: 3, maxItems: 3`. Failure is a distinct explicit response (`suggestionsUnavailable`), never a shorter array.
 6. **Synthetic-only graph.** Numeric edge values are returned only by `/api/v1/demo/graph`, which reads a labelled fixture and whose responses carry `"synthetic": true` and a `fixtureRevision`. Real-member endpoints expose no numeric tie value, rank or drift flag to anyone. The synthetic boundary is enforced by the route's data source, not by a request flag.
 7. **Idempotency.** Mutating requests accept an `Idempotency-Key` header; the server stores key → first response per actor and operation and replays it. This internal guarantee is independent of any provider's own header semantics, which remain unverified (Q-005).

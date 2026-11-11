@@ -303,6 +303,48 @@ test('payment-executing operations document a closed gate and no simulated succe
   }
 });
 
+test('the venue is paid by Payouts, with fees recorded and PENDING distinct from success', () => {
+  const spec = loadSpec();
+  const payment = spec.components.schemas.PaymentState;
+  assert.deepEqual(payment.properties.state.enum, [
+    'blocked',
+    'payout_pending',
+    'payout_success',
+    'payout_denied',
+    'failed',
+  ]);
+  // Orders/Checkout cannot spend collected funds, so no order field may linger.
+  assert.equal(payment.properties.providerOrderId, undefined);
+  assert.ok(
+    payment.properties.providerPayoutBatchId,
+    'payout batch id must be representable',
+  );
+  assert.ok(
+    payment.required.includes('feeCents'),
+    'provider fee must always be reported',
+  );
+  assert.equal(
+    payment.properties.feeCents.$ref,
+    '#/components/schemas/AmountCents',
+  );
+
+  const kinds = spec.components.schemas.LedgerEntry.properties.kind.enum;
+  for (const kind of ['venue_payment_sent', 'provider_fee']) {
+    assert.ok(kinds.includes(kind), `ledger must record ${kind}`);
+  }
+  assert.ok(
+    !kinds.includes('venue_payment_captured'),
+    'capture wording belongs to Orders, not Payouts',
+  );
+
+  const create =
+    spec.paths['/circles/{circleId}/turns/{turnId}/venue-payments'].post;
+  assert.match(create.description, /Payouts/);
+  assert.match(create.description, /PENDING/);
+  assert.match(create.description, /never implies a venue reservation/i);
+  assert.equal(payment.properties.reservationConfirmed.const, false);
+});
+
 test('webhook ingress is unauthenticated by design but verified before effects', () => {
   const spec = loadSpec();
   const webhook = spec.paths['/webhooks/paypal'].post;

@@ -53,13 +53,25 @@ Only five touchpoints cross the lanes: the YT-014 contract freeze, the YT-018 fi
 
 ## Remaining decisions
 
-1. **Money flow (Q-001, Q-005):** no sandbox subscription, venue capture or verified webhook. Source-of-funds feasibility, provider idempotency semantics and human flow approval unresolved. Draft routes must not become working payment behavior.
+1. **Money flow — mechanism verified, flow still unapproved (Q-001 answered, Q-005 open).** YT-006 ran against the sandbox on 2026-11-11: auth, catalog product, $5.00/month plan `P-8AW24653TA0269907NL2PYKA`, subscription `I-RPU70L1FAUWH` (APPROVAL_PENDING), and a **successful venue payout** — batch `CLAPZR33X2P32`, `SUCCESS` on readback, 12.00 USD, fee 0.25 USD, txn `0VL83865553929934`. ADR 0005 records the correction: **Payouts**, not Orders/Checkout, is the only way to spend collected funds. Still outstanding: payer approval so the subscription becomes ACTIVE, a real contribution event, a webhook listener and an end-to-end signature verification. The payment gate stays closed until a human approves the flow.
 2. **Privacy and behavior (Q-002):** synthetic graph only, enforced by route rather than by a flag. No real-user numeric scores or pair warnings. Pair visibility, own-data access, pause consequences and retention need owner decisions. The host-in-the-flagged-pair case is undesigned.
 3. **Policy (Q-006):** forfeit, cancellation, refunds, disputes, pause collection effects and retention are open; drafts use explicit `policy_pending` states instead of inventing rights.
 4. **Product decisions:** rotation exceptions (PRD D-P02) and the minimum contribution amount (D-P01) need owner decisions.
 5. **Repository controls:** GitHub owner, remote, main and CI verified; CODEOWNERS activation and branch protection remain separate work.
 6. **Research:** plans and hypotheses only. No claimed interviews, participant feedback or effectiveness evidence.
 7. **Release:** YT-014 freeze, Phase 2, deployment, final demo and each future main merge each require their own approval.
+
+## YT-006 sandbox result
+
+| Leg               | Evidence                                                                          | Verdict                                       |
+| ----------------- | --------------------------------------------------------------------------------- | --------------------------------------------- |
+| Auth and scopes   | app `APP-7J2002686X0070045`; payouts and subscription scopes granted              | pass                                          |
+| Plan              | `PROD-3K282225S7986580D`, plan `P-8AW24653TA0269907NL2PYKA` ACTIVE at $5.00/month | pass                                          |
+| Contribution in   | subscription `I-RPU70L1FAUWH` at `APPROVAL_PENDING`                               | incomplete — payer approval is a browser step |
+| Venue payment out | payout `CLAPZR33X2P32` PENDING on create, `SUCCESS` on readback, fee 0.25 USD     | **pass**                                      |
+| Webhook           | no public HTTPS listener exists                                                   | blocked, YT-032                               |
+
+Three consequences: Payouts moves from the cut list into core scope; every payout writes two ledger entries (amount and provider fee) or the derived pot drifts from the real balance; and `PENDING` must never be shown as success, since settlement took about 25 seconds.
 
 ## Next handoff
 
