@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "phase": 0,
+  "paymentEvidence": "none",
+  "notice": "Synthetic bootstrap fixture only. History, drift scores, approvals and provider events are not implemented or evidenced.",
+  "members": [
+    {
+      "id": "synthetic-sam",
+      "firstName": "Sam"
+    },
+    {
+      "id": "synthetic-priya",
+      "firstName": "Priya"
+    },
+    {
+      "id": "synthetic-alex",
+      "firstName": "Alex"
+    },
+    {
+      "id": "synthetic-jo",
+      "firstName": "Jo"
+    }
+  ],
+  "events": []
+}

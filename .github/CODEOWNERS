@@ -1,0 +1,66 @@
+# Human GitHub handles have not been supplied. These mappings are deliberately
+# commented rather than impersonating an account or silently implying enforcement.
+# BLOCKER YT-007 / Q-003: human + SRE must replace HANDLE with real authorized
+# GitHub owners, uncomment mappings, verify repository permissions, and require
+# Code Owner + Reviewer approval with branch protection before merging to main.
+# Roles are agent responsibilities, not valid GitHub reviewer identities.
+# General owner: orchestrator + human
+# * @HANDLE
+# Role: tech-writer (AGENTS shared with orchestrator)
+# /README.md @HANDLE
+# /AGENTS.md @HANDLE
+# Role: orchestrator; RULES changes require human approval
+# /tasks/ @HANDLE
+# /agents/ @HANDLE
+# Role: product-manager; UX owns USER_STORIES Research; Data owns delegated metrics
+# /docs/01-product/ @HANDLE
+# Role: product-designer; Content owns VOICE_AND_TONE; Accessibility owns audit
+# /docs/02-design/ @HANDLE
+# Role: architect; Payments owns PAYMENTS; LLM owns AI Prompts
+# /docs/03-architecture/ @HANDLE
+# /docs/decisions/ @HANDLE
+# /packages/shared/ @HANDLE
+# Role: behavioral-scientist
+# /docs/04-behavioral/ @HANDLE
+# Role: security
+# /docs/05-risk/THREAT_MODEL.md @HANDLE
+# Role: privacy
+# /docs/05-risk/PRIVACY.md @HANDLE
+# Role: legal-compliance
+# /docs/05-risk/COMPLIANCE.md @HANDLE
+# Role: trust-safety
+# /docs/05-risk/TRUST_SAFETY.md @HANDLE
+# Role: growth-market
+# /docs/07-gtm/MARKET.md @HANDLE
+# Role: demo-pitch
+# /docs/07-gtm/PITCH.md @HANDLE
+# /docs/07-gtm/DEMO_SCRIPT.md @HANDLE
+# Role: frontend; narrower specialist paths override
+# /apps/web/ @HANDLE
+# Role: product-designer
+# /apps/web/src/styles/ @HANDLE
+# Role: content-designer
+# /apps/web/src/content/ @HANDLE
+# Role: backend; narrower Payments path overrides
+# /services/api/ @HANDLE
+# Role: payments
+# /services/api/src/payments/ @HANDLE
+# /docs/03-architecture/PAYMENTS.md @HANDLE
+# Role: ml-engineer
+# /services/ai/graph/ @HANDLE
+# Role: llm-engineer
+# /services/ai/copilot/ @HANDLE
+# Role: qa; fixtures owned by Data
+# /tests/ @HANDLE
+# Role: sre-devops
+# /.github/ @HANDLE
+# /infra/ @HANDLE
+# /package.json @HANDLE
+# /package-lock.json @HANDLE
+# /tsconfig.json @HANDLE
+# /Makefile @HANDLE
+# /.env.example @HANDLE
+# /docs/06-ops/ @HANDLE
+# Role: data-analytics (narrow paths override broad)
+# /tests/fixtures/ @HANDLE
+# /infra/seed/ @HANDLE

@@ -1,0 +1,10 @@
+node_modules/
+package-lock.json
+.local/
+coverage/
+.git/
+docs/04-behavioral/sources.json
+agents/RULES.md
+CLAUDE.md
+.cursorrules
+.github/copilot-instructions.md
