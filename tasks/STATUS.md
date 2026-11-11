@@ -47,8 +47,9 @@ Only five touchpoints cross the lanes: the YT-014 contract freeze, the YT-018 fi
 - Contract-test negative control: the committed spec was copied and mutated 8 ways (float money amount, two plans presented as success, pause reason field, numeric tie score on a real circle, removed payment-gate response, approval claiming to be a payment, false `x-frozen`, dangling `$ref`). **All 8 were detected**; the spec was then restored byte-identical and re-verified.
 - Contrast ratios in `DESIGN_SYSTEM.md` were computed from the listed hex values rather than asserted.
 - WCAG references cite the W3C Recommendation only and carry an explicit no-conformance-claim note; no interface exists to audit.
-- Independent agent review of the Phase 1 drafts: **not performed** — the delegation provider was rate-limited (resets about 16:17 local). Drafts stay IN REVIEW; cross-review is Shaahid ↔ Alan per touchpoint T4.
-- Branch CI for `orchestrator/phase-1-contracts`: recorded after push, not claimed in advance.
+- Independent agent review of the Phase 1 drafts: **not performed** — the delegation provider was rate-limited. The human (Shaahid) directed the merge to main without it, so the Reviewer gate for these documents is **explicitly waived by the human, not satisfied**. Lane cross-review (touchpoint T4) still applies to Phase 2 code.
+- Branch CI for `orchestrator/phase-1-contracts` at `9fcab2c`: GitHub run `43062689323` succeeded.
+- Merge to main: fast-forward of `main` to `9fcab2c` on the human's explicit instruction (rule 24 gate). No squash, no rewrite; the reviewed bootstrap history is preserved.
 
 ## Remaining decisions
 
@@ -62,4 +63,4 @@ Only five touchpoints cross the lanes: the YT-014 contract freeze, the YT-018 fi
 
 ## Next handoff
 
-Shaahid and Alan cross-review their counterpart's lane, then decide Q-001, Q-002 and Q-006 so YT-014 can reconcile and freeze the contract. Bootstrap checks are not Phase 1 acceptance evidence. Do not begin Phase 2 implementation before the freeze and the required risk decisions.
+Phase 1 documents are on `main`. Shaahid and Alan cross-review their counterpart's lane, then decide Q-001, Q-002 and Q-006 so YT-014 can reconcile and freeze the contract. Bootstrap checks are not Phase 1 acceptance evidence. Do not begin Phase 2 implementation before the freeze and the required risk decisions.
