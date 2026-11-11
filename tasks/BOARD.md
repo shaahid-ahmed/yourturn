@@ -36,8 +36,9 @@ The user requested initial scaffold creation across the tree. Orchestrator coord
 
 ## IN PROGRESS
 
-| ID  | Title | Role | Depends on | Acceptance criteria | Claimed by | Branch/PR |
-| --- | ----- | ---- | ---------- | ------------------- | ---------- | --------- |
+| ID     | Title                                              | Role     | Depends on                                   | Acceptance criteria                                                                                                                                                                                                                        | Claimed by                              | Branch/PR                                    |
+| ------ | -------------------------------------------------- | -------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- | -------------------------------------------- |
+| RV-001 | Phase 1: T4 cross-review of Lane S contract drafts | reviewer | YT-009 (IN REVIEW); YT-008 and YT-010 inputs | Review API.md, openapi.json, DATA_MODEL.md, ARCHITECTURE.md and ADR 0004 against USER_STORIES US-001–US-014 and PHASE1_REVIEW B-01–B-14; file contradictions, missing criteria and safety gaps as comments and owner rows; no Lane S edits | Human: Alan — reviewer, kiro-lane-a-xr1 | reviewer/phase1-contract-review (local only) |
 
 ## IN REVIEW
 
