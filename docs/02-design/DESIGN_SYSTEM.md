@@ -128,7 +128,7 @@ Six decorative fills, assigned to a pod at creation and never re-coloured by sta
 
 ## Motion (base scale)
 
-`--duration-instant` 80ms, `--duration-fast` 140ms, `--duration-base` 240ms, `--duration-slow` 420ms, `--duration-ambient` 14s (bubble drift). Easings: `--easing-standard`, `--easing-enter`, `--easing-exit`, `--easing-settle` (a small overshoot used only for the booking pop). Under `prefers-reduced-motion: reduce` every duration becomes `0ms`, and the test enforces this. The per-moment spec (logo turn, bubble drift, card arrival, booking pop, balance thread) and each moment's reduced-motion equivalent are US-203.
+`--duration-instant` 80ms, `--duration-fast` 140ms, `--duration-base` 240ms, `--duration-slow` 420ms, `--duration-ambient` 14s (bubble drift). Easings: `--easing-standard`, `--easing-enter`, `--easing-exit`, `--easing-settle` (a small overshoot used only for the booking pop). Under `prefers-reduced-motion: reduce` every duration becomes `0ms`, and the test enforces this. Each moment (logo turn, bubble drift, card arrival, booking pop, balance thread and the rest) has its own `--duration-*` token, a text equivalent and a reduced-motion equivalent in [MOTION.md](MOTION.md) (US-203). Ambient motion rests after `--ambient-limit` (5s).
 
 ## Focus
 

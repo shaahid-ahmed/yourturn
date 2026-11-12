@@ -133,12 +133,24 @@
   --shadow-sheet: 0 -2px 24px rgb(28 27 25 / 0.12);
   --shadow-bubble: 0 6px 20px rgb(28 27 25 / 0.08);
 
-  /* ---------- Motion (base scale; per-moment spec in MOTION.md, US-203) ---------- */
+  /* ---------- Motion (base scale + per-moment; spec in MOTION.md, US-203) ---------- */
   --duration-instant: 80ms;
   --duration-fast: 140ms;
   --duration-base: 240ms;
   --duration-slow: 420ms;
-  --duration-ambient: 14s; /* bubble drift loop */
+  --duration-ambient: 14s; /* one slow bubble-drift cycle */
+  --ambient-limit: 5s; /* ambient motion rests after this (WCAG 2.2.2) */
+
+  /* Per-moment durations (docs/02-design/MOTION.md) */
+  --duration-logo-turn: 1100ms; /* P1 */
+  --duration-bubble-birth: 520ms; /* P6 → P5 */
+  --duration-bubble-open: 360ms; /* P5 → P7 */
+  --duration-rhythm-pulse: 2400ms; /* P5, P8 */
+  --duration-card-arrival: 280ms; /* P9–P13 cards */
+  --duration-vote-settle: 320ms; /* P9, P10 */
+  --duration-booking-pop: 420ms; /* P12 */
+  --duration-thread-draw: 700ms; /* P13–P15 */
+  --duration-thread-fade: 900ms; /* P14, P15 */
   --easing-standard: cubic-bezier(0.2, 0, 0, 1);
   --easing-enter: cubic-bezier(0, 0, 0, 1);
   --easing-exit: cubic-bezier(0.3, 0, 1, 1);
@@ -161,5 +173,14 @@
     --duration-base: 0ms;
     --duration-slow: 0ms;
     --duration-ambient: 0ms;
+    --duration-logo-turn: 0ms;
+    --duration-bubble-birth: 0ms;
+    --duration-bubble-open: 0ms;
+    --duration-rhythm-pulse: 0ms;
+    --duration-card-arrival: 0ms;
+    --duration-vote-settle: 0ms;
+    --duration-booking-pop: 0ms;
+    --duration-thread-draw: 0ms;
+    --duration-thread-fade: 0ms;
   }
 }
