@@ -157,14 +157,54 @@ No personal data is collected from real users in Phase 1. The MVP audience is fi
 
 ---
 
+## Private budget answers: the tally boundary (UN-009)
+
+**What this covers:** the answers that would reveal a member's money if they leaked. They are whether an option "works" for one member's private limits, the private stretch ask and its answer, and the limits themselves. Audited against the code on `main` (November 12, 2026).
+
+**The guarantee is architectural and policy-based, not cryptographic.** The code that checks feasibility sees a member's budget and the per-member answer in plaintext, in process memory. Anyone who can read that process (an operator, a debugger, a memory dump) can see them. No secure enclave, secret sharing or multi-party computation is used, and the product must never say otherwise.
+
+### Where each private answer lives
+
+| Data                                             | Held in                                                                                                | Persisted?                                                                                                           | Logged? | Who can read it                                                                                       |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------- |
+| Private limits (budget, diet, dislikes, travel)  | `ConstraintVault`, sealed per member with AES-256-GCM                                                  | Today **no**: memory only, lost on restart (#101). PR #106 persists only the sealed record in `private_limits_vault` | No      | That member (`/me/private-limits`) and that member's planner run                                      |
+| "Works / doesn't work" for one member and option | The caller's memory while the shortlist is built (`checkBudget` returns only `{ memberId, feasible }`) | **Never.** No table has a column for it (asserted by `tests/privacy-boundary.test.mjs`)                              | No      | Nobody outside the planner run                                                                        |
+| Stretch approval during a planning run           | `StretchSession`, in memory                                                                            | Never                                                                                                                | No      | The planner run                                                                                       |
+| The stretch ask and its answer                   | `stretch_ask` (option title, per-person cost, deadline, status)                                        | **Yes, deliberately.** The deadline and the one-hangout scope must survive a restart. The table has no pod column    | No      | Only that member (`/me/stretch-asks/...`); no pod-scoped response references it                       |
+| Prompt context sent to the model                 | `buildPromptContext` (first name and plan-relevant tags)                                               | Not stored                                                                                                           | No      | The model provider, which never receives budgets: `findForbiddenFields` is asserted before every call |
+
+**Deviation from the original UN-009 wording.** UN-009 said per-member answers are "never persisted". That holds for feasibility answers. It does **not** hold for the stretch ask, which is stored because it is the member's own private message with a deadline. The stretch ask is kept private by scope (owner-only routes, no pod column), not by being kept out of storage.
+
+**Not wired yet.** `checkBudget` has no caller in the running server, and the ADR 0006 `tally.mjs` is used only by its legacy tests. When the planner hook lands (#100), it must call the checker in memory, pass only the feasible set onward, and write nothing per member.
+
+### Logging
+
+- Fastify's request logger is off (`logger: false`), so request bodies and headers are never logged.
+- Validation failures log the validator's error descriptors: the field path and the rule that failed, not the submitted value.
+- **Risk (PV-08):** the 500 handler logs the whole error object. If code that handles private limits ever puts a value into an error message, it would be logged. **Rule:** code that touches limits, stretch asks or feasibility must never interpolate a private value into an error, log line or exception.
+
+### What the pod can still infer (inference over rounds)
+
+The pod sees only the shortlist (options that work for everyone), the votes, and whether "nothing fit this time". Even so:
+
+1. **Missing options narrow a ceiling.** If an option a member suggested (P17) never appears, everyone knows someone's limit excluded it. Over several rounds with visible prices ("nothing above $40 has ever appeared"), the group can bound the lowest budget. In a 3-person pod, members who know their own budgets can sometimes work out whose it is.
+2. **"Nothing fit" after a widening** says the same thing more sharply.
+3. **Timing of a stretch ask.** A pause in planning followed by a pricier option suggests someone accepted a stretch.
+4. **The hangout state leaks a stretch ask today (PV-09).** `getHangout` returns the raw state, so every pod member can see `STRETCH_ASKS`, which reveals that someone was asked to stretch. The Home cue (`podStage`) already shows it as "planning", but the hangout read does not.
+
+**Mitigations in place:** no reasons, labels or counts on cards (contract invariant 5); a diversity rule that keeps at least one free or near-free option, so a "nothing fit" outcome is rarely about money; stretch answers that apply to one hangout only. **Not mitigated:** points 1–3 are inherent to showing a filtered shortlist and can only be reduced, not removed. Members should be told this in the P20 privacy explanation.
+
 ## Open items
 
-| ID    | Item                                                                            | Blocked by           | Owner                        |
-| ----- | ------------------------------------------------------------------------------- | -------------------- | ---------------------------- |
-| PV-01 | Collection effect of a pause — does charging actually stop?                     | Q-006, Payments      | Legal + Payments + human     |
-| PV-02 | Exact peer-disclosed state for a paused member once PV-01 resolves              | Q-006 → PV-01        | Privacy + Legal + Behavioral |
-| PV-03 | Vault deletion and export rights after leaving a pod                            | Q-006, Legal         | Legal + Privacy              |
-| PV-04 | Post-exit own-payment access scope                                              | Q-006                | Legal + Privacy              |
-| PV-05 | Lawful basis and regulatory assessment (GDPR/CCPA)                              | Phase 2, Legal       | Legal counsel                |
-| PV-06 | Poll vote names visible to peers (Q-013)                                        | Q-013                | Privacy + Behavioral         |
-| PV-07 | Multi-member `derived_from_member_ids` staleness cascade (more than one leaves) | Architect, B-05 test | Architect + Privacy          |
+| ID    | Item                                                                                                                                                                                 | Blocked by                  | Owner                        |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- | ---------------------------- |
+| PV-01 | Collection effect of a pause — does charging actually stop?                                                                                                                          | Q-006, Payments             | Legal + Payments + human     |
+| PV-02 | Exact peer-disclosed state for a paused member once PV-01 resolves                                                                                                                   | Q-006 → PV-01               | Privacy + Legal + Behavioral |
+| PV-03 | Vault deletion and export rights after leaving a pod                                                                                                                                 | Q-006, Legal                | Legal + Privacy              |
+| PV-04 | Post-exit own-payment access scope                                                                                                                                                   | Q-006                       | Legal + Privacy              |
+| PV-05 | Lawful basis and regulatory assessment (GDPR/CCPA)                                                                                                                                   | Phase 2, Legal              | Legal counsel                |
+| PV-06 | Poll vote names visible to peers (Q-013)                                                                                                                                             | Q-013                       | Privacy + Behavioral         |
+| PV-07 | Multi-member `derived_from_member_ids` staleness cascade (more than one leaves)                                                                                                      | Architect, B-05 test        | Architect + Privacy          |
+| PV-08 | The 500 handler logs whole error objects; a private value in an error message would be logged (UN-009)                                                                               | Backend code rule           | Backend + Privacy            |
+| PV-09 | `getHangout` returns `STRETCH_ASKS` to every pod member, revealing that someone was asked to stretch (UN-009). Fix: map it to `PLANNING` in pod-scoped responses, as `podStage` does | Contract change (Architect) | Architect + Backend          |
+| PV-10 | Tell members in P20 that the shortlist can be inferred over rounds (UN-009 points 1–3)                                                                                               | Content copy                | Content + Privacy            |

@@ -70,15 +70,20 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 
 ## IN PROGRESS
 
-| ID     | Title                                           | Role          | Depends on | Acceptance criteria                                                                                                                                               | Claimed by                                                                                                  | Branch/PR                            |
-| ------ | ----------------------------------------------- | ------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| YT-026 | ∥ Phase 2: abuse and coercion assessment        | trust-safety  | YT-014     | Host misuse, exclusion, harassment, financial coercion and safe exit scenarios with mitigation/test owners                                                        | Human: Vid — IN PROGRESS (trust-safety, claude-opus-5-5), taken over from Alan at Vid's request 2026-11-12  | `trust-safety/yt-026-abuse-coercion` |
-| YT-027 | ∥ Phase 2: market and positioning               | growth-market | YT-014     | Dated primary sources, sourced sizing and competitor comparisons; ethical revenue hypotheses; no invented traction                                                | Human: Vid — IN PROGRESS (growth-market, claude-opus-5-5), taken over from Alan at Vid's request 2026-11-12 | `growth-market/yt-027-market`        |
-| UN-009 | ∥ Phase 2: tally privacy boundary and retention | privacy       | UN-001     | Per-member answers held in memory only, never persisted or logged; documented as architectural not cryptographic privacy; inference-over-rounds risk written down | Human: Vid — IN PROGRESS (privacy, claude-opus-5-5), taken over from Alan at Vid's request 2026-11-12       | `privacy/un-009-tally-boundary`      |
+| ID     | Title                                    | Role          | Depends on | Acceptance criteria                                                                                                | Claimed by                                                                                                  | Branch/PR                            |
+| ------ | ---------------------------------------- | ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| YT-026 | ∥ Phase 2: abuse and coercion assessment | trust-safety  | YT-014     | Host misuse, exclusion, harassment, financial coercion and safe exit scenarios with mitigation/test owners         | Human: Vid — IN PROGRESS (trust-safety, claude-opus-5-5), taken over from Alan at Vid's request 2026-11-12  | `trust-safety/yt-026-abuse-coercion` |
+| YT-027 | ∥ Phase 2: market and positioning        | growth-market | YT-014     | Dated primary sources, sourced sizing and competitor comparisons; ethical revenue hypotheses; no invented traction | Human: Vid — IN PROGRESS (growth-market, claude-opus-5-5), taken over from Alan at Vid's request 2026-11-12 | `growth-market/yt-027-market`        |
 
 | US-019 | Phase 2: HTTP routes for the contract | backend | US-001, US-002, US-013, YT-007 (stack ratification) | Every openapi.json operation is served under /api/v1; requests and responses are validated against the contract; errors match the contract Error / PaymentGateError shapes; createSettlementPayment stays gated closed (409 payment_gate_blocked) | Human: Shaahid — IN PROGRESS | — |
 
 ## IN REVIEW
+
+Alan's Lane A tasks taken over by Vid, awaiting independent review:
+
+| ID     | Title                                           | Role    | Depends on | Acceptance criteria                                                                                                                                               | Claimed by                                                                         | Branch/PR                       |
+| ------ | ----------------------------------------------- | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------- |
+| UN-009 | ∥ Phase 2: tally privacy boundary and retention | privacy | UN-001     | Per-member answers held in memory only, never persisted or logged; documented as architectural not cryptographic privacy; inference-over-rounds risk written down | Human: Vid — IN REVIEW (privacy, claude-opus-5-5), taken over from Alan 2026-11-12 | `privacy/un-009-tally-boundary` |
 
 Vid's reassigned backend tasks awaiting independent review (Rohan reviews, per the Lane S reassignment):
 
@@ -767,6 +772,30 @@ How to verify: `npm test` (347/348 pass; 1 pre-existing Windows-only failure in 
 Risks / gotchas: The Windows path-separator test failure (`tests/web-accessibility.test.mjs:96`) is owned by the QA lane; it predates this branch and passes on hosted CI. No `apps/web` or `services/` files were touched, so no backend or frontend regressions are possible from these changes.
 
 Next step: Shaahid reviews and merges `product-manager/rv-012-lane-a-fixes`. Update RV-008 and RV-012 Branch/PR columns with the merged PR number. Alan picks up RV-009 (Privacy decisions) as the next unclaimed Lane A task.
+
+### Handoff UN-009: privacy (Vid, taken over from Alan) → reviewer, architect + backend (PV-09)
+
+Done: `docs/05-risk/PRIVACY.md` has a new "Private budget answers: the tally boundary" section, audited against the code on `main`. It contains:
+
+- **Where each private answer lives:** a table of limits, feasibility, stretch session, stretch ask and prompt context, giving persisted/logged/who-reads for each.
+- **The boundary:** stated as architectural, not cryptographic.
+- **Logging rules.**
+- **Four inference-over-rounds risks.**
+
+There are three new open items:
+
+- **PV-08:** the 500 handler logs whole errors.
+- **PV-09:** `getHangout` returns `STRETCH_ASKS` to the whole pod. This is a **live leak**, and the fix needs Architect approval.
+- **PV-10:** tell members about inference in P20.
+
+`tests/privacy-boundary.test.mjs` (4 tests) holds the code claims: the feasibility output shape, no column can store a feasibility answer, the request logger is off, and the doc states its limits.
+Not done:
+
+- PV-09 is recorded but not fixed; it is outside this lane. Filing a GitHub issue for it was blocked by tool permissions, so a human should file it.
+- Feasibility checks are not wired into the server yet (#100).
+  Deviation: UN-009 said answers are "never persisted". That is true for feasibility answers, but **not** for the stretch ask, which is stored deliberately and kept private by scope. The doc states this.
+  How to verify: `npm run check`; `node --test tests/privacy-boundary.test.mjs`.
+  Next step: an independent review; Architect and Backend decide PV-09; Content adds the PV-10 copy.
 
 ## Human Phase 1 authorization and coordinated ownership
 
