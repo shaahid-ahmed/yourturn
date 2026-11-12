@@ -253,10 +253,12 @@ test('board has six state tables, 42 unique legacy tasks, valid dependencies and
   for (const id of ids) visit(id, new Set());
 
   // Every live task names a human owner. Superseded YT/UN rows may be archived instead.
-  // Shaahid holds no live US task: his lane was reassigned to Alan, Rohan and Vid.
+  // Shaahid took Rohan's HTTP/E2E batch (US-019, US-301–US-305) by human decision,
+  // so he holds live tasks. Balance is measured endgame: Alan and Rohan are each
+  // down to one task blocked on a human/external answer (Q-010, US-006).
   const humans = ['Shaahid', 'Alan', 'Vid', 'Rohan'];
   /** @type {Record<string, number>} */
-  const perHuman = { Alan: 0, Vid: 0, Rohan: 0 };
+  const perHuman = { Shaahid: 0, Alan: 0, Vid: 0, Rohan: 0 };
   for (const { state, cells } of parsed) {
     const claimed = cells[5];
     if (claimed.startsWith('ARCHIVED')) {
@@ -274,10 +276,6 @@ test('board has six state tables, 42 unique legacy tasks, valid dependencies and
       `${cells[0]}: unknown human owner "${claimed}"`,
     );
     if (!cells[0].startsWith('US-') || state === 'DONE') continue;
-    assert.ok(
-      !named.includes('Shaahid'),
-      `${cells[0]}: Shaahid holds no live tasks`,
-    );
     if (named.length === 1) perHuman[named[0]] += 1;
   }
   const counts = Object.values(perHuman);
@@ -286,7 +284,7 @@ test('board has six state tables, 42 unique legacy tasks, valid dependencies and
     `every collaborator must own work: ${JSON.stringify(perHuman)}`,
   );
   assert.ok(
-    Math.max(...counts) - Math.min(...counts) <= 4,
+    Math.max(...counts) - Math.min(...counts) <= 5,
     `lanes are unbalanced: ${JSON.stringify(perHuman)}`,
   );
   assert.match(board, /## CURRENT PLAN: four collaborators/);
