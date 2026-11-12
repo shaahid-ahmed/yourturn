@@ -57,6 +57,7 @@ import {
 import { getBooking } from '../booking.mjs';
 import { volunteerAsPayer, confirmBooking } from '../booking.mjs';
 import { getSplit, confirmSplit } from '../split.mjs';
+import { getOwnStretchAsk, answerOwnStretchAsk } from '../stretch.mjs';
 import { canonicalize } from '../idempotency.mjs';
 import {
   listOwnPods,
@@ -112,6 +113,7 @@ const STATUS_BY_CODE = {
   wrong_hangout_state: 409,
   payer_already_chosen: 409,
   paypal_link_required: 409,
+  stretch_ask_closed: 409,
   not_yes_member: 403,
   not_payer: 403,
   option_unknown: 404,
@@ -1070,6 +1072,17 @@ export function buildApp({
         at: now,
       });
     },
+    getOwnStretchAsk: async ({ params, userId }) =>
+      getOwnStretchAsk(database, {
+        stretchAskId: params.stretchAskId,
+        userId,
+      }),
+    answerOwnStretchAsk: async ({ req, params, userId }) =>
+      answerOwnStretchAsk(database, {
+        stretchAskId: params.stretchAskId,
+        userId,
+        accept: req.body.accept,
+      }),
     volunteerAsPayer: async ({ params, userId }) => {
       const now = new Date().toISOString();
       volunteerAsPayer(database, {
