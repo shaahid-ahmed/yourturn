@@ -1629,6 +1629,45 @@ export function buildApp({
       };
     },
 
+    // ---- wave: paypal (US-019) -------------------------------------------
+
+    getOwnPayPalLink: async ({ userId }) => {
+      const row = /** @type {any} */ (
+        database
+          .prepare(
+            'SELECT status, environment, linked_at FROM paypal_link WHERE user_id = ?',
+          )
+          .get(userId)
+      );
+      if (!row)
+        return { status: 'not_linked', environment: 'sandbox', linkedAt: null };
+      return {
+        status: String(row.status),
+        environment: 'sandbox',
+        linkedAt: row.linked_at ? String(row.linked_at) : null,
+      };
+    },
+
+    startOwnPayPalLink: async () => {
+      const err = /** @type {any} */ (
+        new Error(
+          'the payment gate is closed: no human money-flow approval recorded',
+        )
+      );
+      err.code = 'payment_gate_blocked';
+      throw err;
+    },
+
+    unlinkOwnPayPal: async () => {
+      const err = /** @type {any} */ (
+        new Error(
+          'the payment gate is closed: no human money-flow approval recorded',
+        )
+      );
+      err.code = 'payment_gate_blocked';
+      throw err;
+    },
+
     // ---- wave: notifications (US-019) ------------------------------------
 
     getOwnNotificationSettings: async ({ userId }) =>
