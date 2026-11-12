@@ -18,11 +18,14 @@
   /* ---------- Layout: phone-first ---------- */
   --layout-min: 360px;
   --layout-max: 430px;
+  --layout-floor: 320px; /* must still reflow, no sideways scroll (WCAG 1.4.10) */
   --gutter: clamp(16px, 4.5vw, 20px);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --bar-height: 56px; /* top app bar */
   --dock-height: 72px; /* bottom action dock, thumb zone */
+  /* Keep focused controls clear of the sticky dock (WCAG 2.4.11) */
+  --scroll-padding-bottom: calc(var(--dock-height) + var(--safe-bottom) + 8px);
 
   /* ---------- Touch ---------- */
   --target-min: 44px; /* WCAG 2.5.8 floor is 24px; we hold 44px everywhere */

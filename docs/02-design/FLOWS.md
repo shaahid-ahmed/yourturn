@@ -56,7 +56,7 @@ P5 Home ─┬─ tap bubble ─▶ P7 Pod chat ─┬─ header ─▶ P8 Pod s
 
 ### P2 Sign in · Entry · spec p.5
 
-**Layout.** Heading "Sign in with your phone", a phone field (country code, then number), and a Send code primary button in the dock. After that, a 6-digit code field with autofill from SMS, a Resend code link and Continue. Terms and Privacy links sit under the button, at `--text-small` with 44px targets.
+**Layout.** Heading "Sign in with your phone", a phone field (country code, then number), and a Send code primary button in the dock. After that, a 6-digit code field with autofill from SMS (`autocomplete="one-time-code"`) that also accepts paste, so nothing has to be memorised or retyped (WCAG 3.3.8), a Resend code link and Continue. Terms and Privacy links sit under the button, at `--text-small` with 44px targets.
 **Actions.** Request a code, enter it, continue. The sign-in method is provisionally phone plus SMS code (spec p.16 #3).
 
 | State   | What the member sees                                                                                                                                                                                   |
@@ -308,7 +308,7 @@ Every money screen carries the notice label **"Sandbox — no real money"** whil
 
 ### P17 Event detail · Hub · spec p.11
 
-**Layout.** Title, venue or organizer, date and time, price, description, a static map image with an "Open in Maps" link, and tags. In the dock: **Suggest to a pod** (primary), with Save and Add to calendar as secondary buttons.
+**Layout.** Title, venue or organizer, date and time, price, description, a static map image (decorative, `alt=""`, because the address is written out in text beside it) with an "Open in Maps" link, and tags. In the dock: **Suggest to a pod** (primary), with Save and Add to calendar as secondary buttons.
 **Suggest to a pod.** A pod picker sheet, then a confirmation. The event posts to that pod's chat as a suggestion from you, which the planner adds to its next shortlist.
 
 | State   | What the member sees                                                                                                                                  |
