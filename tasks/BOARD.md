@@ -99,16 +99,19 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 
 ## IN PROGRESS
 
-| ID  | Title | Role | Depends on | Acceptance criteria | Claimed by | Branch/PR |
-| --- | ----- | ---- | ---------- | ------------------- | ---------- | --------- |
+| ID     | Title                                | Role             | Depends on | Acceptance criteria                                                                                    | Claimed by                                                                    | Branch/PR                        |
+| ------ | ------------------------------------ | ---------------- | ---------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- | -------------------------------- |
+| US-203 | ∥ Phase 2: motion and reduced motion | product-designer | US-202     | Logo turn, bubble drift, card arrival, booking pop, balance thread; reduced-motion equivalent for each | Human: Vid — IN PROGRESS (product-designer, claude-opus-5-5) since 2026-11-12 | `product-designer/us-203-motion` |
+| US-204 | Phase 3: accessibility audit         | accessibility    | US-202     | WCAG 2.2 AA evidence; colour never the only signal                                                     | Human: Vid — IN PROGRESS (accessibility, claude-opus-5-5) since 2026-11-12    | `accessibility/us-204-audit`     |
 
 ## IN REVIEW
 
 Lane V design work awaiting independent review:
 
-| ID     | Title                               | Role             | Depends on | Acceptance criteria                                                | Claimed by                                                             | Branch/PR                          |
-| ------ | ----------------------------------- | ---------------- | ---------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- | ---------------------------------- |
-| US-201 | ∥ Phase 1: design system and tokens | product-designer | US-001     | Phone-first tokens at 360–430 CSS px; PayPal blue as line art only | Human: Vid — IN REVIEW (product-designer, claude-opus-5-5) 2026-11-12 | `product-designer/us-201-tokens`   |
+| ID     | Title                               | Role             | Depends on | Acceptance criteria                                                                                                | Claimed by                                                             | Branch/PR                         |
+| ------ | ----------------------------------- | ---------------- | ---------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- | --------------------------------- |
+| US-201 | ∥ Phase 1: design system and tokens | product-designer | US-001     | Phone-first tokens at 360–430 CSS px; PayPal blue as line art only                                                 | Human: Vid — IN REVIEW (product-designer, claude-opus-5-5) 2026-11-12 | `product-designer/us-201-tokens`  |
+| US-202 | ∥ Phase 1: all 23 screens to spec   | product-designer | US-201     | Every screen from the page map including loading/empty/error/refused; no hover-only affordance; 44px touch targets | Human: Vid — IN REVIEW (product-designer, claude-opus-5-5) 2026-11-12 | `product-designer/us-202-screens` |
 
 | ID     | Title                                                     | Role                 | Depends on                                                                                                                        | Acceptance criteria                                                                                                                                                                             | Claimed by                                            | Branch/PR                                                                                   |
 | ------ | --------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -579,6 +582,21 @@ How to verify: On `origin/architect/xr-fixes`, read the three review docs; `node
 Risks / gotchas: PR #4 must merge to `main` with green hosted CI before RV-002..RV-006 move to DONE — none of the fixes are on `main` yet (PR #3 merged to the wrong base). The OSS-reviewer run did not satisfy the independent-review gate; cross-lane human review remains the path. Nothing pushed; all my changes are local on `alan-branch1`.
 Next step: Shaahid merges PR #4 and records RV-010/RV-011. I pick up RV-012 (fix my Lane A docs for the Payouts/graph-gate drift) and RV-008 (the US-002 vs B-03 counting contradiction) in Lane A.
 
+### Handoff US-201: product-designer (Vid) → frontend (Alan), accessibility (US-204), reviewer
+
+Done: `apps/web/src/styles/tokens.css` holds the Unspoken tokens: layout 360–430 px, 44/48 px targets, palette, rem type scale, spacing, shape, elevation and a base motion scale that drops to 0 ms under reduced motion. `docs/02-design/DESIGN_SYSTEM.md` is rewritten for Unspoken, replacing the YourTurn circles, pot and graph. It covers principles, layout, touch, colour with computed contrast, typography, focus, a 22-component inventory and a never-build list. `tests/design-tokens.test.mjs` recomputes contrast for 38 pairs from the CSS. It also fails if any token other than `--color-paypal-line` holds PayPal blue or a saturated blue, and it checks the 360/430 px and 44 px floors, rem type, the reduced-motion zeroing, and that every colour token is documented.
+Not done: No screen is built (US-202 specifies them; Alan builds them). The PayPal brand value `#0070BA` is a placeholder that still needs checking against PayPal's brand guidance. Dark mode is out of scope. Design stances on Q-011 #1/#2/#5/#6/#14/#16 and Q-013 are provisional and listed in the doc. Dependency US-001 is not done; tokens do not depend on the contract (STATUS.md "Next" item 3).
+How to verify: `npm run check` (62 tests pass locally). Mutation check: setting `--color-ink-muted` to `#9a9790` makes the contrast test fail at 2.79:1.
+Risks / gotchas: The contrast figures measure the palette, not the product; conformance is US-204. Content Designer owns the final strings, and the quoted copy is intent only.
+Next step: Independent review. Alan consumes `tokens.css` in `apps/web`, and US-202 specifies the 23 screens on top of it.
+
+### Handoff US-202: product-designer (Vid) → frontend (Alan), content-designer, accessibility (US-204), reviewer
+
+Done: `docs/02-design/FLOWS.md` is rewritten for Unspoken, replacing YourTurn S-01 to S-09. It specifies all 23 screens from the spec's page map, P1–P23, each with layout, actions, rules and a Loading / Empty / Error / Refused state table, and cites the spec page. It also covers eight global rules (44px targets, no hover-only affordance, private versus pod, no reasons on the pod side, honest "Simulated booking" and "Sandbox — no real money" labels, offline, screen-reader announcements), the navigation map with the hub-entry placement decision, and a cross-screen edge-case table. `tests/design-flows.test.mjs` checks that all 23 screens appear exactly once with all four states and a spec page, that the global rules are stated, that no "budget-friendly" or "why this one" label appears except as a prohibition, and that private styling stays on P4/P19/P22/P23.
+Not done: No screen is built (Alan, US-101–US-105). Strings are intent only (Content Designer). States are named by what the member sees, because US-001 has no error codes yet; they need mapping once the contract lands. Q-011 #1/#2/#5/#6/#11/#14/#16 and Q-013 stances are provisional and marked inline.
+How to verify: `npm run check`. Mutation check: deleting P12's Refused row fails with "P12 is missing its Refused state".
+Risks / gotchas: P9/P10 votes show names because the spec requires it; Q-013 still needs Privacy and Behavioral to record that as deliberate. Hub-entry placement (bottom-right sheet) is a design choice the spec leaves open.
+Next step: Independent review; Alan builds against it; US-203 specifies the motion moments; US-204 audits the screens once they run.
 ## Human Phase 1 authorization and coordinated ownership
 
 The human explicitly authorized Phase 1 after approving the private push and main promotion. This authorizes drafting/reviewing contracts and designs while YT-006 and the residual YT-007 readiness conditions stay BLOCKED. It does not claim sandbox success, waive RULES, approve a money-flow change, authorize real-user research, freeze unresolved contracts or start Phase 2.
