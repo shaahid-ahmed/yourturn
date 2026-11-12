@@ -206,7 +206,7 @@ test('board has six state tables, 42 unique tasks, valid dependencies and no dep
   // Both must satisfy the same structural rules, so a pivot cannot smuggle in a malformed row.
   const rows = board
     .split('\n')
-    .filter((line) => /^\| (?:YT|UN)-\d{3}\s*\|/.test(line));
+    .filter((line) => /^\| (?:YT|UN|US)-\d{3}\s*\|/.test(line));
   const legacy = rows.filter((line) => line.startsWith('| YT-'));
   const current = rows.filter((line) => line.startsWith('| UN-'));
   assert.equal(
@@ -215,6 +215,11 @@ test('board has six state tables, 42 unique tasks, valid dependencies and no dep
     'the 42 YourTurn rows are history and must not be deleted',
   );
   assert.ok(current.length > 0, 'Unspoken tasks must exist after ADR 0006');
+  const currentUs = rows.filter((line) => line.startsWith('| US-'));
+  assert.ok(
+    currentUs.length >= 30,
+    'the four-person plan must have real tasks',
+  );
   const parsed = rows.map((line) =>
     line
       .split('|')
@@ -232,7 +237,7 @@ test('board has six state tables, 42 unique tasks, valid dependencies and no dep
   for (const cells of parsed) {
     assert.equal(cells.length, 7);
     for (const cell of cells) assert.ok(cell);
-    const needed = cells[3].match(/(?:YT|UN)-\d{3}/g) ?? [];
+    const needed = cells[3].match(/(?:YT|UN|US)-\d{3}/g) ?? [];
     for (const dependency of needed)
       assert.ok(ids.includes(dependency), `${cells[0]}: missing ${dependency}`);
     deps.set(cells[0], needed);
@@ -246,7 +251,7 @@ test('board has six state tables, 42 unique tasks, valid dependencies and no dep
   for (const id of ids) visit(id, new Set());
 
   // Every task names exactly one human owner, or both for a declared touchpoint.
-  const humans = ['Shaahid', 'Alan'];
+  const humans = ['Shaahid', 'Alan', 'Vid', 'Rohan'];
   /** @type {Record<string, number>} */
   const perHuman = { Shaahid: 0, Alan: 0, joint: 0 };
   for (const cells of parsed) {
