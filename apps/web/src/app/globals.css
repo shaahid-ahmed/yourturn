@@ -51,6 +51,23 @@
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  /* WCAG 2.4.11: focused controls are never hidden under the sticky
+     header (56px) or the bottom composer/dock (72px). */
+  scroll-padding-top: 64px;
+  scroll-padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px) + 8px);
+}
+
+/* Reduced motion: every animation and transition becomes an instant state
+   change (docs/02-design/MOTION.md). Smooth scrolling stops too. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 body {

@@ -3,11 +3,12 @@
 // Phone number field → OTP entry → continue.
 // Sign-in method is not yet chosen (backend section 12).
 import { useState } from 'react';
-import { Button, Input } from '@/components/ui';
+import { Button, Input, useDocumentTitle } from '@/components/ui';
 
 type Step = 'phone' | 'code';
 
 export default function SignInPage() {
+  useDocumentTitle('Sign in');
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
@@ -107,11 +108,11 @@ export default function SignInPage() {
       <footer className="mt-auto pt-8 text-center">
         <p className="text-xs text-[var(--color-ink-muted)]">
           By continuing you agree to our{' '}
-          <a href="#" className="underline">
+          <a href="#" className="underline inline-block py-3">
             Terms
           </a>{' '}
           and{' '}
-          <a href="#" className="underline">
+          <a href="#" className="underline inline-block py-3">
             Privacy policy
           </a>
           .

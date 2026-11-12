@@ -2,7 +2,7 @@
 // P5 — Home
 // Floating pod bubbles. No cue ever names a single member's status.
 import { useState } from 'react';
-import { EmptyState, Button } from '@/components/ui';
+import { EmptyState, Button, useDocumentTitle } from '@/components/ui';
 
 type PodStage =
   'none' | 'planning' | 'poll_open' | 'booking_pending' | 'payments_open';
@@ -56,6 +56,7 @@ const BUBBLE_POSITIONS = [
 ];
 
 export default function HomePage() {
+  useDocumentTitle('Your pods');
   const [pods] = useState<DemoPod[]>(DEMO_PODS);
 
   if (pods.length === 0) {
@@ -188,7 +189,7 @@ function HubBar() {
   const items = [
     { href: '/hub/events', label: 'Events', icon: '🗺' },
     { href: '/hub/calendar', label: 'Calendar', icon: '📅' },
-    { href: '/hub/money', label: 'Money', icon: '💸' },
+    { href: '/money', label: 'Money', icon: '💸' },
     { href: '/hub/profile', label: 'Profile', icon: '👤' },
   ];
   return (

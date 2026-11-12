@@ -92,8 +92,9 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 
 Lane V design work awaiting independent review:
 
-| ID  | Title | Role | Depends on | Acceptance criteria | Claimed by | Branch/PR |
-| --- | ----- | ---- | ---------- | ------------------- | ---------- | --------- |
+| ID     | Title                        | Role          | Depends on | Acceptance criteria                                                | Claimed by                                                                                                                                  | Branch/PR                                            |
+| ------ | ---------------------------- | ------------- | ---------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| US-204 | Phase 3: accessibility audit | accessibility | US-202     | WCAG 2.2 AA evidence; colour never the only signal                 | Human: Vid — IN REVIEW (accessibility, claude-opus-5-5) 2026-11-12: design and app-stage audits done; device screen-reader pass outstanding | `accessibility/us-204-app-audit` (design stage: #49) |
 
 | ID     | Title                                              | Role                 | Depends on                                                                                                                        | Acceptance criteria                                                                                                      | Claimed by                                            | Branch/PR                      |
 | ------ | -------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- | ------------------------------ |
@@ -147,11 +148,11 @@ Bootstrap artifact tasks closed on verified review, hosted CI and human main pro
 
 ## BLOCKED
 
-| ID     | Title                              | Role                       | Depends on                                                                | Acceptance criteria                                                                                                                                                | Claimed by                                                                                                                                                                                      | Branch/PR                                                                                        |
-| ------ | ---------------------------------- | -------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| US-015 | Phase 2: security and legal review | security, legal-compliance | US-001, US-006                                                            | Threat model, webhook handling, authorization matrix, P2P transfer questions; unresolved risks block the gate                                                      | Human: Rohan — security, legal-compliance, claude-opus-us015 (partial; waits on US-006)                                                                                                         | [#62](https://github.com/shaahid-ahmed/yourturn/pull/62) `security/us-015-security-legal-review` |
-| US-204 | Phase 3: accessibility audit       | accessibility              | US-202                                                                    | WCAG 2.2 AA evidence; colour never the only signal                                                                                                                 | Human: Vid — BLOCKED (accessibility, claude-opus-5-5): design-stage audit done, app-stage audit waits on runnable screens (US-101–US-105) App screens merged #53 — app-stage audit can proceed. | `accessibility/us-204-audit`                                                                     |
-| YT-007 | Phase 0: human release gate        | orchestrator               | YT-001, YT-002, YT-003, YT-004, YT-005, YT-006; real GitHub owners/remote | Independent review, green hosted CI, initial rules/stack ratification, protected main/merge approval and explicit human Phase 1 authorization; resolve Q-001–Q-005 | Human: Shaahid — Unclaimed                                                                                                                                                                      | —                                                                                                |
+| ID     | Title                              | Role                       | Depends on                                                                | Acceptance criteria                                                                                                                                                | Claimed by                                                                              | Branch/PR                                                                                        |
+| ------ | ---------------------------------- | -------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| US-015 | Phase 2: security and legal review | security, legal-compliance | US-001, US-006                                                            | Threat model, webhook handling, authorization matrix, P2P transfer questions; unresolved risks block the gate                                                      | Human: Rohan — security, legal-compliance, claude-opus-us015 (partial; waits on US-006) | [#62](https://github.com/shaahid-ahmed/yourturn/pull/62) `security/us-015-security-legal-review` |
+| YT-007 | Phase 0: human release gate        | orchestrator               | YT-001, YT-002, YT-003, YT-004, YT-005, YT-006; real GitHub owners/remote | Independent review, green hosted CI, initial rules/stack ratification, protected main/merge approval and explicit human Phase 1 authorization; resolve Q-001–Q-005 | Human: Shaahid — Unclaimed                                                              | —                                                                                                |
+
 
 ## LATER
 
@@ -622,6 +623,27 @@ Not done: the **app-stage audit** (VoiceOver, TalkBack, keyboard, 320px/200% zoo
 How to verify: `npm run check` (77 tests pass locally).
 Risks / gotchas: designer and auditor are the same person at this stage. The app-stage audit should be run or re-checked by someone else.
 Next step: unblocks when Alan's screens run. Then follow the "App-stage audit plan" in ACCESSIBILITY.md and record the results there.
+
+### Handoff US-204 (app stage): accessibility (Vid) → frontend (Alan), reviewer
+
+Done: an app-stage audit of all 19 routes of the built app (PR #53), at 390px and 320px with reduced motion. It used axe-core (WCAG 2.2 A/AA tags), keyboard traversal, reflow at 320px and 200% text, WCAG text spacing, a review of each route's accessibility tree, and a keyboard-only voting walkthrough. There were 11 findings (A-11 to A-21); 9 are fixed in `apps/web`:
+
+- Per-screen document titles (the root metadata title had overwritten them).
+- P6 invalid listbox markup.
+- P9 votes: now a changeable, single-choice `aria-pressed` toggle, labelled "Vote for <option>", showing first names instead of ids.
+- Faded-text contrast (3.44:1).
+- Balance chips are no longer live regions, and the lock badge carries the spec text.
+- A global reduced-motion rule, plus instant chat scroll under reduce.
+- The P22 header badge overflow.
+- Home's broken `/hub/money` link.
+- 44px Terms/Privacy targets.
+- Scroll padding so focus is never hidden.
+
+After the fixes: 0 axe violations, 19/19 titles, 0 targets under 44px, 0 overflow, 0 clipped text. Results are recorded in `docs/02-design/ACCESSIBILITY.md`. `tests/a11y/app-audit.mjs` is the manual retest tool, and `tests/web-accessibility.test.mjs` (in `npm test`) guards the fixes; all 6 of its tests fail on the pre-fix code.
+Not done: a hands-on VoiceOver and TalkBack pass on real devices (15 minutes, ideally by someone other than the designer). Open: A-07 (Product Manager), A-08 (Product Manager), A-10 (Frontend, once US-007 streaming lands) and A-14 (Frontend, card headings).
+How to verify: `npm run check`; then follow `tests/a11y/app-audit.mjs` to re-run the browser audit (it exits non-zero on any problem).
+Risks / gotchas: the fixes touch Alan's `apps/web` files, so Frontend must approve before merge (ROSTER: Accessibility fixes go through a scoped PR). The designer and the auditor are the same person.
+Next step: Alan reviews and approves the `apps/web` changes; a reviewer approves; a human runs the device screen-reader pass before the demo is recorded.
 
 ## Human Phase 1 authorization and coordinated ownership
 

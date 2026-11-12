@@ -3,7 +3,13 @@
 // Six-step stepper: basics, interests, private limits, calendar, PayPal, permissions.
 // Every answer editable later from P19 (Profile hub screen).
 import { useState } from 'react';
-import { Button, Input, StepIndicator, LockBadge } from '@/components/ui';
+import {
+  Button,
+  Input,
+  StepIndicator,
+  LockBadge,
+  useDocumentTitle,
+} from '@/components/ui';
 
 const INTEREST_OPTIONS = [
   'Bowling',
@@ -30,6 +36,7 @@ const DIETARY_OPTIONS = [
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
 export default function ProfileCreatePage() {
+  useDocumentTitle('Create your profile');
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
