@@ -1,133 +1,152 @@
-# YourTurn API contract
+# Unspoken API contract
 
-**Status:** `v0.1.0-draft` — draft for YT-009. **Not frozen, not implemented, not approved for money movement.** Freeze is YT-014 and requires the Q-001/Q-002/Q-006 decisions. Machine-readable source of truth: [openapi.json](openapi.json). Rationale: [ADR 0004](../decisions/0004-phase-1-contracts.md).
-**Owner:** Architect. LLM Engineer owns the prompts section of [AI.md](AI.md); Payments owns [PAYMENTS.md](PAYMENTS.md).
+**Status:** `v0.2.0-draft` — US-001. **Not frozen, not implemented, not approved for money movement.** Written to the designer's spec ([`Unspoken Experience and Pages Spec.pdf`](../02-design/source/Unspoken%20Experience%20and%20Pages%20Spec.pdf)) under [ADR 0007](../decisions/0007-ux-spec-supersedes-payment-flow.md). Machine-readable source of truth: [openapi.json](openapi.json).
+**Owner:** Architect (US-001 is Rohan's). Payments owns [PAYMENTS.md](PAYMENTS.md); LLM Engineer owns the prompts section of [AI.md](AI.md).
+**Architect approval:** Rohan (Architect), November 12, 2026 — write US-001 under ADR 0007 and mark Q-011 decisions 5, 6 and 14 as open, no ADR 0008 yet. Defaults: #6 strictest, #5 a volunteer payer. #14 was revised on review of PR #56 to a middle default that matches P13.
+
+This contract replaces the YourTurn `v0.1.0-draft` circle/turn/Payouts contract (ADR 0004/0005), which ADR 0006 and ADR 0007 superseded. None of its 24 operations survive.
 
 ## Contract status and version
 
-| Property             | Value                                                                                              |
-| -------------------- | -------------------------------------------------------------------------------------------------- |
-| Contract version     | `0.1.0-draft` (`info.version` in openapi.json)                                                     |
-| Status marker        | `info.x-contract-status: draft`, `info.x-frozen: false`                                            |
-| Base path            | `/api/v1` on loopback only; no sandbox or production server is declared                            |
-| Media type           | `application/json; charset=utf-8` for all requests and responses                                   |
-| Breaking-change rule | Any route, schema, money-semantics or graph-boundary change needs a new ADR and Architect approval |
+| Property             | Value                                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------------------- |
+| Contract version     | `0.2.0-draft` (`info.version`)                                                                           |
+| Status marker        | `info.x-contract-status: draft`, `info.x-frozen: false`, `info.x-adr: "0007"`                            |
+| Operations           | 74 across 59 paths, in 10 tags                                                                           |
+| Base path            | `/api/v1` on loopback only; the public HTTPS origin is US-014                                            |
+| Media type           | `application/json; charset=utf-8`, except the pod event stream (`text/event-stream`)                     |
+| Breaking-change rule | Any route, schema, money-semantics or visibility change needs an ADR and Architect approval              |
+| Open decisions       | `info.x-open-decisions` lists Q-011 decisions 1, 2, 4, 5, 6, 14 and 16, each with the default it assumes |
 
-While the status is `draft`, no role may treat these routes as settled: Backend and Frontend may build against them only after the YT-014 freeze and only for the behaviors whose policy decisions have landed. Payment-executing routes additionally require human money-flow approval.
+While the status is `draft`, builders may work against these routes, but a route marked `x-open-decision` can change when that decision lands. The one money-moving route stays gated closed regardless.
+
+## What the contract covers, by spec page
+
+| Tag             | Pages        | Operations                                                                                                                                                                               |
+| --------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session`       | P2           | `requestPhoneCode`, `createSession`, `endSession`                                                                                                                                        |
+| `profile`       | P4, P19, P20 | `getCurrentUser`, `updateOwnProfile`, `deleteOwnAccount`, `getOwnPrivateLimits`, `setOwnPrivateLimits`, `setOwnPermissionStatus`, `listInterests`                                        |
+| `pods`          | P5, P6, P8   | `matchContacts`, `listOwnPods`, `createPod`, `getPod`, invitations, single-use invite links, members, mute, rhythm proposals, group activities                                           |
+| `chat`          | P7, P22      | `listPodMessages`, `sendPodMessage`, `streamPodEvents`, `listOwnPlannerChat`, `sendOwnPlannerChatMessage`, `getOwnStretchAsk`, `answerOwnStretchAsk`                                     |
+| `planning`      | P9–P12, P23  | `listHangouts`, `startHangout`, `getHangout`, `getPoll`, `castOwnVote`, `setOwnReadyAnswer`, `acceptPlannerOffer`, `confirmBooking`, `rateOwnHangout`                                    |
+| `money`         | P13–P15, P21 | `volunteerAsPayer`, `getSplit`, `confirmSplit`, `setActualTotal`, `listOwnBalances`, `getOwnBalance`, `createSettlementPayment`, PayPal link read/start/unlink, `receiveProviderWebhook` |
+| `calendar`      | P17, P18     | calendar accounts list/connect/disconnect, per-calendar planner access, `getOwnCalendar`, `addEventToOwnCalendar`                                                                        |
+| `subscription`  | P3, P20      | `getOwnSubscription`, `submitSubscriptionReceipt`, `restoreSubscription`                                                                                                                 |
+| `events`        | P16, P17     | `searchEvents`, `getEvent`, saved events, `suggestEventToPod`                                                                                                                            |
+| `notifications` | P20          | `getOwnNotificationSettings`, `setOwnNotificationSettings`, `registerPushToken`                                                                                                          |
+
+P1 (splash) needs only `getCurrentUser` and `listOwnPods`. Calendar writes after booking and reminder jobs are server-side and have no client route.
+
+## The hangout lifecycle
+
+`HangoutState` is exactly the ADR 0007 list: `PLANNING, STRETCH_ASKS, ACTIVITY_VOTE, TIME_VOTE, READY_CHECK, AWAITING_CONFIRMATION, BOOKING, BOOKED, BALANCES_OPEN, SETTLED, NO_PLAN, BOOKING_FAILED`. There is no hold, capture or void state. The transition table belongs to US-002; the contract fixes the client-visible order:
+
+1. `startHangout` (or the rhythm date) → `PLANNING`. Stretch asks go privately to single members (`STRETCH_ASKS`).
+2. Activity poll, then time poll (`castOwnVote`). Spec decision 8 recommends two polls; adopted for the draft.
+3. Ready check (`setOwnReadyAnswer`). Any number of yeses is enough; yes requires a linked PayPal account.
+4. A yes-member volunteers as payer (`volunteerAsPayer`), then the payer confirms the booking (`confirmBooking`) → `BOOKING` → `BOOKED` or `BOOKING_FAILED`.
+5. The payer confirms the split (`confirmSplit`) → `BALANCES_OPEN`; later `setActualTotal` appends adjustments.
+6. Members settle (`createSettlementPayment`, gate closed) → `SETTLED` when every balance is paid.
+
+`NO_PLAN` and `BOOKING_FAILED` lead to a planner offer card; `acceptPlannerOffer` widens the window or area, or tries the next-best plan.
 
 ## Authentication and authorization
 
-**Session model.** `POST /sessions` selects a seeded synthetic member; there is no password, email or real identity. The server sets an `HttpOnly`, `SameSite=Strict` session cookie (`Secure` whenever served over TLS) and returns a CSRF token.
+**Session.** `requestPhoneCode` then `createSession` sign in by phone. In the demo no text message is sent (`delivery: "simulated_demo"`) and only seeded synthetic numbers can sign in. The server sets an `HttpOnly`, `SameSite=Strict` cookie (`Secure` over TLS) and returns a CSRF token.
 
-**CSRF.** Every mutating request (`POST`, `PUT`, `DELETE`) must send `X-CSRF-Token` matching the session's token. A missing or wrong token yields `403 csrf_rejected` with no state change.
+**CSRF.** Every mutating request sends `X-CSRF-Token`. Missing or wrong → `403 csrf_rejected`, nothing changes.
 
-**Tenant isolation.** Authorization is evaluated per circle on every request, from the session's membership rows — never from a client-supplied member or circle claim. A caller who is not an accepted member of the circle in the path receives `404 not_found`, identical to a non-existent circle, so existence, size and member names are not disclosed.
+**Tenant isolation.** Every `/pods/{podId}` route is authorized from the session's own membership rows, never from a client claim. A non-member gets `404 not_found`, identical to a missing pod, so existence, size and names are not disclosed. Every `/me/...` route acts only on the caller's own records; there is no admin override.
 
 **Authorization matrix.**
 
-| Operation                                                                           | Permitted caller                                                      | Denied-caller behavior                                 |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------ |
-| `getCircle`, `listTurns`, `getLedger`, `listContributionProposals`                  | Accepted or paused member of that circle                              | `404`                                                  |
-| `acceptInvitation`                                                                  | Invitee named on that invitation                                      | `404` for anyone else                                  |
-| `createContributionProposal`, `agreeContributionProposal`                           | Accepted member; agreement records only the caller's own              | `404` / `403`                                          |
-| `setOwnTrackingConsent`, `pauseOwnParticipation`, `leaveCircle`, `setOwnAttendance` | The member themselves (`/members/me`) only — no admin override exists | `404`                                                  |
-| `createPlanSuggestions`, `approvePlan`, `createVenuePayment`                        | Host of that specific turn                                            | `403 not_host`, with no host-only guidance in the body |
-| `createManualPlan`                                                                  | Host of that turn                                                     | `403 not_host`                                         |
-| `getSyntheticDemoGraph`                                                             | Any authenticated session                                             | `401`                                                  |
-| `createSession`, `endSession`, `getCurrentMember`, `listVenues`                     | Any caller / own session                                              | `401` where a session is required                      |
-| `getOwnSubscriptionState`, `startContributionSubscription`                          | The member themselves                                                 | `404`                                                  |
-| `getVenuePaymentState`                                                              | Any accepted or paused member of that circle                          | `404`                                                  |
-| `receiveProviderWebhook`                                                            | Unauthenticated by provider design; gated by signature verification   | `401 webhook_signature_invalid`, no side effects       |
+| Operation                                                                                                                  | Permitted caller                                                                                                                | Denied caller                   |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `requestPhoneCode`, `createSession`                                                                                        | Anyone (no session)                                                                                                             | —                               |
+| `receiveProviderWebhook`                                                                                                   | Unauthenticated by design; gated by signature verification                                                                      | `401 webhook_signature_invalid` |
+| All `/me/...` routes, `listOwnPods`, `matchContacts`, `listInterests`, events                                              | Any session, on the caller's own records only                                                                                   | `401`                           |
+| `getPod`, chat, stream, hangouts, polls, `castOwnVote`, `setOwnReadyAnswer`, rhythm, group activities, `suggestEventToPod` | Joined member of that pod                                                                                                       | `404`                           |
+| `inviteMembers`, `removeMember`                                                                                            | The pod's creator                                                                                                               | `403 not_creator`               |
+| `volunteerAsPayer`                                                                                                         | A yes-member with a linked PayPal account                                                                                       | `403 not_yes_member` / `409`    |
+| `confirmBooking`                                                                                                           | **The payer only** — strict default for Q-011.6                                                                                 | `403 not_payer`                 |
+| `confirmSplit`, `setActualTotal`                                                                                           | The payer only                                                                                                                  | `403 not_payer`                 |
+| `getSplit`                                                                                                                 | The payer and every yes-member of that hangout, each seeing every share for that hangout (Q-011.14 middle default, matches P13) | `404` for anyone else           |
+| `listOwnBalances`, `getOwnBalance`                                                                                         | **A party to the balance only** — running balances stay private under the Q-011.14 default                                      | `404`                           |
+| `createSettlementPayment`                                                                                                  | The member who owes                                                                                                             | `403 not_debtor`; `409` gate    |
 
-**Post-exit access is undecided (XR-15).** A departed member currently receives `404` on circle-scoped routes, which also hides their own pending subscription or payment state. Whether a former member may read their own money state — scoped so no other member's data is exposed — is a Q-006 question; no route is added until it is decided.
+## Open decisions in the contract
 
-**Two closed gates.** _Payments_ are gated on YT-006 evidence, the YT-025 legal assessment, a Q-006 decision and human money-flow approval (XR-06). _Real-member graph inference_ is gated on Q-002 (XR-01): while closed, no tie- or drift-derived value is computed, stored, returned **or used as prompt input**, and no guidance names a pair. Non-persistence was never the safeguard — not inferring is. Both gates are server-side configuration that only a human can open; neither has a simulated-success path.
+Each open Q-011 decision is an `x-open-decision` object (`question`, `decision`, `topic`, `contractDefault`, `specRecommendation`, `status: "open"`) on the operations and schemas it affects, and all of them are listed in `info.x-open-decisions`.
 
-**Host-only data.** Host-facing copy comes from a closed `rationaleKey` vocabulary chosen by the server, never from model prose (XR-02), so "positive framing" is a checkable constraint rather than a hope. No numeric value, ranking or warning about named people is ever returned. No endpoint exposes another member's consent state, pause state, contact details or tie value — including through error messages and validation details.
+| Q-011 | Decision                     | Default this draft assumes                                                                                                                                                                                                | Where                                             |
+| ----- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| 5     | How the payer is chosen      | A yes-member with linked PayPal volunteers; the first volunteer wins; no rotation is modelled                                                                                                                             | `volunteerAsPayer`                                |
+| 6     | Who confirms a booking       | **Only the payer** (strictest)                                                                                                                                                                                            | `confirmBooking`                                  |
+| 14    | Who sees which balances      | **Middle default.** Split card: every yes-member of a hangout sees every share for that hangout (P13). Running balances: only balances you are a party to; the payer sees every balance owed to them; no pod-ledger route | `getSplit`, `Split`, `listOwnBalances`, `Balance` |
+| 4     | How the payer pays the venue | The app only tracks IOUs; no venue payment route exists                                                                                                                                                                   | `confirmSplit`                                    |
+| 1, 2  | Who pays the $15; free trial | Each user holds their own plan; no trial state                                                                                                                                                                            | `SubscriptionState`, subscription routes          |
+| 16    | Fixed interest list          | Server-supplied and versioned; contents not fixed                                                                                                                                                                         | `listInterests`, `InterestList`                   |
 
-## Routes and schemas
+**Why a middle default for Q-011.14.** Spec page P13 shows "each yes-member's share" on the split card, and an equal split makes those shares near-identical anyway, so the card is shared among that hangout's yes-members. What stays private is the running state of money: who has paid, who still owes and any totals across hangouts live only on `/me/balances`, for the two parties to each balance. `Split` references no balance schema, and no pod-scoped route returns one. Widening running balances to the pod, if decision 14 lands that way, is a visibility change that needs Architect approval.
 
-Full schemas are in `openapi.json`. Summary, grouped by tag:
+Spec decisions outside Q-011 that the draft adopts from the spec's own recommendation are marked `x-spec-recommendation` (decisions 3, 7, 8, 10, 11, 12, 13, 18, 20). They are not final decisions.
 
-| Method and path                                                  | Operation                   | Notes                                                   |
-| ---------------------------------------------------------------- | --------------------------- | ------------------------------------------------------- |
-| `POST /sessions`                                                 | `createSession`             | Demo identity only; returns CSRF token                  |
-| `DELETE /sessions`                                               | `endSession`                | Clears session                                          |
-| `GET /me`                                                        | `getCurrentMember`          | Caller's own record and memberships                     |
-| `GET /venues`                                                    | `listVenues`                | Fixed list; `availabilityKnown: false`                  |
-| `GET /circles/{circleId}`                                        | `getCircle`                 | Peer view, `potCentsDerived`, `readyForPlanning`        |
-| `POST /circles/{circleId}/invitations/{invitationId}/acceptance` | `acceptInvitation`          | `409 circle_full` above six accepted                    |
-| `GET`/`POST /circles/{circleId}/contribution-proposals`          | proposal read/create        | Amount 100–1500 cents, default 500                      |
-| `POST …/contribution-proposals/{proposalId}/agreements`          | `agreeContributionProposal` | Version-bound; `409 version_stale`                      |
-| `PUT /circles/{circleId}/members/me/consent`                     | `setOwnTrackingConsent`     | Default off; withdrawal excludes incident edges         |
-| `POST …/members/me/pause`                                        | `pauseOwnParticipation`     | **No reason field exists**                              |
-| `POST …/members/me/leave`                                        | `leaveCircle`               | One confirmation; no retention offer                    |
-| `GET /circles/{circleId}/turns`                                  | `listTurns`                 | Deterministic order + advancement state                 |
-| `POST …/turns/{turnId}/plan-suggestions`                         | `createPlanSuggestions`     | Exactly three plans or explicit unavailable             |
-| `POST …/turns/{turnId}/approvals`                                | `approvePlan`               | Records exact plan version; not a payment               |
-| `PUT …/turns/{turnId}/attendance`                                | `setOwnAttendance`          | `penaltyApplied: false` always                          |
-| `GET /circles/{circleId}/ledger`                                 | `getLedger`                 | Derived pot + append-only entries                       |
-| `GET`/`POST /circles/{circleId}/subscriptions`                   | subscription state/start    | Start is gate-blocked                                   |
-| `POST …/turns/{turnId}/plans`                                    | `createManualPlan`          | Non-AI fixed-venue path (XR-11)                         |
-| `GET`/`POST …/turns/{turnId}/venue-payments`                     | payment state/create        | Payouts from the pot (ADR 0005); create is gate-blocked |
-| `POST /webhooks/paypal`                                          | `receiveProviderWebhook`    | Verify signature before any effect                      |
-| `GET /demo/graph`                                                | `getSyntheticDemoGraph`     | Only numeric-edge endpoint; synthetic fixture           |
+**Open spec decisions that are not modelled.** These are open and have no default in the contract or the code. They are listed here and on the board, not in `info.x-open-decisions`.
 
-### Invariants the schema enforces
+| Spec decision | Question                                      | Spec recommendation                         | State in the draft                                                                                                       |
+| ------------- | --------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 11 (part)     | What happens when a pod drops below 3 members | Open (the 3-minimum came from hidden votes) | **Open.** Joining is capped at 3–8; planning needs 3 joined; nothing happens to an existing hangout when a member leaves |
+| 19            | The payer drops out after booking             | The pod picks a new payer                   | **Open.** No route or transition replaces a payer                                                                        |
+| 17            | Only one member says yes                      | The planner checks before going ahead       | **Open.** One yes moves the ready check on like any other count; there is no double-check step                           |
 
-1. **Money.** Every monetary field is `integer` and named `*Cents`; `currency` is `const: "USD"`. Contribution amounts are bounded 100–1500 inclusive (floor is draft proposal D-P01, ceiling is from the brief). No float, decimal string or formatted amount appears anywhere.
-2. **Derived pot, split by provenance.** `potCentsDerived` (all entries, display only) and `potCentsVerified` (synthetic-free, provider-verified) are separate signed sums; **only `potCentsVerified` may gate a payment**, so fixture money cannot authorize a real one (XR-03). Both are signed because an out-of-order outflow or a correction can make the pot negative, which is shown as a deficit rather than clamped (XR-05). `potLabel` is required wherever a pot appears. No schema has a writable or stored balance field.
-3. **Exactly three, distinct.** `SuggestionSet.plans` is `minItems: 3, maxItems: 3, uniqueItems: true` with a distinct venue per plan, and each `oneOf` branch pins `outcome` to a `const`, so `outcome: "three_plans"` cannot accompany an unavailable result (XR-26). A degraded result cannot look like success.
-4. **Approval is not payment.** `PlanApproval` carries `isPayment: false` and `isReservation: false` as constants; `PaymentState` carries `reservationConfirmed: false` and `attendanceConfirmed: false`.
-5. **Synthetic graph only.** `SyntheticGraph.synthetic` is `const: true`, node ids must match `^synthetic-`, and every edge carries a `textEquivalent` alongside `stateLabel`. No other response schema contains a numeric tie value. The data source is the route, not a request flag.
-6. **No hardship reasons.** `PauseRequest` has `additionalProperties: false` and no reason field, so there is no wire format in which a reason could arrive.
-7. **Honest pending states.** `ConsentState.ownDataAccess`, `ParticipationState.collectionEffect` and `LeaveResult.forfeitPolicy` are enums whose only value names the unresolved decision, instead of asserting a settled outcome.
-8. **Distinct provider states.** Subscription (`created`/`approved`/`active`/`payment_received`) and payout (`payout_pending`/`payout_success`/`payout_denied`) states are separate enum members; `blocked` and `failed` are distinct from both. `payout_pending` is what a create returns, so it is never displayed as success.
-9. **Fees are explicit.** `PaymentState.feeCents` is required and `LedgerEntry.kind` includes `provider_fee`: one payout writes a venue-amount entry and a fee entry, both keyed to one verified event, so the derived pot cannot drift from the real balance (ADR 0005).
+## Invariants the schema enforces
+
+1. **Money.** Every `*Cents` field is a non-negative integer (`AmountCents`); signed ledger adjustments are internal to US-002 and never cross the API; `Currency` is `const: "USD"`. Private budgets are `BudgetCents`, a multiple of 100, because screens show whole dollars. The only `number` fields are the NYC map coordinates.
+2. **No stored balance.** `Balance` and `BalanceSummary` are derived from the append-only ledger on every read. `setActualTotal` appends adjustments; nothing is overwritten.
+3. **One gated money route.** `createSettlementPayment` is the only operation with `x-payment-gate`. It returns `409 payment_gate_blocked` with `gate.open: false`, `humanApprovalRecorded: false`, blocking task `US-006` and questions `Q-010`, `Q-012`. `completed` comes only from a verified webhook, never a return URL; a failed payment returns the balance to `owed`.
+4. **Private stays private.** `PrivateLimits`, `StretchAsk`, `PlannerChatMessage`, ratings and calendar data are reachable only from `/me/...` responses. No pod-scoped response schema references them. Every such schema carries `x-visibility`.
+5. **No explanations on cards.** `ShortlistOption`, `Poll`, `Hangout` and `CardRef` have no reason, fit, feasibility or label field. No card says "budget-friendly" or "why this one", and the pod never learns why an option is missing or whose limit blocked a plan.
+6. **Votes with names (Q-013).** `PollVote` and `ReadyAnswer` require `userId` and `firstName` (`x-visibility: pod-with-names`). Tie-break: lower per-person estimate, then earlier start.
+7. **People by first name only.** `UserRef`, `PodMember`, votes, splits and balances never carry a phone number. `PhoneE164` appears only in the caller's own profile and in their own contact-match request and result.
+8. **Pod size.** `Pod.minMembers` is 3 and `maxMembers` 8; members, pending invitations and active invite links together never exceed 8. Planning needs 3 joined members (`409 pod_too_small`).
+9. **Simulated booking.** `Booking.simulated` is `const: true` with a fixed `simulatedLabel`. Catalog events and shortlist options are `synthetic: const true`.
+10. **Notifications.** `NotificationSettings` has exactly `polls`, `reminders`, `privateAsks`, `money`. `info.x-notification-send-gate.open` is `false`: no notification is sent until Content Designer and Behavioral Scientist approve the copy. Private reminders never go into pod chat.
 
 ## Errors and idempotency
 
-**Error shape.** Every non-2xx response is `Error`: a stable `code` from a closed enum, a human `message`, optional field-level `details`, and optional `pendingDecision` naming the open question that blocks the operation. Error bodies never include another member's data, a hardship reason or a tie score.
+Every non-2xx response is `Error`: a stable `code` from a closed enum, a `message`, optional field `details`, optional `pendingDecision` (for example `Q-010` or `Q-011.6`) and an optional structured `constraint`. Error bodies never include another member's private limits, calendar or balance.
 
-| Status | Codes                                                                                             | Meaning                                                             |
-| ------ | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 400    | `validation_failed`                                                                               | Schema or bounds violation; nothing changed                         |
-| 401    | `unauthenticated`, `webhook_signature_invalid`                                                    | No valid session; or unverified provider event with no side effects |
-| 403    | `csrf_rejected`, `not_host`                                                                       | Rejected without leaking host-only data                             |
-| 404    | `not_found`                                                                                       | Missing **or** not a member — deliberately indistinguishable        |
-| 409    | `circle_full`, `circle_not_ready`, `version_stale`, `invitation_resolved`, `payment_gate_blocked` | Conflict with current state or a closed gate                        |
-| 422    | `approval_stale`, `budget_exceeded`                                                               | Request understood but refused on money-safety grounds              |
-| 429    | `rate_limited`                                                                                    | Abuse protection; now declared on every operation (XR-27)           |
-| 500    | `internal_error`                                                                                  | No partial money effect may persist; declared on every operation    |
-| 503    | `graph_gate_blocked`                                                                              | Real-member graph inference is gated closed (Q-002)                 |
+| Status | Codes                                                                                                                                                                                                                                                                                                                                                                  |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | `validation_failed`                                                                                                                                                                                                                                                                                                                                                    |
+| 401    | `unauthenticated`, `webhook_signature_invalid`                                                                                                                                                                                                                                                                                                                         |
+| 403    | `csrf_rejected`, `not_creator`, `not_payer`, `not_debtor`, `not_yes_member`                                                                                                                                                                                                                                                                                            |
+| 404    | `not_found` — missing **or** not a member                                                                                                                                                                                                                                                                                                                              |
+| 409    | `pod_full`, `pod_too_small`, `already_member`, `invitation_resolved`, `invite_link_used`, `invite_link_expired`, `wrong_hangout_state`, `poll_closed`, `option_unknown`, `payer_already_chosen`, `paypal_link_required`, `subscription_required`, `calendar_not_connected`, `stretch_ask_resolved`, `split_already_confirmed`, `open_balances`, `payment_gate_blocked` |
+| 422    | `phone_code_invalid`, `phone_code_expired`, `receipt_invalid`, `idempotency_key_conflict`                                                                                                                                                                                                                                                                              |
+| 429    | `rate_limited` — declared on every operation                                                                                                                                                                                                                                                                                                                           |
+| 500    | `internal_error` — declared on every operation; no partial effect persists                                                                                                                                                                                                                                                                                             |
 
-**Payment gate.** `payment_gate_blocked` returns a `gate` object with `open: false`, `humanApprovalRecorded: false` and the blocking task ids. The gate is server-side configuration; no request field, header, query parameter or client state can open it, and the contract defines **no** simulated-success response.
+**Idempotency.** `Idempotency-Key` is **required** on `confirmSplit`, `setActualTotal` and `createSettlementPayment`, and optional on `createPod`, `startHangout`, `confirmBooking` and the subscription receipt routes. The server binds `(actor, operation, key)` to the path parameters and a request-body fingerprint and replays the first response only when all match; otherwise `422 idempotency_key_conflict`. Chat sends deduplicate on `clientMessageId`.
 
-**Idempotency (internal).** Mutating requests accept `Idempotency-Key`. The server persists `(actor, operation, key) → first response` **plus the path parameters and a request-body fingerprint**, and replays the stored response only when all three match (XR-21). A reused key with a different target or body returns `409 idempotency_key_conflict` rather than replaying the wrong result — otherwise the same key on circle B would return circle A's success and silently fail to act.
-
-**Idempotency (provider).** RULES rule 8 requires an idempotency key on every PayPal call; endpoint-specific provider support and retention are **unverified (Q-005)**. The contract therefore relies on internal keys plus provider-event deduplication by `providerEventId`, and does not assume that sending a header guarantees provider-side deduplication.
-
-**Webhook safety.** Signature verification precedes any ledger entry, status change or notification. Verified events are deduplicated by provider event id; a duplicate returns `202` with `duplicate: true, effectsApplied: false` and leaves the derived pot unchanged. Out-of-order events are reconciled by reading provider state rather than by trusting arrival order.
-
-## Machine-readable schema and shared type generation
-
-`openapi.json` is the single source of truth. After the YT-014 freeze, `packages/shared` will contain types generated from it by a committed script, and no role may hand-write a duplicate of a generated type. Until then, `packages/shared` holds no types — the contract is still moving.
-
-Generation plan: `openapi.json` → generator → `packages/shared/src/contract.d.ts` (types only, no runtime logic), verified by regenerating in CI and failing on any diff, so drift between the contract and the code cannot pass review.
+**Webhook safety.** `receiveProviderWebhook` verifies the signature before any ledger entry, status change or notification, deduplicates by provider event id and is safe to run twice; a duplicate returns `202` with `duplicate: true, effectsApplied: false`.
 
 ## Contract tests
 
-**Known verification gaps, stated plainly (XR-27):** the spec has **24 operations** — earlier handoffs said 21, which was wrong. Validation against the full OpenAPI 3.1 **metaschema has not been run**, so ADR 0004's verification step is unmet rather than satisfied. The contribution floor of 100 cents is a **draft proposal (D-P01)**, so tests assert that a floor exists and is documented as draft, not that it is 100.
+`tests/contract.test.mjs` (run by `npm test`) replaces the retired suite. It checks, against the committed document with no network:
 
-Implemented now (`tests/contract.test.mjs`, run by `npm test`) against the committed spec, with no network access:
+- OpenAPI 3.1, `0.2.0-draft`, unfrozen, `x-task: US-001`, `x-adr: 0007`, loopback server; every `$ref` resolves; every operation has a unique id, one tag, a summary and `429`/`500`; the operation count is 74;
+- every mutating operation inherits the session and sends a CSRF token, except the three explicitly unauthenticated ones;
+- no retired state, route, operation or schema (hold/capture/void, pot, circle, turn, Payouts, contribution, graph) remains;
+- `HangoutState` is exactly the ADR 0007 list;
+- money is integer cents in USD, budgets are whole dollars, the plan is 1500 cents, and `number` appears only in map coordinates;
+- Q-011 decisions 5, 6 and 14 carry `x-open-decision` with the approved defaults; `confirmBooking`/`confirmSplit`/`setActualTotal` refuse with `not_payer`; the split card shows every share to the hangout's yes-members but references no balance schema; running balances are reachable only from `/me/balances`; and no pod-wide ledger route exists;
+- private schemas are unreachable from any non-`/me` response, and no schema about another person carries a phone number;
+- no card or hangout schema has a reason/fit/feasibility/label field;
+- votes and ready-check answers carry names; pods are 3–8 with single-use links; every pod route can answer `404`;
+- bookings are simulated and labelled; balances use `owed/pending/paid/failed`; settlement is the only gated money route and needs an idempotency key; the webhook is verified before effects;
+- notifications have exactly four switches and a closed send gate; the subscription is a sandbox app-store plan separate from hangout money.
 
-- spec parses as JSON, declares `openapi: 3.1.0`, and is marked `draft` / not frozen;
-- every path item has at least one operation, every operation has a unique `operationId`, a `summary` and at least one response, and every `$ref` resolves within the document;
-- every monetary schema is `integer`; contribution bounds are exactly 100–1500; `currency` is `const: "USD"`;
-- `SuggestionSet.plans` is fixed at exactly three items;
-- `PlanApproval.isPayment` / `isReservation` and `PaymentState.reservationConfirmed` / `attendanceConfirmed` are `false` constants;
-- `SyntheticGraph.synthetic` is `const: true` and no other schema exposes a numeric tie value;
-- `PauseRequest` admits no reason field;
-- both payment-executing operations document a `409` with the `payment_gate_blocked` gate shape.
+**Structural validation.** `npm run lint:openapi` runs Redocly CLI (`@redocly/cli`, recommended ruleset) against `openapi.json`. It is part of `make check` and hosted CI and currently reports no errors or warnings.
 
-These are **structural** checks against the document. Validation against the full OpenAPI 3.1 metaschema, request/response validation of a running service, and product end-to-end tests are future work (QA, YT-028); passing these tests is not evidence that any endpoint exists.
+**Known gaps.** No route is implemented, so these tests are not evidence of behavior. Shared types are not yet generated into `packages/shared`.

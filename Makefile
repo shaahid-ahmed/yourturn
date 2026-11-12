@@ -1,4 +1,4 @@
-.PHONY: install dev seed test lint typecheck secrets check
+.PHONY: install dev seed test lint lint-openapi typecheck secrets check
 install:
 	npm ci
 dev:
@@ -9,6 +9,8 @@ test:
 	npm test
 lint:
 	npm run lint
+lint-openapi:
+	npm run lint:openapi
 typecheck:
 	npm run typecheck
 secrets:
