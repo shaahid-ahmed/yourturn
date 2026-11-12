@@ -53,7 +53,6 @@ The user requested initial scaffold creation across the tree. Orchestrator coord
 | US-006 | ∥ Phase 2: member-to-member PayPal settlement                               | payments             | US-005, Q-010                                                  | Sandbox payment between two personal accounts; verified webhook before any effect; idempotency bound to target and body; failure returns to owed; gate closed                                                                                                                                                                                                                          | Human: Alan — Unclaimed           | —                                                                                             |
 | US-009 | ∥ Phase 2: private budget checks and stretch asks                           | llm-engineer         | US-001, US-002                                                 | Feasible/not-feasible only; stretch ask to that member only; group never sees the ask                                                                                                                                                                                                                                                                                                  | Human: Alan — DONE, merged #52    | [#52](https://github.com/shaahid-ahmed/yourturn/pull/52) `llm-engineer/budget-checks`         |
 | US-010 | ∥ Phase 2: NYC events catalog                                               | data-analytics       | US-001                                                         | Seeded catalog, search and filters, detail, suggest-to-pod; every fixture visibly synthetic                                                                                                                                                                                                                                                                                            | Human: Alan — DONE, merged #50    | [#50](https://github.com/shaahid-ahmed/yourturn/pull/50) `data-analytics/nyc-catalog`         |
-| US-011 | ∥ Phase 2: calendar integration                                             | backend              | US-001, US-002                                                 | Google Calendar connect; free/busy only; per-calendar consent; no cross-member calendar content                                                                                                                                                                                                                                                                                        | Human: Vid — Unclaimed            | —                                                                                             |
 | US-012 | Phase 2: booking confirmation and reminders                                 | backend              | US-008, US-013                                                 | Simulated booking labelled in the UI; confirmation before booking; reminder jobs; BOOKING_FAILED offers next-best                                                                                                                                                                                                                                                                      | Human: Vid — Unclaimed            | —                                                                                             |
 | US-014 | Phase 2: public HTTPS origin                                                | sre-devops           | US-006                                                         | One public HTTPS origin for return/cancel and webhooks; configurable per environment                                                                                                                                                                                                                                                                                                   | Human: Vid — Unclaimed            | —                                                                                             |
 | US-016 | Phase 3: independent backend review                                         | reviewer             | US-005, US-006, US-015                                         | Non-author review; money branches covered; findings with owners                                                                                                                                                                                                                                                                                                                        | Human: Vid — Unclaimed            | —                                                                                             |
@@ -101,9 +100,10 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 
 Vid's reassigned backend tasks awaiting independent review (Rohan reviews, per the Lane S reassignment):
 
-| ID     | Title                                        | Role    | Depends on | Acceptance criteria                                                                                     | Claimed by                                                   | Branch/PR                     |
-| ------ | -------------------------------------------- | ------- | ---------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------- |
-| US-003 | ∥ Phase 1: subscription receipt verification | backend | US-001     | $15/month plan, sandbox receipt validation, plan status, restore purchase; plan check gates the planner | Human: Vid — IN REVIEW (backend, claude-opus-5-5) 2026-11-12 | `backend/us-003-subscription` |
+| ID     | Title                                        | Role    | Depends on     | Acceptance criteria                                                                                     | Claimed by                                                   | Branch/PR                     |
+| ------ | -------------------------------------------- | ------- | -------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------- |
+| US-003 | ∥ Phase 1: subscription receipt verification | backend | US-001         | $15/month plan, sandbox receipt validation, plan status, restore purchase; plan check gates the planner | Human: Vid — IN REVIEW (backend, claude-opus-5-5) 2026-11-12 | `backend/us-003-subscription` |
+| US-011 | ∥ Phase 2: calendar integration              | backend | US-001, US-002 | Google Calendar connect; free/busy only; per-calendar consent; no cross-member calendar content         | Human: Vid — IN REVIEW (backend, claude-opus-5-5) 2026-11-12 | `backend/us-011-calendar`     |
 
 Lane V design work awaiting independent review:
 
@@ -640,6 +640,24 @@ Not done: a real App Store or Play sandbox verifier. The default is an HMAC-sign
 How to verify: `npm run check`; `node --test tests/subscription.test.mjs`.
 Risks / gotchas: the plan check uses the **caller's** plan, per the Q-011.1 default. If one member covers the pod, `requirePlannerEnabled` changes to a pod-level check.
 Next step: Rohan reviews (the reassignment note names him as reviewer for US-003, US-011 and US-012); US-019 exposes the routes.
+
+### Handoff US-011: backend (Vid) → reviewer (Rohan), US-012, US-019
+
+Done: `services/api/src/calendar.mjs` covers:
+
+- **Connect:** Google Calendar connect with scopes exactly `freebusy.read` and `events.write`, and a signed, member-bound OAuth state that expires.
+- **Consent:** per calendar and off by default; the owner can list, set, or disconnect (revoking the credential). Another member gets `404`.
+- **Planner check:** `slotsThatFitPod` reads only consented calendars and returns only the fitting slots, plus the members to ask privately.
+- **Booking writes:** `blockBookedHangout` writes once per yes-member after booking.
+- **Own view:** `getOwnCalendar` shows busy blocks without titles, plus booked hangouts.
+- **Catalog events:** `addEventToOwnCalendar`.
+- **Revoked grants:** a rejected credential marks the account `needs_reconnect`.
+
+Tests: `tests/calendar.test.mjs` (9), including a fake Google whose private titles must never leak. Docs: `docs/03-architecture/CALENDAR.md`, and variable names in `.env.example`.
+Not done: a real Google adapter (the default provider refuses to connect), and HTTP routes (US-019). Apple and Outlook come after the demo.
+How to verify: `npm run check`; `node --test tests/calendar.test.mjs`.
+Risks / gotchas: `slotsThatFitPod` returns `askPrivately` member ids to the planner only. They must never be shown to the pod, or they would reveal who has no calendar connected.
+Next step: Rohan reviews. US-012 calls `blockBookedHangout` after BOOKED.
 
 ## Human Phase 1 authorization and coordinated ownership
 
