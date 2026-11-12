@@ -253,9 +253,10 @@ test('board has six state tables, 42 unique legacy tasks, valid dependencies and
   for (const id of ids) visit(id, new Set());
 
   // Every live task names a human owner. Superseded YT/UN rows may be archived instead.
-  // Shaahid took Rohan's HTTP/E2E batch (US-019, US-301–US-305) by human decision,
-  // so he holds live tasks. Balance is measured endgame: Alan and Rohan are each
-  // down to one task blocked on a human/external answer (Q-010, US-006).
+  // Shaahid holds the active US-006 sandbox settlement task (gate closed) plus
+  // US-019; Rohan holds the reopened US-015 review; Vid holds US-204's device
+  // pass. Balance is measured endgame: every collaborator owns live work or
+  // has their whole lane DONE.
   const humans = ['Shaahid', 'Alan', 'Vid', 'Rohan'];
   /** @type {Record<string, number>} */
   const perHuman = { Shaahid: 0, Alan: 0, Vid: 0, Rohan: 0 };
@@ -278,12 +279,10 @@ test('board has six state tables, 42 unique legacy tasks, valid dependencies and
     if (!cells[0].startsWith('US-') || state === 'DONE') continue;
     if (named.length === 1) perHuman[named[0]] += 1;
   }
-  // Endgame (Nov 12 + ADR 0008): Alan holds one task blocked on Q-010, Vid holds
-  // the device-pass remainder of US-204, Shaahid holds the remaining unblocked
-  // work by human decision, and Rohan's lane is complete (US-001/002/004/007/008/013
-  // DONE, US-015 DONE as moot). Fairness is verified by ownership: every live
-  // task names exactly one human owner, and every collaborator either owns live
-  // work or has their whole lane DONE.
+  // Endgame (Nov 12 + ADR 0009): US-006 is back as Shaahid's active sandbox
+  // settlement task (gate still closed), US-015 is Rohan's live BLOCKED review
+  // again, Vid holds the device-pass remainder of US-204, and every
+  // collaborator either owns live work or has their whole lane DONE.
   const doneClaimed = /** @type {Record<string, number>} */ ({
     Shaahid: 0,
     Alan: 0,
