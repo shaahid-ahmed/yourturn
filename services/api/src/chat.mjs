@@ -77,7 +77,8 @@ const ULID = /^[0-9A-HJKMNP-TV-Z]{26}$/;
  * A pod message for its members, or a private reminder for one member.
  * Both are pointers: neither carries message text or another member's data.
  * @typedef {{ kind: 'pod_message', podId: string, messageId: string, recipientUserIds: string[] }
- *   | { kind: 'private_reminder', userId: string, reminderKey: string, refId: string }} PushIntent
+ *   | { kind: 'private_reminder', userId: string, reminderKey: string, refId: string }
+ *   | { kind: 'private_ask', userId: string, refId: string }} PushIntent
  */
 
 /**
