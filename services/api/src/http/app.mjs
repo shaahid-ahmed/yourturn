@@ -34,7 +34,9 @@ import {
   getPod,
   matchContacts,
   requireMember,
+  newUlid,
 } from '../pods.mjs';
+import { splitShares } from '../money.mjs';
 import {
   getOwnSubscription,
   submitSubscriptionReceipt,
@@ -520,6 +522,144 @@ function currentUser(database, vault, userId) {
       calendar: perms.calendar,
     },
     paypalLinked: Boolean(paypal),
+  };
+}
+
+/**
+ * Derive the current balance state for a debtor in a hangout from the
+ * append-only ledger_entry rows. Returns null if no balance_created entry
+ * exists for this pair.
+ *
+ * @param {any} db
+ * @param {string} hangoutId
+ * @param {string} debtorUserId
+ */
+function deriveBalance(db, hangoutId, debtorUserId) {
+  const entries = /** @type {any[]} */ (
+    db
+      .prepare(
+        'SELECT entry_id, kind, amount_cents, created_at FROM ledger_entry WHERE hangout_id = ? AND debtor_user_id = ? ORDER BY seq ASC',
+      )
+      .all(hangoutId, debtorUserId)
+  );
+  if (entries.length === 0) return null;
+  let amountCents = 0;
+  let status = /** @type {'owed'|'pending'|'paid'|'failed'} */ ('owed');
+  let entryId = '';
+  let updatedAt = '';
+  for (const e of entries) {
+    updatedAt = String(e.created_at);
+    if (e.kind === 'balance_created') {
+      entryId = String(e.entry_id);
+      amountCents = Number(e.amount_cents);
+      status = 'owed';
+    } else if (e.kind === 'adjustment') {
+      amountCents += Number(e.amount_cents);
+    } else if (e.kind === 'payment_initiated') {
+      status = 'pending';
+    } else if (e.kind === 'payment_captured') {
+      status = 'paid';
+    } else if (e.kind === 'payment_failed') {
+      status = 'failed';
+    }
+  }
+  return { entryId, amountCents, status, updatedAt };
+}
+
+/**
+ * Build the Split contract object for a hangout. Returns the split card as a
+ * draft (before the payer confirms) or confirmed. Throws not_found when no
+ * payer has been chosen yet.
+ *
+ * @param {any} db
+ * @param {string} hangoutId
+ * @param {string} podId
+ */
+function splitView(db, hangoutId, podId) {
+  const h = /** @type {any} */ (
+    db
+      .prepare('SELECT * FROM hangout WHERE hangout_id = ? AND pod_id = ?')
+      .get(hangoutId, podId)
+  );
+  if (!h) {
+    const err = /** @type {any} */ (new Error('hangout not found'));
+    err.code = 'not_found';
+    throw err;
+  }
+  const payerUserId = /** @type {string | null} */ (h.payer_user_id ?? null);
+  if (!payerUserId) {
+    const err = /** @type {any} */ (new Error('no payer chosen yet'));
+    err.code = 'not_found';
+    throw err;
+  }
+  const payerUser = /** @type {any} */ (
+    db
+      .prepare('SELECT user_id, first_name FROM app_user WHERE user_id = ?')
+      .get(payerUserId)
+  );
+  const splitRow = /** @type {any} */ (
+    db.prepare('SELECT * FROM split WHERE hangout_id = ?').get(hangoutId)
+  );
+  const actualRow = /** @type {any} */ (
+    db
+      .prepare(
+        'SELECT actual_total_cents FROM split_actual_total WHERE hangout_id = ? ORDER BY seq DESC LIMIT 1',
+      )
+      .get(hangoutId)
+  );
+  const status = splitRow ? 'confirmed' : 'draft';
+  const basis = actualRow ? 'actual' : 'estimate';
+  let totalCents = 0;
+  if (actualRow) {
+    totalCents = Number(actualRow.actual_total_cents);
+  } else if (splitRow) {
+    totalCents = Number(splitRow.estimate_cents);
+  } else {
+    const booking = /** @type {any} */ (
+      db
+        .prepare(
+          'SELECT estimated_total_cents FROM booking WHERE hangout_id = ?',
+        )
+        .get(hangoutId)
+    );
+    totalCents = booking ? Number(booking.estimated_total_cents) : 0;
+  }
+  const yesRows = /** @type {any[]} */ (
+    db
+      .prepare(
+        "SELECT r.user_id, u.first_name FROM ready_answer r JOIN app_user u ON u.user_id = r.user_id WHERE r.hangout_id = ? AND r.answer = 'yes' ORDER BY r.user_id",
+      )
+      .all(hangoutId)
+  );
+  const yesMemberIds = yesRows.map((r) => String(r.user_id));
+  const nameMap = new Map(
+    yesRows.map((r) => [String(r.user_id), String(r.first_name)]),
+  );
+  let shares =
+    /** @type {{ user: { userId: string, firstName: string }, shareCents: number }[]} */ ([]);
+  if (yesMemberIds.length > 0 && totalCents >= yesMemberIds.length) {
+    const rawShares = splitShares(totalCents, yesMemberIds, hangoutId);
+    shares = rawShares.map((s) => ({
+      user: {
+        userId: s.memberId,
+        firstName: nameMap.get(s.memberId) ?? 'Member',
+      },
+      shareCents: s.shareCents,
+    }));
+  }
+  return {
+    hangoutId,
+    payer: {
+      userId: payerUserId,
+      firstName: payerUser ? String(payerUser.first_name) : 'Member',
+    },
+    status,
+    basis,
+    totalCents,
+    currency: 'USD',
+    splitType: 'equal',
+    yesMemberCount: yesMemberIds.length,
+    shares,
   };
 }
 
@@ -1131,6 +1271,304 @@ export function buildApp({
         signatureVerified: true,
         duplicate: !row,
         effectsApplied: false,
+      };
+    },
+
+    // ---- wave: balances (US-019) -----------------------------------------
+
+    getSplit: async ({ params, userId }) => {
+      requireMember(database, params.podId, userId);
+      return splitView(database, params.hangoutId, params.podId);
+    },
+
+    confirmSplit: async ({ req, params, userId }) => {
+      requireMember(database, params.podId, userId);
+      const h = /** @type {any} */ (
+        database
+          .prepare(
+            'SELECT payer_user_id FROM hangout WHERE hangout_id = ? AND pod_id = ?',
+          )
+          .get(params.hangoutId, params.podId)
+      );
+      if (!h) {
+        const err = /** @type {any} */ (new Error('hangout not found'));
+        err.code = 'not_found';
+        throw err;
+      }
+      if (h.payer_user_id !== userId) {
+        const err = /** @type {any} */ (
+          new Error('only the payer can confirm the split')
+        );
+        err.code = 'not_payer';
+        throw err;
+      }
+      if (
+        database
+          .prepare('SELECT 1 AS x FROM split WHERE hangout_id = ?')
+          .get(params.hangoutId)
+      ) {
+        const err = /** @type {any} */ (new Error('split already confirmed'));
+        err.code = 'split_already_confirmed';
+        throw err;
+      }
+      const { totalCents } = req.body;
+      const yesIds = /** @type {any[]} */ (
+        database
+          .prepare(
+            "SELECT user_id FROM ready_answer WHERE hangout_id = ? AND answer = 'yes' ORDER BY user_id",
+          )
+          .all(params.hangoutId)
+      ).map((r) => String(r.user_id));
+      if (yesIds.length === 0) {
+        const err = /** @type {any} */ (new Error('no yes-members'));
+        err.code = 'wrong_hangout_state';
+        throw err;
+      }
+      const now = new Date().toISOString();
+      database
+        .prepare(
+          'INSERT INTO split (hangout_id, payer_user_id, estimate_cents, confirmed_at) VALUES (?, ?, ?, ?)',
+        )
+        .run(params.hangoutId, userId, totalCents, now);
+      if (totalCents >= yesIds.length) {
+        const rawShares = splitShares(totalCents, yesIds, params.hangoutId);
+        for (const { memberId, shareCents } of rawShares) {
+          if (memberId === userId) continue;
+          database
+            .prepare(
+              `INSERT INTO ledger_entry (entry_id, seq, hangout_id, debtor_user_id, creditor_user_id, kind, amount_cents, payment_id, provider_event_id, synthetic, created_at)
+               VALUES (?, (SELECT COALESCE(MAX(seq), 0) + 1 FROM ledger_entry), ?, ?, ?, 'balance_created', ?, NULL, NULL, 1, ?)`,
+            )
+            .run(
+              newUlid(),
+              params.hangoutId,
+              memberId,
+              userId,
+              shareCents,
+              now,
+            );
+        }
+      }
+      return splitView(database, params.hangoutId, params.podId);
+    },
+
+    setActualTotal: async ({ req, params, userId }) => {
+      requireMember(database, params.podId, userId);
+      const splitRow = /** @type {any} */ (
+        database
+          .prepare('SELECT payer_user_id FROM split WHERE hangout_id = ?')
+          .get(params.hangoutId)
+      );
+      if (!splitRow) {
+        const err = /** @type {any} */ (new Error('split not confirmed yet'));
+        err.code = 'wrong_hangout_state';
+        throw err;
+      }
+      if (splitRow.payer_user_id !== userId) {
+        const err = /** @type {any} */ (
+          new Error('only the payer can set the actual total')
+        );
+        err.code = 'not_payer';
+        throw err;
+      }
+      const nextSeq = /** @type {any} */ (
+        database
+          .prepare(
+            'SELECT COALESCE(MAX(seq), 0) + 1 AS next_seq FROM split_actual_total WHERE hangout_id = ?',
+          )
+          .get(params.hangoutId)
+      ).next_seq;
+      database
+        .prepare(
+          'INSERT INTO split_actual_total (hangout_id, seq, actual_total_cents, entered_at) VALUES (?, ?, ?, ?)',
+        )
+        .run(
+          params.hangoutId,
+          nextSeq,
+          req.body.actualTotalCents,
+          new Date().toISOString(),
+        );
+      return splitView(database, params.hangoutId, params.podId);
+    },
+
+    listOwnBalances: async ({ userId }) => {
+      const asDebtor = /** @type {any[]} */ (
+        database
+          .prepare(
+            `SELECT e.entry_id, e.hangout_id, e.creditor_user_id, h.pod_id
+               FROM ledger_entry e JOIN hangout h ON h.hangout_id = e.hangout_id
+              WHERE e.debtor_user_id = ? AND e.kind = 'balance_created'
+              ORDER BY e.seq DESC`,
+          )
+          .all(userId)
+      );
+      const asCreditor = /** @type {any[]} */ (
+        database
+          .prepare(
+            `SELECT e.entry_id, e.hangout_id, e.debtor_user_id, h.pod_id
+               FROM ledger_entry e JOIN hangout h ON h.hangout_id = e.hangout_id
+              WHERE e.creditor_user_id = ? AND e.kind = 'balance_created' AND e.debtor_user_id != ?
+              ORDER BY e.seq DESC`,
+          )
+          .all(userId, userId)
+      );
+      let totalIOweCents = 0;
+      let totalOwedToMeCents = 0;
+      const balances = [];
+      for (const row of asDebtor) {
+        const bal = deriveBalance(database, String(row.hangout_id), userId);
+        if (!bal) continue;
+        const pod = /** @type {any} */ (
+          database
+            .prepare('SELECT name FROM pod WHERE pod_id = ?')
+            .get(String(row.pod_id))
+        );
+        const hInfo = /** @type {any} */ (
+          database
+            .prepare(
+              `SELECT o.title FROM hangout h LEFT JOIN shortlist_option o ON o.option_id = h.chosen_option_id WHERE h.hangout_id = ?`,
+            )
+            .get(String(row.hangout_id))
+        );
+        const cp = /** @type {any} */ (
+          database
+            .prepare(
+              'SELECT user_id, first_name FROM app_user WHERE user_id = ?',
+            )
+            .get(String(row.creditor_user_id))
+        );
+        if (bal.status === 'owed' || bal.status === 'pending') {
+          totalIOweCents += bal.amountCents;
+        }
+        balances.push({
+          balanceId: bal.entryId,
+          podId: String(row.pod_id),
+          podName: pod ? String(pod.name) : 'Pod',
+          hangoutId: String(row.hangout_id),
+          hangoutTitle: hInfo?.title ? String(hInfo.title) : 'Hangout',
+          direction: 'i_owe',
+          counterparty: cp
+            ? { userId: String(cp.user_id), firstName: String(cp.first_name) }
+            : { userId: String(row.creditor_user_id), firstName: 'Member' },
+          amountCents: bal.amountCents,
+          currency: 'USD',
+          status: bal.status,
+          updatedAt: bal.updatedAt,
+        });
+      }
+      for (const row of asCreditor) {
+        const debtorId = String(row.debtor_user_id);
+        const bal = deriveBalance(database, String(row.hangout_id), debtorId);
+        if (!bal) continue;
+        const pod = /** @type {any} */ (
+          database
+            .prepare('SELECT name FROM pod WHERE pod_id = ?')
+            .get(String(row.pod_id))
+        );
+        const hInfo = /** @type {any} */ (
+          database
+            .prepare(
+              `SELECT o.title FROM hangout h LEFT JOIN shortlist_option o ON o.option_id = h.chosen_option_id WHERE h.hangout_id = ?`,
+            )
+            .get(String(row.hangout_id))
+        );
+        const cp = /** @type {any} */ (
+          database
+            .prepare(
+              'SELECT user_id, first_name FROM app_user WHERE user_id = ?',
+            )
+            .get(debtorId)
+        );
+        if (bal.status === 'owed' || bal.status === 'pending') {
+          totalOwedToMeCents += bal.amountCents;
+        }
+        balances.push({
+          balanceId: bal.entryId,
+          podId: String(row.pod_id),
+          podName: pod ? String(pod.name) : 'Pod',
+          hangoutId: String(row.hangout_id),
+          hangoutTitle: hInfo?.title ? String(hInfo.title) : 'Hangout',
+          direction: 'owed_to_me',
+          counterparty: cp
+            ? { userId: String(cp.user_id), firstName: String(cp.first_name) }
+            : { userId: debtorId, firstName: 'Member' },
+          amountCents: bal.amountCents,
+          currency: 'USD',
+          status: bal.status,
+          updatedAt: bal.updatedAt,
+        });
+      }
+      return {
+        totalIOweCents,
+        totalOwedToMeCents,
+        currency: 'USD',
+        balances,
+        nextCursor: null,
+      };
+    },
+
+    getOwnBalance: async ({ params, userId }) => {
+      const entry = /** @type {any} */ (
+        database
+          .prepare(
+            `SELECT e.entry_id, e.hangout_id, e.debtor_user_id, e.creditor_user_id, h.pod_id
+               FROM ledger_entry e JOIN hangout h ON h.hangout_id = e.hangout_id
+              WHERE e.entry_id = ? AND e.kind = 'balance_created'`,
+          )
+          .get(params.balanceId)
+      );
+      if (!entry) {
+        const err = /** @type {any} */ (new Error('balance not found'));
+        err.code = 'not_found';
+        throw err;
+      }
+      const hangoutId = String(entry.hangout_id);
+      const isDebtor = String(entry.debtor_user_id) === userId;
+      const isCreditor = String(entry.creditor_user_id) === userId;
+      if (!isDebtor && !isCreditor) {
+        const err = /** @type {any} */ (new Error('balance not found'));
+        err.code = 'not_found';
+        throw err;
+      }
+      const debtorId = String(entry.debtor_user_id);
+      const bal = deriveBalance(database, hangoutId, debtorId);
+      if (!bal) {
+        const err = /** @type {any} */ (new Error('balance not found'));
+        err.code = 'not_found';
+        throw err;
+      }
+      const pod = /** @type {any} */ (
+        database
+          .prepare('SELECT name FROM pod WHERE pod_id = ?')
+          .get(String(entry.pod_id))
+      );
+      const hInfo = /** @type {any} */ (
+        database
+          .prepare(
+            `SELECT o.title FROM hangout h LEFT JOIN shortlist_option o ON o.option_id = h.chosen_option_id WHERE h.hangout_id = ?`,
+          )
+          .get(hangoutId)
+      );
+      const cpId = isDebtor ? String(entry.creditor_user_id) : debtorId;
+      const cp = /** @type {any} */ (
+        database
+          .prepare('SELECT user_id, first_name FROM app_user WHERE user_id = ?')
+          .get(cpId)
+      );
+      return {
+        balanceId: bal.entryId,
+        podId: String(entry.pod_id),
+        podName: pod ? String(pod.name) : 'Pod',
+        hangoutId,
+        hangoutTitle: hInfo?.title ? String(hInfo.title) : 'Hangout',
+        direction: isDebtor ? 'i_owe' : 'owed_to_me',
+        counterparty: cp
+          ? { userId: String(cp.user_id), firstName: String(cp.first_name) }
+          : { userId: cpId, firstName: 'Member' },
+        amountCents: bal.amountCents,
+        currency: 'USD',
+        status: bal.status,
+        updatedAt: bal.updatedAt,
       };
     },
   };
