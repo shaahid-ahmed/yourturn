@@ -36,12 +36,12 @@ Technically: `calendar_consent.planner_may_read` defaults to 0. When a member gr
 
 Concretely:
 
-| Artifact | Effect on revocation |
-| -------- | -------------------- |
-| Future free/busy reads | Blocked immediately by the disconnect operation |
-| Existing shortlist options | Options whose feasibility depended on the revoking member's availability are marked stale via `derived_from_member_ids` |
-| Approved plans awaiting booking | Treated as stale; re-approval required |
-| Already-booked hangouts | Calendar write receipts stay (the member explicitly agreed to that specific booking) |
+| Artifact                        | Effect on revocation                                                                                                    |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Future free/busy reads          | Blocked immediately by the disconnect operation                                                                         |
+| Existing shortlist options      | Options whose feasibility depended on the revoking member's availability are marked stale via `derived_from_member_ids` |
+| Approved plans awaiting booking | Treated as stale; re-approval required                                                                                  |
+| Already-booked hangouts         | Calendar write receipts stay (the member explicitly agreed to that specific booking)                                    |
 
 **What "derived from" means here:** A time slot is derived from a member if including that member's free/busy data was necessary for the slot to appear as feasible. The backend enforces this check; the Privacy decision is that any slot that required the revoking member's availability is considered derived-from and must be re-confirmed.
 
@@ -159,12 +159,12 @@ No personal data is collected from real users in Phase 1. The MVP audience is fi
 
 ## Open items
 
-| ID    | Item                                                                           | Blocked by           | Owner                         |
-| ----- | ------------------------------------------------------------------------------ | -------------------- | ----------------------------- |
-| PV-01 | Collection effect of a pause — does charging actually stop?                    | Q-006, Payments      | Legal + Payments + human      |
-| PV-02 | Exact peer-disclosed state for a paused member once PV-01 resolves             | Q-006 → PV-01        | Privacy + Legal + Behavioral  |
-| PV-03 | Vault deletion and export rights after leaving a pod                           | Q-006, Legal         | Legal + Privacy               |
-| PV-04 | Post-exit own-payment access scope                                             | Q-006                | Legal + Privacy               |
-| PV-05 | Lawful basis and regulatory assessment (GDPR/CCPA)                             | Phase 2, Legal       | Legal counsel                 |
-| PV-06 | Poll vote names visible to peers (Q-013)                                       | Q-013                | Privacy + Behavioral          |
-| PV-07 | Multi-member `derived_from_member_ids` staleness cascade (more than one leaves) | Architect, B-05 test | Architect + Privacy           |
+| ID    | Item                                                                            | Blocked by           | Owner                        |
+| ----- | ------------------------------------------------------------------------------- | -------------------- | ---------------------------- |
+| PV-01 | Collection effect of a pause — does charging actually stop?                     | Q-006, Payments      | Legal + Payments + human     |
+| PV-02 | Exact peer-disclosed state for a paused member once PV-01 resolves              | Q-006 → PV-01        | Privacy + Legal + Behavioral |
+| PV-03 | Vault deletion and export rights after leaving a pod                            | Q-006, Legal         | Legal + Privacy              |
+| PV-04 | Post-exit own-payment access scope                                              | Q-006                | Legal + Privacy              |
+| PV-05 | Lawful basis and regulatory assessment (GDPR/CCPA)                              | Phase 2, Legal       | Legal counsel                |
+| PV-06 | Poll vote names visible to peers (Q-013)                                        | Q-013                | Privacy + Behavioral         |
+| PV-07 | Multi-member `derived_from_member_ids` staleness cascade (more than one leaves) | Architect, B-05 test | Architect + Privacy          |
