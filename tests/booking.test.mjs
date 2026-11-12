@@ -442,3 +442,20 @@ test('migration 3 keeps the reminder log append-only', () => {
     /append-only/,
   );
 });
+
+test('US-016: the payer can only volunteer once the plan awaits confirmation', () => {
+  const { db } = setup();
+  db.prepare(
+    "UPDATE hangout SET state = 'PLANNING', updated_at = ? WHERE hangout_id = 'h-1'",
+  ).run(AT);
+  rejectsWith(
+    () =>
+      volunteerAsPayer(db, {
+        podId: 'p-a',
+        hangoutId: 'h-1',
+        userId: 'u-1',
+        at: AT,
+      }),
+    'wrong_hangout_state',
+  );
+});
