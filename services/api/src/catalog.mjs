@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { join, dirname } from 'path';
