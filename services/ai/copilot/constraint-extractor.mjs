@@ -106,6 +106,7 @@ export function extractConstraints(profile) {
   }
 
   // Interests → preferenceWeights (1.0 for each known interest)
+  /** @type {Record<string, number>} */
   const preferenceWeights = {};
   for (const tag of profile.interests ?? []) {
     if (KNOWN_TAGS.includes(tag)) {
@@ -581,6 +582,10 @@ export const FIXTURE_EVALS = Object.freeze([
   },
 ]);
 
+/**
+ * @param {number} v
+ * @param {string} name
+ */
 function assertCents(v, name) {
   if (!Number.isInteger(v) || v < 0) {
     throw new TypeError(

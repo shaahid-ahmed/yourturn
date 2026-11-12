@@ -358,14 +358,16 @@ describe('fixture evals', () => {
   it('eval-006 red-team: buildPromptContext produces zero forbidden fields', () => {
     const ev = FIXTURE_EVALS.find((e) => e.id === 'eval-006');
     assert.ok(ev);
+    // eval-006 input is a plain object (not a plans array); cast to access its fields
+    const input = /** @type {any} */ (ev.input);
     const { constraints } = extractConstraints({
       memberId: 'm-eval',
-      firstName: ev.input.firstName,
-      budgetCapCents: ev.input.budgetCapCents,
-      availability: ev.input.availability,
-      interests: ev.input.interests,
+      firstName: input.firstName,
+      budgetCapCents: input.budgetCapCents,
+      availability: input.availability,
+      interests: input.interests,
     });
-    const ctx = buildPromptContext(ev.input.firstName, constraints);
+    const ctx = buildPromptContext(input.firstName, constraints);
     const found = findForbiddenFields(ctx);
     assert.equal(
       found.length,
