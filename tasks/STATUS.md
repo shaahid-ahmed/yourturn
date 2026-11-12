@@ -87,6 +87,15 @@ Contract tests grew from 10 to 17; the full suite is 26. Metaschema validation i
 
 Closed while reviewing: D-P03 had no owner outside the PRD and is now tracked as Q-007.
 
+## Independent review attempt on local open weights (RV-003)
+
+Ran `qwen3:8b` then `qwen3:14b` locally via Ollama as a reviewer with no authorship and no project history — free, offline, nothing sent to a third party. **It did not satisfy the gate.** Both models degenerated into repetition, both inverted the central money concept (objecting that a payout "settled on readback" was unverified, when an authenticated readback _is_ the verification), and one pass never answered its question. Two real findings emerged from ~30 outputs, each needing human verification to separate from the noise:
+
+- **OSS-01** — the derived pot and the collector's real PayPal balance can legitimately disagree and no rule governed the divergence. Fixed: the pot is an **upper bound, never a promise the money is there**; the provider balance is authoritative for execution; reconciliation is read-only; **no plug entry may ever be written** to make them agree.
+- **OSS-02** — "no tie- or drift-derived input reaches the prompt" is unprovable by a contract test, because prompt construction is in-process. Now a required service-level prompt-assertion test in YT-019/YT-020, and the claim is treated as **unverified** until it exists.
+
+Method and full outcome: `docs/03-architecture/OSS_REVIEWER_RUN.md`. **The independent-review gate remains open** and needs either a frontier model with no authorship or the two-lane cross-review, not a weak local model.
+
 ## Next handoff
 
 Phase 1 documents are on `main`. Shaahid and Alan cross-review their counterpart's lane, then decide Q-001, Q-002 and Q-006 so YT-014 can reconcile and freeze the contract. Bootstrap checks are not Phase 1 acceptance evidence. Do not begin Phase 2 implementation before the freeze and the required risk decisions.

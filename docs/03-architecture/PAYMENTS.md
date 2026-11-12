@@ -69,6 +69,7 @@ Distinct, never inferred from one another: subscription created / approval-pendi
 - Integer cents convert to the provider's decimal string only at the boundary, and the response amount is re-parsed and compared before any entry is written.
 - The pot is re-derived inside the approving transaction, so concurrent approvals cannot both pass a budget check.
 - The sender balance is a second, external constraint: a payout can fail for insufficient funds even when the derived pot looks sufficient. That failure must surface honestly rather than as a retry loop.
+- **Divergence invariant (OSS-01).** The derived pot and the collector account's PayPal balance are two different numbers that can legitimately disagree — unsettled contributions, provider fees, and sandbox funding all move one without the other. The rule: **the derived pot is an upper bound on what may be spent, never a promise that the money is there**, and the provider balance is authoritative for whether a payout can execute. A divergence is therefore not an error to be corrected by writing a ledger entry; the ledger may only ever be changed by a verified provider event. When a payout fails for insufficient balance while the derived pot is sufficient, the demo must show that honestly as an environment problem, and **no compensating or plug entry may be written** to make the two agree. Reconciliation is read-only: compare, report, never adjust.
 
 ## Tests and approval
 
