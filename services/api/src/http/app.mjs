@@ -389,11 +389,13 @@ function currentUser(database, vault, userId) {
 }
 
 /**
- * @param {{ db?: any, vaultKey?: string }} [options] vaultKey is 64 hex chars;
+ * @param {{ db?: any, vaultKey?: string, publicOrigin?: string }} [options] vaultKey is 64 hex chars;
  * a random key is generated when omitted, so private limits do not survive
- * a restart. Production must load a persistent key.
+ * a restart. Production must load a persistent key. publicOrigin is the
+ * public HTTPS origin (US-014, e.g. a tunnel URL) used for invite links and
+ * documented return/cancel URLs; when omitted the request host is used.
  */
-export function buildApp({ db, vaultKey } = {}) {
+export function buildApp({ db, vaultKey, publicOrigin } = {}) {
   const database =
     db ??
     (() => {
@@ -668,7 +670,7 @@ export function buildApp({ db, vaultKey } = {}) {
         callerUserId: userId,
         at: now,
       });
-      const origin = `${req.protocol}://${req.host}`;
+      const origin = publicOrigin ?? `${req.protocol}://${req.host}`;
       return {
         inviteLinkId: link.inviteLinkId,
         url: `${origin}/i/${link.token}`,
