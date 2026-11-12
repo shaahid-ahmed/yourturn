@@ -20,21 +20,10 @@
  * Migrations are append-only too: never edit one that has shipped; add the next.
  */
 
-/** The ADR 0007 hangout states, in the contract's order. */
-export const HANGOUT_STATES = Object.freeze([
-  'PLANNING',
-  'STRETCH_ASKS',
-  'ACTIVITY_VOTE',
-  'TIME_VOTE',
-  'READY_CHECK',
-  'AWAITING_CONFIRMATION',
-  'BOOKING',
-  'BOOKED',
-  'BALANCES_OPEN',
-  'SETTLED',
-  'NO_PLAN',
-  'BOOKING_FAILED',
-]);
+import { HANGOUT_STATES } from '../hangout-lifecycle.mjs';
+
+/** Re-exported so the schema and the lifecycle can never disagree. */
+export { HANGOUT_STATES };
 
 /**
  * Ledger entry kinds. Named to match the US-005 IOU ledger (PR #51) so the
