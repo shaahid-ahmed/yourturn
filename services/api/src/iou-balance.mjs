@@ -15,14 +15,19 @@
 import { assertCents, splitShares } from './money.mjs';
 
 /** @type {ReadonlyArray<string>} */
-export const BALANCE_STATES = Object.freeze(['owed', 'pending', 'paid', 'failed']);
+export const BALANCE_STATES = Object.freeze([
+  'owed',
+  'pending',
+  'paid',
+  'failed',
+]);
 
 /** @type {ReadonlyArray<string>} */
 export const BALANCE_ENTRY_KINDS = Object.freeze([
-  'balance_created',    // payer confirms split → creates owed balance
-  'payment_initiated',  // member opens PayPal → marks pending
-  'payment_captured',   // webhook confirms payment → marks paid
-  'payment_failed',     // payment fails → back to owed
+  'balance_created', // payer confirms split → creates owed balance
+  'payment_initiated', // member opens PayPal → marks pending
+  'payment_captured', // webhook confirms payment → marks paid
+  'payment_failed', // payment fails → back to owed
 ]);
 
 /**
@@ -122,7 +127,8 @@ export class IouLedger {
   initiatePayment({ hangoutId, memberId, idempotencyKey }) {
     if (!hangoutId) throw new TypeError('initiatePayment needs a hangoutId');
     if (!memberId) throw new TypeError('initiatePayment needs a memberId');
-    if (!idempotencyKey) throw new TypeError('initiatePayment needs an idempotencyKey');
+    if (!idempotencyKey)
+      throw new TypeError('initiatePayment needs an idempotencyKey');
 
     // Idempotent: same key returns without an error or duplicate entry.
     if (this.#idempotencyKeys.has(idempotencyKey)) {
@@ -175,16 +181,20 @@ export class IouLedger {
   capturePayment({ hangoutId, memberId, providerEventId, amountCents }) {
     if (!hangoutId) throw new TypeError('capturePayment needs a hangoutId');
     if (!memberId) throw new TypeError('capturePayment needs a memberId');
-    if (!providerEventId) throw new TypeError('capturePayment needs a providerEventId');
+    if (!providerEventId)
+      throw new TypeError('capturePayment needs a providerEventId');
     assertCents(amountCents);
-    if (amountCents <= 0) throw new RangeError('captured amountCents must be positive');
+    if (amountCents <= 0)
+      throw new RangeError('captured amountCents must be positive');
 
     // Provider event idempotency: delivering the same event twice is safe.
     const eventKey = `captured::${providerEventId}`;
     if (this.#providerEvents.has(eventKey)) {
       return /** @type {BalanceEntry} */ (
         this.#entries.find(
-          (e) => e.providerEventId === providerEventId && e.kind === 'payment_captured',
+          (e) =>
+            e.providerEventId === providerEventId &&
+            e.kind === 'payment_captured',
         )
       );
     }
@@ -232,13 +242,16 @@ export class IouLedger {
   failPayment({ hangoutId, memberId, providerEventId }) {
     if (!hangoutId) throw new TypeError('failPayment needs a hangoutId');
     if (!memberId) throw new TypeError('failPayment needs a memberId');
-    if (!providerEventId) throw new TypeError('failPayment needs a providerEventId');
+    if (!providerEventId)
+      throw new TypeError('failPayment needs a providerEventId');
 
     const eventKey = `failed::${providerEventId}`;
     if (this.#providerEvents.has(eventKey)) {
       return /** @type {BalanceEntry} */ (
         this.#entries.find(
-          (e) => e.providerEventId === providerEventId && e.kind === 'payment_failed',
+          (e) =>
+            e.providerEventId === providerEventId &&
+            e.kind === 'payment_failed',
         )
       );
     }
@@ -316,7 +329,9 @@ export class IouLedger {
     const memberIds = [
       ...new Set(
         this.#entries
-          .filter((e) => e.hangoutId === hangoutId && e.kind === 'balance_created')
+          .filter(
+            (e) => e.hangoutId === hangoutId && e.kind === 'balance_created',
+          )
           .map((e) => e.memberId),
       ),
     ];
@@ -333,9 +348,7 @@ export class IouLedger {
    * @returns {{ totalOwedCents: number, totalOwedToMeCents: number, byHangout: Array<{ hangoutId: string, role: 'debtor'|'payer', amountCents: number, state: string }> }}
    */
   memberSummary(memberId) {
-    const hangoutIds = [
-      ...new Set(this.#entries.map((e) => e.hangoutId)),
-    ];
+    const hangoutIds = [...new Set(this.#entries.map((e) => e.hangoutId))];
 
     /** @type {Array<{ hangoutId: string, role: 'debtor'|'payer', amountCents: number, state: string }>} */
     const byHangout = [];

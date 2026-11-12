@@ -25,7 +25,11 @@ import { IdempotencyStore } from '../idempotency.mjs';
 // shared hangout state machine, which tracks the UX-spec lifecycle (ADR-0007).
 const SETTLEMENT_TRANSITIONS = {
   PROPOSED: { openCommitments: 'COMMITTING' },
-  COMMITTING: { allAuthorized: 'SETTLING', declined: 'VOIDING', deadlinePassed: 'VOIDING' },
+  COMMITTING: {
+    allAuthorized: 'SETTLING',
+    declined: 'VOIDING',
+    deadlinePassed: 'VOIDING',
+  },
   SETTLING: { allCaptured: 'CONFIRMED', captureFailed: 'SETTLEMENT_FAILED' },
   VOIDING: { allVoided: 'NOT_HAPPENING' },
   CONFIRMED: {},
@@ -44,7 +48,9 @@ function transition(state, event) {
   const next = allowed[event];
   if (!next) {
     const legal = Object.keys(allowed).join(', ') || 'none';
-    throw new RangeError(`settlement in ${state} cannot ${event}; legal: ${legal}`);
+    throw new RangeError(
+      `settlement in ${state} cannot ${event}; legal: ${legal}`,
+    );
   }
   return next;
 }

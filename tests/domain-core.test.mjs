@@ -68,7 +68,10 @@ test('hangout: only declared transitions are legal (UX spec / ADR-0007)', () => 
   assert.equal(transition('STRETCH_ASKS', 'stretchTimedOut'), 'PLANNING');
 
   // Voting phase
-  assert.equal(transition('ACTIVITY_VOTE', 'activityVoteComplete'), 'TIME_VOTE');
+  assert.equal(
+    transition('ACTIVITY_VOTE', 'activityVoteComplete'),
+    'TIME_VOTE',
+  );
   assert.equal(transition('ACTIVITY_VOTE', 'noneFeasible'), 'NO_PLAN');
   assert.equal(transition('TIME_VOTE', 'timeVoteComplete'), 'READY_CHECK');
   assert.equal(transition('TIME_VOTE', 'noTimeSlot'), 'NO_PLAN');
