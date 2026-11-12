@@ -65,19 +65,24 @@ export function requestPhoneCode(db, { phone, at }) {
  */
 export function createSession(db, { challengeId, code, at }) {
   const now = at ?? new Date().toISOString();
-  const row = db
-    .prepare('SELECT * FROM phone_challenge WHERE challenge_id = ?')
-    .get(challengeId);
+  const row =
+    /** @type {{ consumed_at: string | null, expires_at: string, code_digest: string, phone: string } | undefined} */ (
+      db
+        .prepare('SELECT * FROM phone_challenge WHERE challenge_id = ?')
+        .get(challengeId)
+    );
   if (!row || row.consumed_at || row.expires_at <= now) return null;
   if (digest(code) !== row.code_digest) return null;
   db.prepare(
     'UPDATE phone_challenge SET consumed_at = ? WHERE challenge_id = ?',
   ).run(now, challengeId);
-  let user = db
-    .prepare(
-      'SELECT user_id FROM app_user WHERE phone = ? AND deleted_at IS NULL',
-    )
-    .get(row.phone);
+  let user = /** @type {{ user_id: string } | undefined} */ (
+    db
+      .prepare(
+        'SELECT user_id FROM app_user WHERE phone = ? AND deleted_at IS NULL',
+      )
+      .get(row.phone)
+  );
   let isNewUser = false;
   if (!user) {
     const userId = newUlid(Date.parse(now));
@@ -113,11 +118,14 @@ export function endSession(db, sessionId) {
  */
 export function resolveSession(db, sessionId) {
   if (!sessionId) return null;
-  const row = db
-    .prepare(
-      'SELECT user_id, csrf_token_digest FROM session WHERE session_id = ? AND ended_at IS NULL AND expires_at > ?',
-    )
-    .get(sessionId, new Date().toISOString());
+  const row =
+    /** @type {{ user_id: string, csrf_token_digest: string } | undefined} */ (
+      db
+        .prepare(
+          'SELECT user_id, csrf_token_digest FROM session WHERE session_id = ? AND ended_at IS NULL AND expires_at > ?',
+        )
+        .get(sessionId, new Date().toISOString())
+    );
   if (!row) return null;
   return { userId: row.user_id, csrfDigest: row.csrf_token_digest };
 }

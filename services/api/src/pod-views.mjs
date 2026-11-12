@@ -8,6 +8,8 @@ import { newUlid, requireMember } from './pods.mjs';
 
 /** Member-scoped reads: outsiders get not_found, like a missing pod.
  * @param {import('node:sqlite').DatabaseSync} db
+ * @param {string} podId
+ * @param {string} userId
  */
 function mustBeMember(db, podId, userId) {
   try {
@@ -42,12 +44,14 @@ export class PodViewError extends Error {
  * @returns {string[]} pod ids the user has joined and not left
  */
 export function listOwnPods(db, userId) {
-  return db
-    .prepare(
-      'SELECT pod_id AS podId FROM pod_membership WHERE user_id = ? AND left_at IS NULL ORDER BY joined_at, pod_id',
-    )
-    .all(userId)
-    .map((/** @type {{ podId: string }} */ r) => r.podId);
+  const rows = /** @type {Array<{ podId: string }>} */ (
+    db
+      .prepare(
+        'SELECT pod_id AS podId FROM pod_membership WHERE user_id = ? AND left_at IS NULL ORDER BY joined_at, pod_id',
+      )
+      .all(userId)
+  );
+  return rows.map((r) => r.podId);
 }
 
 /**
@@ -118,13 +122,19 @@ export function proposeRhythm(db, { podId, userId, cadence, at }) {
   return { proposalId, cadence, status: 'open', createdAt: now };
 }
 
-function joinedUserIds(db, podId) {
-  return db
-    .prepare(
-      'SELECT user_id AS userId FROM pod_membership WHERE pod_id = ? AND left_at IS NULL',
-    )
-    .all(podId)
-    .map((/** @type {{ userId: string }} */ r) => r.userId);
+/** @returns {string[]} */
+function joinedUserIds(
+  /** @type {import('node:sqlite').DatabaseSync} */ db,
+  /** @type {string} */ podId,
+) {
+  const rows = /** @type {Array<{ userId: string }>} */ (
+    db
+      .prepare(
+        'SELECT user_id AS userId FROM pod_membership WHERE pod_id = ? AND left_at IS NULL',
+      )
+      .all(podId)
+  );
+  return rows.map((r) => r.userId);
 }
 
 /**
@@ -133,11 +143,14 @@ function joinedUserIds(db, podId) {
  */
 export function acceptRhythmProposal(db, { proposalId, userId, at }) {
   const now = at ?? new Date().toISOString();
-  const proposal = db
-    .prepare(
-      'SELECT pod_id AS podId, status FROM rhythm_proposal WHERE proposal_id = ?',
-    )
-    .get(proposalId);
+  const proposal =
+    /** @type {{ podId: string, status: string } | undefined} */ (
+      db
+        .prepare(
+          'SELECT pod_id AS podId, status FROM rhythm_proposal WHERE proposal_id = ?',
+        )
+        .get(proposalId)
+    );
   if (!proposal) throw new PodViewError('not_found', 'no such rhythm proposal');
   mustBeMember(db, proposal.podId, userId);
   if (proposal.status !== 'open')
@@ -148,14 +161,14 @@ export function acceptRhythmProposal(db, { proposalId, userId, at }) {
   db.prepare(
     'INSERT INTO rhythm_acceptance (proposal_id, user_id, accepted_at) VALUES (?, ?, ?) ON CONFLICT(proposal_id, user_id) DO NOTHING',
   ).run(proposalId, userId, now);
-  const accepted = new Set(
+  const acceptRows = /** @type {Array<{ userId: string }>} */ (
     db
       .prepare(
         'SELECT user_id AS userId FROM rhythm_acceptance WHERE proposal_id = ?',
       )
       .all(proposalId)
-      .map((/** @type {{ userId: string }} */ r) => r.userId),
   );
+  const accepted = new Set(acceptRows.map((r) => r.userId));
   if (joinedUserIds(db, proposal.podId).every((id) => accepted.has(id))) {
     db.prepare(
       "UPDATE rhythm_proposal SET status = 'agreed' WHERE proposal_id = ?",
@@ -169,32 +182,33 @@ export function acceptRhythmProposal(db, { proposalId, userId, at }) {
  */
 export function listRhythmProposals(db, { podId, userId }) {
   mustBeMember(db, podId, userId);
-  const proposals = db
-    .prepare(
-      'SELECT proposal_id AS proposalId, cadence, proposed_by AS proposedBy, status, created_at AS createdAt FROM rhythm_proposal WHERE pod_id = ? ORDER BY created_at DESC, proposal_id DESC',
-    )
-    .all(podId);
-  const names = new Map(
+  const proposals = /** @type {Array<any>} */ (
+    db
+      .prepare(
+        'SELECT proposal_id AS proposalId, cadence, proposed_by AS proposedBy, status, created_at AS createdAt FROM rhythm_proposal WHERE pod_id = ? ORDER BY created_at DESC, proposal_id DESC',
+      )
+      .all(podId)
+  );
+  const nameRows = /** @type {Array<{ userId: string, firstName: string }>} */ (
     db
       .prepare(
         'SELECT user_id AS userId, first_name AS firstName FROM app_user',
       )
       .all()
-      .map((/** @type {{ userId: string, firstName: string }} */ r) => [
-        r.userId,
-        r.firstName,
-      ]),
   );
-  return proposals.map((/** @type any */ p) => {
-    const acceptedBy = db
-      .prepare(
-        'SELECT user_id AS userId FROM rhythm_acceptance WHERE proposal_id = ? ORDER BY accepted_at, user_id',
-      )
-      .all(p.proposalId)
-      .map((/** @type {{ userId: string }} */ r) => ({
-        userId: r.userId,
-        firstName: names.get(r.userId) ?? '?',
-      }));
+  const names = new Map(nameRows.map((r) => [r.userId, r.firstName]));
+  return proposals.map((p) => {
+    const acceptRows = /** @type {Array<{ userId: string }>} */ (
+      db
+        .prepare(
+          'SELECT user_id AS userId FROM rhythm_acceptance WHERE proposal_id = ? ORDER BY accepted_at, user_id',
+        )
+        .all(p.proposalId)
+    );
+    const acceptedBy = acceptRows.map((r) => ({
+      userId: r.userId,
+      firstName: names.get(r.userId) ?? '?',
+    }));
     return {
       proposalId: p.proposalId,
       cadence: p.cadence,
@@ -215,11 +229,13 @@ export function listRhythmProposals(db, { podId, userId }) {
  * @param {string} podId
  */
 export function agreedRhythm(db, podId) {
-  const row = db
-    .prepare(
-      "SELECT cadence, created_at AS agreedAt FROM rhythm_proposal WHERE pod_id = ? AND status = 'agreed' ORDER BY created_at DESC, proposal_id DESC LIMIT 1",
-    )
-    .get(podId);
+  const row = /** @type {{ cadence: string, agreedAt: string } | undefined} */ (
+    db
+      .prepare(
+        "SELECT cadence, created_at AS agreedAt FROM rhythm_proposal WHERE pod_id = ? AND status = 'agreed' ORDER BY created_at DESC, proposal_id DESC LIMIT 1",
+      )
+      .get(podId)
+  );
   if (!row) return null;
   const days =
     row.cadence === 'weekly' ? 7 : row.cadence === 'every_two_weeks' ? 14 : 30;
@@ -261,20 +277,22 @@ export function addGroupActivity(db, { podId, userId, label, at }) {
  */
 export function listGroupActivities(db, { podId, userId }) {
   mustBeMember(db, podId, userId);
-  return db
-    .prepare(
-      `SELECT g.activity_id AS activityId, g.label AS label, g.added_by AS addedBy,
-              u.first_name AS addedByName, g.created_at AS createdAt
-         FROM group_activity g JOIN app_user u ON u.user_id = g.added_by
-        WHERE g.pod_id = ? ORDER BY g.created_at DESC, g.activity_id DESC`,
-    )
-    .all(podId)
-    .map((/** @type any */ r) => ({
-      activityId: r.activityId,
-      label: r.label,
-      addedBy: { userId: r.addedBy, firstName: r.addedByName },
-      createdAt: r.createdAt,
-    }));
+  const rows = /** @type {Array<any>} */ (
+    db
+      .prepare(
+        `SELECT g.activity_id AS activityId, g.label AS label, g.added_by AS addedBy,
+                u.first_name AS addedByName, g.created_at AS createdAt
+           FROM group_activity g JOIN app_user u ON u.user_id = g.added_by
+          WHERE g.pod_id = ? ORDER BY g.created_at DESC, g.activity_id DESC`,
+      )
+      .all(podId)
+  );
+  return rows.map((r) => ({
+    activityId: r.activityId,
+    label: r.label,
+    addedBy: { userId: r.addedBy, firstName: r.addedByName },
+    createdAt: r.createdAt,
+  }));
 }
 
 const STAGE_BY_STATE = {

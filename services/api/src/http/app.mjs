@@ -64,6 +64,7 @@ export function closedGate() {
  * @param {any} node JSON-schema node with local $refs
  * @param {any} root the full spec for $ref resolution
  * @param {any[]} [seen]
+ * @returns {any}
  */
 function deref(node, root, seen = []) {
   if (Array.isArray(node)) return node.map((v) => deref(v, root, seen));
@@ -75,7 +76,11 @@ function deref(node, root, seen = []) {
       const target = node.$ref
         .slice(2)
         .split('/')
-        .reduce((acc, key) => acc[key], root);
+        .reduce(
+          (/** @type {Record<string, any>} */ acc, /** @type {string} */ key) =>
+            acc[key],
+          root,
+        );
       return deref(target, root, [...seen, node.$ref]);
     }
     return Object.fromEntries(
@@ -103,31 +108,39 @@ function loadSpec() {
  */
 function errorHandler(app, db) {
   void db;
-  app.setErrorHandler((err, req, reply) => {
-    if (err.validation) {
-      const op = req.routeOptions?.config?.operation;
-      const responses = op ? op.responses : {};
-      const status = responses && responses['422'] ? 422 : 400;
-      console.error(
-        `[http] ${req.method} ${req.url} validation`,
-        err.validation,
-      );
-      return reply.code(status).send();
-    }
-    const code = typeof err.code === 'string' ? err.code : null;
-    if (code) {
-      const status = STATUS_BY_CODE[code] ?? 422;
-      const body = { code, message: err.message };
-      if (code === 'payment_gate_blocked') body.gate = closedGate();
-      return reply.code(status).send(body);
-    }
-    req.log.error(err);
-    console.error(`[http] ${req.method} ${req.url}`, err);
-    return reply
-      .code(500)
-      .send({ code: 'internal_error', message: 'unexpected error' });
-  });
-  app.setNotFoundHandler((req, reply) => {
+  app.setErrorHandler(
+    (
+      /** @type {any} */ err,
+      /** @type {any} */ req,
+      /** @type {any} */ reply,
+    ) => {
+      if (err.validation) {
+        const op = req.routeOptions?.config?.operation;
+        const responses = op ? op.responses : {};
+        const status = responses && responses['422'] ? 422 : 400;
+        console.error(
+          `[http] ${req.method} ${req.url} validation`,
+          err.validation,
+        );
+        return reply.code(status).send();
+      }
+      const code = typeof err.code === 'string' ? err.code : null;
+      if (code) {
+        const status =
+          STATUS_BY_CODE[/** @type {keyof typeof STATUS_BY_CODE} */ (code)] ??
+          422;
+        const body = /** @type {any} */ ({ code, message: err.message });
+        if (code === 'payment_gate_blocked') body.gate = closedGate();
+        return reply.code(status).send(body);
+      }
+      req.log.error(err);
+      console.error(`[http] ${req.method} ${req.url}`, err);
+      return reply
+        .code(500)
+        .send({ code: 'internal_error', message: 'unexpected error' });
+    },
+  );
+  app.setNotFoundHandler((/** @type {any} */ req, /** @type {any} */ reply) => {
     reply.code(404).send({ code: 'not_found', message: 'no such route' });
   });
 }
@@ -205,10 +218,12 @@ function currentUser(database, vault, userId) {
     err.code = 'not_found';
     throw err;
   }
-  const interests = database
-    .prepare('SELECT tag FROM user_interest WHERE user_id = ? ORDER BY tag')
-    .all(userId)
-    .map((r) => r.tag);
+  const interestRows = /** @type {Array<{ tag: string }>} */ (
+    database
+      .prepare('SELECT tag FROM user_interest WHERE user_id = ? ORDER BY tag')
+      .all(userId)
+  );
+  const interests = interestRows.map((r) => r.tag);
   const perms = database
     .prepare(
       'SELECT contacts, notifications, calendar FROM permission_status WHERE user_id = ?',
@@ -552,7 +567,9 @@ export function buildApp({ db, vaultKey } = {}) {
                 ),
               }
             : undefined,
-          response: okSchema ? { [okCode]: okSchema } : undefined,
+          response: okSchema
+            ? { [/** @type {string} */ (okCode)]: okSchema }
+            : undefined,
         },
         preHandler: async (req, reply) => {
           if (PUBLIC_OPS.has(operationId)) return;
@@ -563,7 +580,7 @@ export function buildApp({ db, vaultKey } = {}) {
               .code(401)
               .send({ code: 'unauthenticated', message: 'sign in first' });
           }
-          req.userId = session.userId;
+          /** @type {any} */ (req).userId = session.userId;
           if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
             const presented = req.headers['x-csrf-token'];
             const expected = Buffer.from(session.csrfDigest, 'hex');
@@ -595,7 +612,7 @@ export function buildApp({ db, vaultKey } = {}) {
             req,
             reply,
             params: req.params,
-            userId: req.userId,
+            userId: /** @type {any} */ (req).userId,
           });
           if (
             !reply.sent &&
