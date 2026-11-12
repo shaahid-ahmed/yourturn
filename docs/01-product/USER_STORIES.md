@@ -27,7 +27,7 @@ As a member, I want the contribution amount agreed by everyone, so money never b
 
 - **Given** a proposed monthly amount, **when** it is validated, **then** it is accepted only as whole USD cents at most 1500, and the default proposal is 500; non-integer, negative, below-minimum (D-P01) and above-maximum values are rejected with a stated bound.
 - **Given** a proposal awaiting agreement, **when** every current accepted member has explicitly agreed to that exact amount and membership version, **then** the circle records the agreement as complete.
-- **Given** at least one member has not agreed, **then** the circle shows "not yet agreed" without naming, counting or ranking who declined, and no activation or collection proceeds.
+- **Given** at least one member has not agreed, **then** the circle shows "not yet agreed" without naming or individually attributing who has not agreed, and no activation or collection proceeds. Agreement progress may be shown as an aggregate positive count ("2 of 4 agreed") provided no framing singles out the holdout; see PHASE1_REVIEW B-03 and RV-008 resolution note.
 - **Given** a completed agreement, **when** the amount or accepted membership changes, **then** the prior agreement is invalidated for the new version and must be re-agreed; historical records are not rewritten.
 - **Given** any agreement state, **then** no amount increase, renewal or re-agreement is ever inferred from silence, inactivity or app usage.
 
@@ -116,7 +116,7 @@ As a member, I want the app to distinguish intent from outcome.
 
 - **Given** no genuine sandbox go/no-go evidence (YT-006) and no human money-flow approval, **when** any payment execution is attempted, **then** it is refused as blocked, with no simulated success substituted.
 - **Given** subscription state, **then** created, approved, active and payment-received are distinct displayed states and none is inferred from another.
-- **Given** an Order, **then** created, payer-approved and captured are distinct, and capture is never displayed as a venue reservation or as attendance.
+- **Given** an IOU balance, **then** owed, pending, paid and failed are distinct states, and paid is never displayed as a venue reservation or as attendance (LA-01; the Orders model was retired in ADR-0007).
 - **Given** a provider webhook, **when** its signature is absent or invalid, **then** no ledger entry, status change or notification occurs.
 - **Given** the same verified provider event delivered twice or out of order, **then** ledger effects occur at most once and the derived pot is unchanged by the duplicate.
 - **Given** any payment failure, pending state or timeout, **then** the state is shown honestly as unverified or failed, never as completed.

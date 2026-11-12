@@ -1,0 +1,285 @@
+{
+  "synthetic": true,
+  "notice": "Synthetic NYC events and venues for the Unspoken demo. All people, prices and schedules are fictional. No real venues were contacted.",
+  "version": "demo-v1",
+  "venues": [
+    {
+      "venueId": "v-brooklyn-bowl",
+      "name": "Brooklyn Bowl",
+      "neighborhood": "Williamsburg",
+      "borough": "Brooklyn",
+      "address": "61 Wythe Ave, Brooklyn, NY 11249",
+      "tags": ["active", "nightlife", "food"],
+      "dietaryOptions": ["vegetarian", "vegan", "gluten-free"],
+      "priceRangeCentsPerPerson": [2000, 4500],
+      "maxGroupSize": 8,
+      "travelMinutesFromMidtown": 25,
+      "hours": {
+        "mon": null,
+        "tue": null,
+        "wed": { "open": "17:00", "close": "23:00" },
+        "thu": { "open": "17:00", "close": "23:00" },
+        "fri": { "open": "17:00", "close": "02:00" },
+        "sat": { "open": "12:00", "close": "02:00" },
+        "sun": { "open": "12:00", "close": "21:00" }
+      }
+    },
+    {
+      "venueId": "v-moma-ps1",
+      "name": "MoMA PS1",
+      "neighborhood": "Long Island City",
+      "borough": "Queens",
+      "address": "22-25 Jackson Ave, Queens, NY 11101",
+      "tags": ["cultural", "art"],
+      "dietaryOptions": [],
+      "priceRangeCentsPerPerson": [1000, 2000],
+      "maxGroupSize": 8,
+      "travelMinutesFromMidtown": 20,
+      "hours": {
+        "mon": null,
+        "tue": null,
+        "wed": { "open": "11:00", "close": "18:00" },
+        "thu": { "open": "11:00", "close": "20:00" },
+        "fri": { "open": "11:00", "close": "20:00" },
+        "sat": { "open": "10:00", "close": "18:00" },
+        "sun": { "open": "10:00", "close": "18:00" }
+      }
+    },
+    {
+      "venueId": "v-smorgasburg",
+      "name": "Smorgasburg",
+      "neighborhood": "Prospect Park",
+      "borough": "Brooklyn",
+      "address": "Breeze Hill, Prospect Park, Brooklyn, NY 11225",
+      "tags": ["food", "outdoor"],
+      "dietaryOptions": [
+        "vegetarian",
+        "vegan",
+        "gluten-free",
+        "halal",
+        "kosher"
+      ],
+      "priceRangeCentsPerPerson": [1500, 3000],
+      "maxGroupSize": 8,
+      "travelMinutesFromMidtown": 35,
+      "hours": {
+        "mon": null,
+        "tue": null,
+        "wed": null,
+        "thu": null,
+        "fri": null,
+        "sat": { "open": "11:00", "close": "18:00" },
+        "sun": { "open": "11:00", "close": "18:00" }
+      }
+    },
+    {
+      "venueId": "v-top-golf-chelsea",
+      "name": "Topgolf Swing Suite",
+      "neighborhood": "Chelsea",
+      "borough": "Manhattan",
+      "address": "Chelsea Piers, Pier 60, New York, NY 10011",
+      "tags": ["active", "food"],
+      "dietaryOptions": ["vegetarian"],
+      "priceRangeCentsPerPerson": [3000, 6000],
+      "maxGroupSize": 6,
+      "travelMinutesFromMidtown": 15,
+      "hours": {
+        "mon": { "open": "09:00", "close": "22:00" },
+        "tue": { "open": "09:00", "close": "22:00" },
+        "wed": { "open": "09:00", "close": "22:00" },
+        "thu": { "open": "09:00", "close": "22:00" },
+        "fri": { "open": "09:00", "close": "23:00" },
+        "sat": { "open": "09:00", "close": "23:00" },
+        "sun": { "open": "09:00", "close": "21:00" }
+      }
+    },
+    {
+      "venueId": "v-high-line-park",
+      "name": "The High Line",
+      "neighborhood": "Chelsea",
+      "borough": "Manhattan",
+      "address": "Gansevoort St to 34th St, New York, NY 10011",
+      "tags": ["outdoor", "active"],
+      "dietaryOptions": ["vegetarian", "vegan"],
+      "priceRangeCentsPerPerson": [0, 500],
+      "maxGroupSize": 8,
+      "travelMinutesFromMidtown": 10,
+      "hours": {
+        "mon": { "open": "07:00", "close": "22:00" },
+        "tue": { "open": "07:00", "close": "22:00" },
+        "wed": { "open": "07:00", "close": "22:00" },
+        "thu": { "open": "07:00", "close": "22:00" },
+        "fri": { "open": "07:00", "close": "23:00" },
+        "sat": { "open": "07:00", "close": "23:00" },
+        "sun": { "open": "07:00", "close": "22:00" }
+      }
+    },
+    {
+      "venueId": "v-resy-dinner-eastvillage",
+      "name": "Superiority Burger",
+      "neighborhood": "East Village",
+      "borough": "Manhattan",
+      "address": "119 Avenue A, New York, NY 10009",
+      "tags": ["food"],
+      "dietaryOptions": ["vegetarian", "vegan"],
+      "priceRangeCentsPerPerson": [1500, 2500],
+      "maxGroupSize": 6,
+      "travelMinutesFromMidtown": 18,
+      "hours": {
+        "mon": null,
+        "tue": { "open": "12:00", "close": "22:00" },
+        "wed": { "open": "12:00", "close": "22:00" },
+        "thu": { "open": "12:00", "close": "22:00" },
+        "fri": { "open": "12:00", "close": "22:00" },
+        "sat": { "open": "12:00", "close": "22:00" },
+        "sun": { "open": "12:00", "close": "21:00" }
+      }
+    },
+    {
+      "venueId": "v-escape-room-midtown",
+      "name": "Clue Chase Escape Rooms",
+      "neighborhood": "Midtown",
+      "borough": "Manhattan",
+      "address": "268 W 44th St, New York, NY 10036",
+      "tags": ["active", "indoor"],
+      "dietaryOptions": [],
+      "priceRangeCentsPerPerson": [2500, 3500],
+      "maxGroupSize": 8,
+      "travelMinutesFromMidtown": 5,
+      "hours": {
+        "mon": { "open": "10:00", "close": "22:00" },
+        "tue": { "open": "10:00", "close": "22:00" },
+        "wed": { "open": "10:00", "close": "22:00" },
+        "thu": { "open": "10:00", "close": "22:00" },
+        "fri": { "open": "10:00", "close": "23:00" },
+        "sat": { "open": "10:00", "close": "23:00" },
+        "sun": { "open": "10:00", "close": "21:00" }
+      }
+    },
+    {
+      "venueId": "v-comedy-cellar",
+      "name": "Comedy Cellar",
+      "neighborhood": "Greenwich Village",
+      "borough": "Manhattan",
+      "address": "117 Macdougal St, New York, NY 10012",
+      "tags": ["nightlife", "comedy"],
+      "dietaryOptions": ["vegetarian"],
+      "priceRangeCentsPerPerson": [2000, 4000],
+      "maxGroupSize": 6,
+      "travelMinutesFromMidtown": 20,
+      "hours": {
+        "mon": null,
+        "tue": { "open": "19:00", "close": "01:00" },
+        "wed": { "open": "19:00", "close": "01:00" },
+        "thu": { "open": "19:00", "close": "01:00" },
+        "fri": { "open": "19:00", "close": "02:00" },
+        "sat": { "open": "19:00", "close": "02:00" },
+        "sun": { "open": "19:00", "close": "01:00" }
+      }
+    }
+  ],
+  "events": [
+    {
+      "eventId": "evt-001",
+      "venueId": "v-brooklyn-bowl",
+      "title": "Open Bowl Night",
+      "description": "Bowling lanes plus a full kitchen and bar. Synthetic event for demo.",
+      "dow": "fri",
+      "startsAt": "2026-11-20T19:00:00-05:00",
+      "endsAt": "2026-11-20T22:00:00-05:00",
+      "estCostPerPersonCents": 3500,
+      "tags": ["active", "nightlife", "food"],
+      "dietaryOptions": ["vegetarian", "vegan"]
+    },
+    {
+      "eventId": "evt-002",
+      "venueId": "v-moma-ps1",
+      "title": "Late Night Thursday",
+      "description": "Extended evening hours at the contemporary art museum. Synthetic event for demo.",
+      "dow": "thu",
+      "startsAt": "2026-11-19T17:00:00-05:00",
+      "endsAt": "2026-11-19T20:00:00-05:00",
+      "estCostPerPersonCents": 1800,
+      "tags": ["cultural", "art"],
+      "dietaryOptions": []
+    },
+    {
+      "eventId": "evt-003",
+      "venueId": "v-smorgasburg",
+      "title": "Weekend Food Market",
+      "description": "Outdoor food market in Prospect Park. Synthetic event for demo.",
+      "dow": "sat",
+      "startsAt": "2026-11-21T12:00:00-05:00",
+      "endsAt": "2026-11-21T17:00:00-05:00",
+      "estCostPerPersonCents": 2500,
+      "tags": ["food", "outdoor"],
+      "dietaryOptions": [
+        "vegetarian",
+        "vegan",
+        "gluten-free",
+        "halal",
+        "kosher"
+      ]
+    },
+    {
+      "eventId": "evt-004",
+      "venueId": "v-top-golf-chelsea",
+      "title": "Friday Evening Swing Suite",
+      "description": "Indoor golf simulators with food and drinks. Synthetic event for demo.",
+      "dow": "fri",
+      "startsAt": "2026-11-20T18:00:00-05:00",
+      "endsAt": "2026-11-20T21:00:00-05:00",
+      "estCostPerPersonCents": 4500,
+      "tags": ["active", "food"],
+      "dietaryOptions": ["vegetarian"]
+    },
+    {
+      "eventId": "evt-005",
+      "venueId": "v-high-line-park",
+      "title": "Evening Walk",
+      "description": "Free elevated park walk with views of the Hudson. Synthetic event for demo.",
+      "dow": "thu",
+      "startsAt": "2026-11-19T17:30:00-05:00",
+      "endsAt": "2026-11-19T19:30:00-05:00",
+      "estCostPerPersonCents": 0,
+      "tags": ["outdoor", "active"],
+      "dietaryOptions": ["vegetarian", "vegan"]
+    },
+    {
+      "eventId": "evt-006",
+      "venueId": "v-resy-dinner-eastvillage",
+      "title": "Wednesday Dinner",
+      "description": "Vegetarian and vegan comfort food in the East Village. Synthetic event for demo.",
+      "dow": "wed",
+      "startsAt": "2026-11-18T19:00:00-05:00",
+      "endsAt": "2026-11-18T21:00:00-05:00",
+      "estCostPerPersonCents": 2000,
+      "tags": ["food"],
+      "dietaryOptions": ["vegetarian", "vegan"]
+    },
+    {
+      "eventId": "evt-007",
+      "venueId": "v-escape-room-midtown",
+      "title": "Friday Escape Challenge",
+      "description": "60-minute puzzle room for groups. Synthetic event for demo.",
+      "dow": "fri",
+      "startsAt": "2026-11-20T20:00:00-05:00",
+      "endsAt": "2026-11-20T21:30:00-05:00",
+      "estCostPerPersonCents": 3000,
+      "tags": ["active", "indoor"],
+      "dietaryOptions": []
+    },
+    {
+      "eventId": "evt-008",
+      "venueId": "v-comedy-cellar",
+      "title": "Thursday Late Show",
+      "description": "Late-night comedy show in Greenwich Village. Synthetic event for demo.",
+      "dow": "thu",
+      "startsAt": "2026-11-19T22:00:00-05:00",
+      "endsAt": "2026-11-20T00:00:00-05:00",
+      "estCostPerPersonCents": 3200,
+      "tags": ["nightlife", "comedy"],
+      "dietaryOptions": ["vegetarian"]
+    }
+  ]
+}
