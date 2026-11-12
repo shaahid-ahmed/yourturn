@@ -82,6 +82,7 @@ The kind names match the US-005 IOU ledger (PR #51) plus `adjustment`, so the du
 
 ## Migration plan
 
-1. Migration 1 (this one) creates the whole schema. It is applied with `migrate(db)` and tested on a scratch file in the system temp directory: apply, reopen, re-run as a no-op, `integrity_check` and `foreign_key_check`.
-2. **Never edit a shipped migration.** Add the next version; versions must be 1, 2, 3 … with no gaps, and a database newer than the code refuses to open.
-3. Seeding synthetic demo data into this schema is US-301 / `infra/seed`, not this task.
+1. Migration 1 creates the core schema. It is applied with `migrate(db)` and tested on a scratch file in the system temp directory: apply, reopen, re-run as a no-op, `integrity_check` and `foreign_key_check`.
+2. Migration 2 (US-008) adds `ready_check` (one per hangout, with its closing time) and `reminder_sent` (append-only; one row per (kind, reference, member), so a reminder job never sends the same private reminder twice).
+3. **Never edit a shipped migration.** Add the next version; versions must be 1, 2, 3 … with no gaps, and a database newer than the code refuses to open.
+4. Seeding synthetic demo data into this schema is US-301 / `infra/seed`, not this task.
