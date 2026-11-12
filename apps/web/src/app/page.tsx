@@ -3,8 +3,10 @@
 // Animated logo on every open. Routes to /signin if signed out, /home if signed in.
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useDocumentTitle } from '@/components/ui';
 
 export default function SplashPage() {
+  useDocumentTitle('Welcome');
   const router = useRouter();
 
   useEffect(() => {

@@ -1,7 +1,13 @@
 'use client';
 // P7 — Pod chat + planner cards (P9–P12 appear as cards in this stream)
 import { useState, useRef, useEffect } from 'react';
-import { PlannerCard, Card, Button, BalanceChip } from '@/components/ui';
+import {
+  PlannerCard,
+  Card,
+  Button,
+  BalanceChip,
+  useDocumentTitle,
+} from '@/components/ui';
 
 type MessageKind =
   | 'text'
@@ -70,6 +76,20 @@ const MEMBERS = [
   { id: 'alex', name: 'Alex' },
 ];
 
+// Votes are shown with first names (spec P9/P10, Q-013), never raw ids.
+function voterNames(ids: string[], iVoted: boolean): string[] {
+  const names = ids
+    .filter((id) => id !== ME.id)
+    .map((id) => MEMBERS.find((m) => m.id === id)?.name ?? id);
+  return iVoted ? [...names, ME.name] : names;
+}
+
+function voteLine(ids: string[], iVoted: boolean): string {
+  const names = voterNames(ids, iVoted);
+  if (names.length === 0) return 'No votes yet';
+  return `${names.length} vote${names.length !== 1 ? 's' : ''} · ${names.join(', ')}`;
+}
+
 const INITIAL_MESSAGES: Message[] = [
   {
     id: 'm0',
@@ -126,6 +146,7 @@ const INITIAL_MESSAGES: Message[] = [
 ];
 
 export default function PodChatPage() {
+  useDocumentTitle('Friday crew chat');
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
   const [myActivityVotes, setMyActivityVotes] = useState<
@@ -137,7 +158,10 @@ export default function PodChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const reduce = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+    bottomRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
   }, [messages]);
 
   function sendMessage() {
@@ -156,8 +180,10 @@ export default function PodChatPage() {
     setInput('');
   }
 
+  // One vote per member; tapping another option moves it, tapping the
+  // same option again withdraws it (spec P9: change a vote before close).
   function voteActivity(activityId: string, vote: boolean) {
-    setMyActivityVotes((prev) => ({ ...prev, [activityId]: vote }));
+    setMyActivityVotes(vote ? { [activityId]: true } : {});
   }
 
   function voteTime(slotId: string) {
@@ -297,7 +323,7 @@ export default function PodChatPage() {
         <div ref={bottomRef} />
 
         {/* Demo controls */}
-        <div className="flex flex-col gap-2 mt-4 px-2 opacity-70">
+        <div className="flex flex-col gap-2 mt-4 px-2">
           <p className="text-xs text-center text-[var(--color-ink-muted)]">
             — Demo actions —
           </p>
@@ -421,9 +447,8 @@ function ChatMessage({
               }`}
             >
               <span>{slot.label}</span>
-              <span className="text-xs opacity-80">
-                {slot.votes.length} vote{slot.votes.length !== 1 ? 's' : ''}
-                {slot.votes.length > 0 ? ` · ${slot.votes.join(', ')}` : ''}
+              <span className="text-xs">
+                {voteLine(slot.votes, myTimeVotes[slot.id] ?? false)}
               </span>
             </button>
           ))}
@@ -553,7 +578,7 @@ function ActivityCard({
   myVote?: boolean;
   onVote: (vote: boolean) => void;
 }) {
-  const voted = myVote !== undefined;
+  const voted = myVote === true;
   return (
     <Card className="flex flex-col gap-2">
       <div className="flex items-start justify-between gap-2">
@@ -584,16 +609,16 @@ function ActivityCard({
       </div>
       <div className="flex items-center justify-between gap-3 mt-1">
         <p className="text-xs text-[var(--color-ink-muted)]">
-          {activity.votes.length} vote{activity.votes.length !== 1 ? 's' : ''}
-          {activity.votes.length > 0 ? ` · ${activity.votes.join(', ')}` : ''}
+          {voteLine(activity.votes, voted)}
         </p>
-        {!voted ? (
-          <Button onClick={() => onVote(true)}>Vote</Button>
-        ) : (
-          <span className="text-sm text-[var(--color-accent)] font-medium">
-            Voted ✓
-          </span>
-        )}
+        <Button
+          variant={voted ? 'secondary' : 'primary'}
+          aria-pressed={voted}
+          aria-label={`${voted ? 'Voted' : 'Vote'} for ${activity.title}`}
+          onClick={() => onVote(!voted)}
+        >
+          {voted ? 'Voted ✓' : 'Vote'}
+        </Button>
       </div>
     </Card>
   );

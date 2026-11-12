@@ -1,5 +1,12 @@
 'use client';
-import React from 'react';
+import React, { useEffect } from 'react';
+
+// WCAG 2.4.2: every screen names itself in the document title.
+export function useDocumentTitle(title: string) {
+  useEffect(() => {
+    document.title = `${title} · Unspoken`;
+  }, [title]);
+}
 
 // ── Shared primitive components ───────────────────────────────────────────────
 
@@ -108,6 +115,7 @@ export function ScreenHeader({
   back?: React.ReactNode;
   right?: React.ReactNode;
 }) {
+  useDocumentTitle(title);
   return (
     <header className="flex items-center justify-between gap-3 px-4 h-14 border-b border-[var(--color-border)] sticky top-0 bg-white z-10">
       <div className="w-10">{back}</div>
@@ -121,10 +129,7 @@ export function ScreenHeader({
 
 export function LockBadge() {
   return (
-    <span
-      className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] bg-[var(--color-surface-sunken)] px-2 py-0.5 rounded-full"
-      aria-label="Private — only you and your planner see this"
-    >
+    <span className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] bg-[var(--color-surface-sunken)] px-2 py-0.5 rounded-full">
       <svg
         width="10"
         height="12"
@@ -134,7 +139,7 @@ export function LockBadge() {
       >
         <path d="M8 5H7V3.5a2.5 2.5 0 0 0-5 0V5H1a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1ZM4 3.5a1 1 0 0 1 2 0V5H4V3.5Zm1 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
       </svg>
-      Only you &amp; your planner
+      Only you and your planner see this
     </span>
   );
 }
@@ -151,15 +156,7 @@ export function BalanceChip({
     paid: 'Paid',
     failed: 'Failed',
   };
-  return (
-    <span
-      className={`chip chip--${status}`}
-      role="status"
-      aria-label={`Balance status: ${labels[status]}`}
-    >
-      {labels[status]}
-    </span>
-  );
+  return <span className={`chip chip--${status}`}>{labels[status]}</span>;
 }
 
 export function Card({

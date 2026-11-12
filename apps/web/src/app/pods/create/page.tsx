@@ -122,16 +122,13 @@ export default function CreatePodPage() {
 
           <ul
             className="flex-1 overflow-y-auto divide-y divide-[var(--color-border)]"
-            role="listbox"
             aria-label="Contacts"
-            aria-multiselectable="true"
           >
             {filtered.map((c) => (
               <li key={c.id}>
                 <button
                   type="button"
-                  role="option"
-                  aria-selected={selected.includes(c.id)}
+                  aria-pressed={selected.includes(c.id)}
                   onClick={() => toggleContact(c.id)}
                   className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--color-surface-sunken)] min-h-[56px] transition-colors"
                 >

@@ -1,7 +1,7 @@
 'use client';
 // P3 — Subscription
 // $15/month plan details. Free trial and who pays are open (section 12).
-import { Button } from '@/components/ui';
+import { Button, useDocumentTitle } from '@/components/ui';
 
 const FEATURES = [
   'AI planner finds and suggests plans in NYC',
@@ -11,6 +11,7 @@ const FEATURES = [
 ];
 
 export default function SubscribePage() {
+  useDocumentTitle('Subscription');
   return (
     <main className="flex flex-col min-h-dvh px-6 pt-12 pb-8">
       <div className="mb-8">

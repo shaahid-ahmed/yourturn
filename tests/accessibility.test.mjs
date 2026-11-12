@@ -46,7 +46,7 @@ test('accessibility: the WCAG 2.2 additions at A/AA are each addressed', () => {
       `criterion ${id} missing`,
     );
   for (const row of table('Criterion map (WCAG 2.2 AA)'))
-    assert.match(row[1], /^(Designed|Fixed here|Open|App)$/, row[0]);
+    assert.match(row[1], /^(Designed|Fixed here|Verified|Open|App)$/, row[0]);
 });
 
 test('accessibility: fixes found by the audit stay in the design', () => {
@@ -67,7 +67,7 @@ test('accessibility: findings have an owner and a status', () => {
 });
 
 test('accessibility: no conformance claim before an app audit', () => {
-  assert.match(a11y, /app audit not performed/i);
+  assert.match(a11y, /device screen-reader pass not yet done/i);
   assert.match(a11y, /No conformance claim/);
   assert.doesNotMatch(
     a11y,

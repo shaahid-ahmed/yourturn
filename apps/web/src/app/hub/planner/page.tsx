@@ -88,12 +88,12 @@ export default function PrivatePlannerPage() {
       <ScreenHeader
         title="Private planner chat"
         back={<BackButton href="/home" />}
-        right={<LockBadge />}
       />
 
       <div className="px-4 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center gap-2">
+        <LockBadge />
         <span className="text-xs text-[var(--color-ink-muted)]">
-          Only you and your planner see this. Never visible to the pod.
+          Never visible to the pod.
         </span>
       </div>
 
