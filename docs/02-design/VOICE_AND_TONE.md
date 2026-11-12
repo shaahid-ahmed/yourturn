@@ -18,19 +18,19 @@ Mechanics: sentence case for headings and buttons; buttons name the action ("App
 
 Banned outright — any instance blocks release:
 
-| Pattern                               | Example of what is banned                               | Use instead                                                  |
-| ------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------ |
-| Guilt / obligation                    | "You've let your friends down", "Sam is waiting on you" | "It's your turn when you're ready."                          |
-| Loss framing                          | "Don't lose your spot", "You'll miss out"               | "You can join the next one."                                 |
-| Countdown panic                       | "Only 2 hours left to pick!"                            | "There's no deadline for this."                              |
-| Streak anxiety                        | "You broke your 5-month streak"                         | _(no streaks exist)_                                         |
-| Confirm-shaming                       | "No thanks, I don't care about my friends"              | "Cancel"                                                     |
-| Fake scarcity / social proof          | "3 circles like yours booked today"                     | _(omit)_                                                     |
-| Ranking or scoring people             | "Your closest friend is Jo", "Connection score 0.42"    | _(never shown)_                                              |
-| Drift as a warning about people       | "Your friendship with Priya is failing"                 | *(gated — see Positive host suggestions below; not for real members until Q-002 is resolved)* |
-| Implying a result that is unverified  | "Booked!", "Payment complete", "Reserved"               | See money strings below                                      |
-| Blaming the user for a system failure | "You did something wrong"                               | "Something went wrong on our side. Nothing was changed."     |
-| Asking why someone paused or left     | "Tell us why you're pausing"                            | _(no reason is ever requested)_                              |
+| Pattern                               | Example of what is banned                               | Use instead                                                                                   |
+| ------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Guilt / obligation                    | "You've let your friends down", "Sam is waiting on you" | "It's your turn when you're ready."                                                           |
+| Loss framing                          | "Don't lose your spot", "You'll miss out"               | "You can join the next one."                                                                  |
+| Countdown panic                       | "Only 2 hours left to pick!"                            | "There's no deadline for this."                                                               |
+| Streak anxiety                        | "You broke your 5-month streak"                         | _(no streaks exist)_                                                                          |
+| Confirm-shaming                       | "No thanks, I don't care about my friends"              | "Cancel"                                                                                      |
+| Fake scarcity / social proof          | "3 circles like yours booked today"                     | _(omit)_                                                                                      |
+| Ranking or scoring people             | "Your closest friend is Jo", "Connection score 0.42"    | _(never shown)_                                                                               |
+| Drift as a warning about people       | "Your friendship with Priya is failing"                 | _(gated — see Positive host suggestions below; not for real members until Q-002 is resolved)_ |
+| Implying a result that is unverified  | "Booked!", "Payment complete", "Reserved"               | See money strings below                                                                       |
+| Blaming the user for a system failure | "You did something wrong"                               | "Something went wrong on our side. Nothing was changed."                                      |
+| Asking why someone paused or left     | "Tell us why you're pausing"                            | _(no reason is ever requested)_                                                               |
 
 Also banned: dark-pattern microcopy (hidden cancellation wording, pre-checked consent labels, "recommended" badges that steer a choice), and any string that names who has not agreed to an amount.
 
