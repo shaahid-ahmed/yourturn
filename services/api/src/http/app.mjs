@@ -6,7 +6,7 @@
  * contract. Errors use the contract `Error` / `PaymentGateError` shapes.
  * The payment gate stays closed: settlement payments answer 409.
  */
-import { createHash, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,7 +15,9 @@ import Fastify from 'fastify';
 import fastifyCookie from '@fastify/cookie';
 
 import { openDatabase, migrate } from '../db/database.mjs';
-import { searchEvents, getEventDetail } from '../catalog.mjs';
+import { searchEvents, getEventDetail, listTags } from '../catalog.mjs';
+import { matchContacts } from '../pods.mjs';
+import { ConstraintVault } from '../vault.mjs';
 import {
   requestPhoneCode,
   createSession,
@@ -180,9 +182,72 @@ function toContractEvent(evt) {
 }
 
 /**
- * @param {{ db?: any }} [options]
+ * Assemble the contract CurrentUser for an active user.
+ * @param {any} database
+ * @param {any} vault
+ * @param {string} userId
  */
-export function buildApp({ db } = {}) {
+function currentUser(database, vault, userId) {
+  const user = database
+    .prepare('SELECT * FROM app_user WHERE user_id = ? AND deleted_at IS NULL')
+    .get(userId);
+  if (!user) {
+    const err = /** @type {any} */ (new Error('no such user'));
+    err.code = 'not_found';
+    throw err;
+  }
+  const interests = database
+    .prepare('SELECT tag FROM user_interest WHERE user_id = ? ORDER BY tag')
+    .all(userId)
+    .map((r) => r.tag);
+  const perms = database
+    .prepare('SELECT contacts, notifications, calendar FROM permission_status WHERE user_id = ?')
+    .get(userId) ?? { contacts: 'not_asked', notifications: 'not_asked', calendar: 'not_asked' };
+  let hasLimits = false;
+  try {
+    vault.readAs(userId, userId);
+    hasLimits = true;
+  } catch {
+    hasLimits = false;
+  }
+  const calendar = database
+    .prepare("SELECT 1 AS one FROM calendar_account WHERE user_id = ? AND status = 'connected'")
+    .get(userId);
+  const paypal = database
+    .prepare("SELECT 1 AS one FROM paypal_link WHERE user_id = ? AND status = 'linked'")
+    .get(userId);
+  return {
+    userId: user.user_id,
+    firstName: user.first_name,
+    photoUrl: user.photo_url,
+    bio: user.bio,
+    phone: user.phone,
+    interests,
+    onboarding: {
+      basics: user.first_name !== 'Member',
+      interests: interests.length > 0,
+      privateLimits: hasLimits,
+      calendar: Boolean(calendar),
+      paypal: Boolean(paypal),
+      permissions: Boolean(
+        database.prepare('SELECT 1 AS one FROM permission_status WHERE user_id = ?').get(userId),
+      ),
+    },
+    permissions: {
+      contacts: perms.contacts,
+      notifications: perms.notifications,
+      calendar: perms.calendar,
+    },
+    paypalLinked: Boolean(paypal),
+  };
+}
+
+/**
+ * @param {{ db?: any, vaultKey?: string }} [options] vaultKey is 64 hex chars;
+ * a random key is generated when omitted, so private limits do not survive
+ * a restart. Production must load a persistent key.
+ */
+export function buildApp({ db, vaultKey } = {}) {
   const database = db ?? (() => {
     const fresh = openDatabase(':memory:');
     migrate(fresh);
@@ -190,6 +255,9 @@ export function buildApp({ db } = {}) {
   })();
   const app = Fastify({ logger: false });
   app.register(fastifyCookie);
+  const vault = new ConstraintVault({
+    masterKey: vaultKey ?? randomBytes(32).toString('hex'),
+  });
   errorHandler(app, database);
 
   const spec = loadSpec();
@@ -261,6 +329,103 @@ export function buildApp({ db } = {}) {
       err.code = 'payment_gate_blocked';
       throw err;
     },
+    getCurrentUser: async ({ userId }) => currentUser(database, vault, userId),
+    updateOwnProfile: async ({ req, userId }) => {
+      const patch = req.body ?? {};
+      const sets = [];
+      const vals = [];
+      if (patch.firstName !== undefined) {
+        sets.push('first_name = ?');
+        vals.push(patch.firstName);
+      }
+      if (patch.bio !== undefined) {
+        sets.push('bio = ?');
+        vals.push(patch.bio);
+      }
+      if (patch.photoUrl !== undefined) {
+        sets.push('photo_url = ?');
+        vals.push(patch.photoUrl);
+      }
+      if (sets.length) {
+        database
+          .prepare(`UPDATE app_user SET ${sets.join(', ')} WHERE user_id = ?`)
+          .run(...vals, userId);
+      }
+      if (patch.interests !== undefined) {
+        database.prepare('DELETE FROM user_interest WHERE user_id = ?').run(userId);
+        const add = database.prepare('INSERT INTO user_interest (user_id, tag) VALUES (?, ?)');
+        for (const tag of patch.interests) add.run(userId, tag);
+      }
+      return currentUser(database, vault, userId);
+    },
+    deleteOwnAccount: async ({ reply, userId }) => {
+      const owed = database
+        .prepare('SELECT COALESCE(SUM(amount_cents), 0) AS t FROM ledger_entry WHERE debtor_user_id = ?')
+        .get(userId).t;
+      const owedTo = database
+        .prepare('SELECT COALESCE(SUM(amount_cents), 0) AS t FROM ledger_entry WHERE creditor_user_id = ?')
+        .get(userId).t;
+      if (owed - owedTo !== 0) {
+        const err = /** @type {any} */ (new Error('balances are still open; settle them first'));
+        err.code = 'open_balances';
+        throw err;
+      }
+      const now = new Date().toISOString();
+      database.prepare('UPDATE app_user SET deleted_at = ? WHERE user_id = ?').run(now, userId);
+      database.prepare('UPDATE session SET ended_at = ? WHERE user_id = ? AND ended_at IS NULL').run(now, userId);
+      vault.forget(userId);
+      reply.code(204);
+      return;
+    },
+    getOwnPrivateLimits: async ({ userId }) => {
+      let stored = null;
+      try {
+        stored = vault.readAs(userId, userId);
+      } catch {
+        stored = null;
+      }
+      if (!stored) {
+        const user = database
+          .prepare('SELECT created_at FROM app_user WHERE user_id = ?')
+          .get(userId);
+        return {
+          budgetPerHangoutCents: null,
+          dietaryNeeds: [],
+          dislikes: [],
+          maxTravelMinutes: null,
+          updatedAt: user.created_at,
+        };
+      }
+      return stored;
+    },
+    setOwnPrivateLimits: async ({ req, userId }) => {
+      const stored = { ...req.body, updatedAt: new Date().toISOString() };
+      vault.put(userId, stored);
+      return stored;
+    },
+    setOwnPermissionStatus: async ({ req, userId }) => {
+      const perms = req.body;
+      database
+        .prepare(
+          `INSERT INTO permission_status (user_id, contacts, notifications, calendar, updated_at)
+           VALUES (?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET
+           contacts = excluded.contacts, notifications = excluded.notifications,
+           calendar = excluded.calendar, updated_at = excluded.updated_at`,
+        )
+        .run(userId, perms.contacts, perms.notifications, perms.calendar, new Date().toISOString());
+      return currentUser(database, vault, userId).permissions;
+    },
+    listInterests: async () => ({
+      listVersion: 'demo-v1',
+      interests: listTags().map((tag) => ({
+        tag,
+        label: tag.replace(/-/g, ' ').replace(/^\w/, (c) => c.toUpperCase()),
+        category: tag === 'food' ? 'cuisine' : ['art', 'comedy', 'cultural'].includes(tag) ? 'event' : 'activity',
+      })),
+    }),
+    matchContacts: async ({ req, userId }) => ({
+      matches: matchContacts(database, { callerUserId: userId, phones: req.body.phones }),
+    }),
   };
 
   for (const [path, ops] of Object.entries(spec.paths)) {
