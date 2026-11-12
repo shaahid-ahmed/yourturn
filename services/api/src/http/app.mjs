@@ -37,7 +37,12 @@ import {
   startHangout,
   sandboxReceiptVerifier,
 } from '../subscription.mjs';
-import { getReadyCheck } from '../polls.mjs';
+import {
+  getPoll,
+  castOwnVote,
+  getReadyCheck,
+  setOwnReadyAnswer,
+} from '../polls.mjs';
 import { getBooking } from '../booking.mjs';
 import {
   listOwnPods,
@@ -89,6 +94,9 @@ const STATUS_BY_CODE = {
   open_balances: 409,
   split_already_confirmed: 409,
   subscription_required: 409,
+  poll_closed: 409,
+  wrong_hangout_state: 409,
+  option_unknown: 404,
   rate_limited: 429,
 };
 
@@ -971,6 +979,34 @@ export function buildApp({ db, vaultKey, publicOrigin, receiptVerifier } = {}) {
     },
     getHangout: async ({ params, userId }) =>
       toContractHangout(database, params.hangoutId, params.podId, userId),
+    getPoll: async ({ params, userId }) =>
+      getPoll(database, {
+        podId: params.podId,
+        hangoutId: params.hangoutId,
+        pollId: params.pollId,
+        userId,
+      }),
+    castOwnVote: async ({ req, params, userId }) => {
+      const now = new Date().toISOString();
+      return castOwnVote(database, {
+        podId: params.podId,
+        hangoutId: params.hangoutId,
+        pollId: params.pollId,
+        userId,
+        optionId: req.body.optionId,
+        at: now,
+      });
+    },
+    setOwnReadyAnswer: async ({ req, params, userId }) => {
+      const now = new Date().toISOString();
+      return setOwnReadyAnswer(database, {
+        podId: params.podId,
+        hangoutId: params.hangoutId,
+        userId,
+        answer: req.body.answer,
+        at: now,
+      });
+    },
   };
 
   for (const [path, ops] of Object.entries(spec.paths)) {
