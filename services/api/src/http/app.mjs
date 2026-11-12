@@ -89,7 +89,11 @@ function deref(node, root, seen = []) {
 
 let cachedSpec = /** @type {any} */ (null);
 function loadSpec() {
-  if (!cachedSpec) cachedSpec = deref(JSON.parse(readFileSync(SPEC_PATH, 'utf8')), JSON.parse(readFileSync(SPEC_PATH, 'utf8')));
+  if (!cachedSpec)
+    cachedSpec = deref(
+      JSON.parse(readFileSync(SPEC_PATH, 'utf8')),
+      JSON.parse(readFileSync(SPEC_PATH, 'utf8')),
+    );
   return cachedSpec;
 }
 
@@ -104,7 +108,10 @@ function errorHandler(app, db) {
       const op = req.routeOptions?.config?.operation;
       const responses = op ? op.responses : {};
       const status = responses && responses['422'] ? 422 : 400;
-      console.error(`[http] ${req.method} ${req.url} validation`, err.validation);
+      console.error(
+        `[http] ${req.method} ${req.url} validation`,
+        err.validation,
+      );
       return reply.code(status).send();
     }
     const code = typeof err.code === 'string' ? err.code : null;
@@ -116,7 +123,9 @@ function errorHandler(app, db) {
     }
     req.log.error(err);
     console.error(`[http] ${req.method} ${req.url}`, err);
-    return reply.code(500).send({ code: 'internal_error', message: 'unexpected error' });
+    return reply
+      .code(500)
+      .send({ code: 'internal_error', message: 'unexpected error' });
   });
   app.setNotFoundHandler((req, reply) => {
     reply.code(404).send({ code: 'not_found', message: 'no such route' });
@@ -201,8 +210,14 @@ function currentUser(database, vault, userId) {
     .all(userId)
     .map((r) => r.tag);
   const perms = database
-    .prepare('SELECT contacts, notifications, calendar FROM permission_status WHERE user_id = ?')
-    .get(userId) ?? { contacts: 'not_asked', notifications: 'not_asked', calendar: 'not_asked' };
+    .prepare(
+      'SELECT contacts, notifications, calendar FROM permission_status WHERE user_id = ?',
+    )
+    .get(userId) ?? {
+    contacts: 'not_asked',
+    notifications: 'not_asked',
+    calendar: 'not_asked',
+  };
   let hasLimits = false;
   try {
     vault.readAs(userId, userId);
@@ -211,10 +226,14 @@ function currentUser(database, vault, userId) {
     hasLimits = false;
   }
   const calendar = database
-    .prepare("SELECT 1 AS one FROM calendar_account WHERE user_id = ? AND status = 'connected'")
+    .prepare(
+      "SELECT 1 AS one FROM calendar_account WHERE user_id = ? AND status = 'connected'",
+    )
     .get(userId);
   const paypal = database
-    .prepare("SELECT 1 AS one FROM paypal_link WHERE user_id = ? AND status = 'linked'")
+    .prepare(
+      "SELECT 1 AS one FROM paypal_link WHERE user_id = ? AND status = 'linked'",
+    )
     .get(userId);
   return {
     userId: user.user_id,
@@ -230,7 +249,9 @@ function currentUser(database, vault, userId) {
       calendar: Boolean(calendar),
       paypal: Boolean(paypal),
       permissions: Boolean(
-        database.prepare('SELECT 1 AS one FROM permission_status WHERE user_id = ?').get(userId),
+        database
+          .prepare('SELECT 1 AS one FROM permission_status WHERE user_id = ?')
+          .get(userId),
       ),
     },
     permissions: {
@@ -248,11 +269,13 @@ function currentUser(database, vault, userId) {
  * a restart. Production must load a persistent key.
  */
 export function buildApp({ db, vaultKey } = {}) {
-  const database = db ?? (() => {
-    const fresh = openDatabase(':memory:');
-    migrate(fresh);
-    return fresh;
-  })();
+  const database =
+    db ??
+    (() => {
+      const fresh = openDatabase(':memory:');
+      migrate(fresh);
+      return fresh;
+    })();
   const app = Fastify({ logger: false });
   app.register(fastifyCookie);
   const vault = new ConstraintVault({
@@ -271,13 +294,21 @@ export function buildApp({ db, vaultKey } = {}) {
         maxCents: q.maxPriceCents,
         borough: q.neighborhood,
       }).filter((e) => {
-        if (q.q && !`${e.title} ${e.description}`.toLowerCase().includes(String(q.q).toLowerCase()))
+        if (
+          q.q &&
+          !`${e.title} ${e.description}`
+            .toLowerCase()
+            .includes(String(q.q).toLowerCase())
+        )
           return false;
         if (q.from && e.startsAt < q.from) return false;
         if (q.to && e.startsAt > q.to) return false;
         return true;
       });
-      return { events: events.slice(0, 50).map(toContractEvent), nextCursor: null };
+      return {
+        events: events.slice(0, 50).map(toContractEvent),
+        nextCursor: null,
+      };
     },
     getEvent: async ({ params }) => {
       const evt = getEventDetail(params.eventId);
@@ -300,7 +331,9 @@ export function buildApp({ db, vaultKey } = {}) {
         code: req.body.code,
       });
       if (!session) {
-        const err = /** @type {any} */ (new Error('the code is wrong or the challenge expired'));
+        const err = /** @type {any} */ (
+          new Error('the code is wrong or the challenge expired')
+        );
         err.code = 'phone_code_invalid';
         throw err;
       }
@@ -324,7 +357,9 @@ export function buildApp({ db, vaultKey } = {}) {
     },
     createSettlementPayment: async () => {
       const err = /** @type {any} */ (
-        new Error('the payment gate is closed: no human money-flow approval recorded')
+        new Error(
+          'the payment gate is closed: no human money-flow approval recorded',
+        )
       );
       err.code = 'payment_gate_blocked';
       throw err;
@@ -352,27 +387,43 @@ export function buildApp({ db, vaultKey } = {}) {
           .run(...vals, userId);
       }
       if (patch.interests !== undefined) {
-        database.prepare('DELETE FROM user_interest WHERE user_id = ?').run(userId);
-        const add = database.prepare('INSERT INTO user_interest (user_id, tag) VALUES (?, ?)');
+        database
+          .prepare('DELETE FROM user_interest WHERE user_id = ?')
+          .run(userId);
+        const add = database.prepare(
+          'INSERT INTO user_interest (user_id, tag) VALUES (?, ?)',
+        );
         for (const tag of patch.interests) add.run(userId, tag);
       }
       return currentUser(database, vault, userId);
     },
     deleteOwnAccount: async ({ reply, userId }) => {
       const owed = database
-        .prepare('SELECT COALESCE(SUM(amount_cents), 0) AS t FROM ledger_entry WHERE debtor_user_id = ?')
+        .prepare(
+          'SELECT COALESCE(SUM(amount_cents), 0) AS t FROM ledger_entry WHERE debtor_user_id = ?',
+        )
         .get(userId).t;
       const owedTo = database
-        .prepare('SELECT COALESCE(SUM(amount_cents), 0) AS t FROM ledger_entry WHERE creditor_user_id = ?')
+        .prepare(
+          'SELECT COALESCE(SUM(amount_cents), 0) AS t FROM ledger_entry WHERE creditor_user_id = ?',
+        )
         .get(userId).t;
       if (owed - owedTo !== 0) {
-        const err = /** @type {any} */ (new Error('balances are still open; settle them first'));
+        const err = /** @type {any} */ (
+          new Error('balances are still open; settle them first')
+        );
         err.code = 'open_balances';
         throw err;
       }
       const now = new Date().toISOString();
-      database.prepare('UPDATE app_user SET deleted_at = ? WHERE user_id = ?').run(now, userId);
-      database.prepare('UPDATE session SET ended_at = ? WHERE user_id = ? AND ended_at IS NULL').run(now, userId);
+      database
+        .prepare('UPDATE app_user SET deleted_at = ? WHERE user_id = ?')
+        .run(now, userId);
+      database
+        .prepare(
+          'UPDATE session SET ended_at = ? WHERE user_id = ? AND ended_at IS NULL',
+        )
+        .run(now, userId);
       vault.forget(userId);
       reply.code(204);
       return;
@@ -412,7 +463,13 @@ export function buildApp({ db, vaultKey } = {}) {
            contacts = excluded.contacts, notifications = excluded.notifications,
            calendar = excluded.calendar, updated_at = excluded.updated_at`,
         )
-        .run(userId, perms.contacts, perms.notifications, perms.calendar, new Date().toISOString());
+        .run(
+          userId,
+          perms.contacts,
+          perms.notifications,
+          perms.calendar,
+          new Date().toISOString(),
+        );
       return currentUser(database, vault, userId).permissions;
     },
     listInterests: async () => ({
@@ -420,11 +477,19 @@ export function buildApp({ db, vaultKey } = {}) {
       interests: listTags().map((tag) => ({
         tag,
         label: tag.replace(/-/g, ' ').replace(/^\w/, (c) => c.toUpperCase()),
-        category: tag === 'food' ? 'cuisine' : ['art', 'comedy', 'cultural'].includes(tag) ? 'event' : 'activity',
+        category:
+          tag === 'food'
+            ? 'cuisine'
+            : ['art', 'comedy', 'cultural'].includes(tag)
+              ? 'event'
+              : 'activity',
       })),
     }),
     matchContacts: async ({ req, userId }) => ({
-      matches: matchContacts(database, { callerUserId: userId, phones: req.body.phones }),
+      matches: matchContacts(database, {
+        callerUserId: userId,
+        phones: req.body.phones,
+      }),
     }),
   };
 
@@ -443,26 +508,34 @@ export function buildApp({ db, vaultKey } = {}) {
         url,
         config: { operation: op },
         schema: {
-          body:
-            /** @type {any} */ (op).requestBody?.content?.['application/json']?.schema,
+          body: /** @type {any} */ (op).requestBody?.content?.[
+            'application/json'
+          ]?.schema,
           querystring: /** @type {any} */ (op).parameters
             ? {
                 type: 'object',
                 properties: Object.fromEntries(
-                  /** @type {any[]} */ (/** @type {any} */ (op).parameters ?? [])
+                  /** @type {any[]} */ (
+                    /** @type {any} */ (op).parameters ?? []
+                  )
                     .filter((p) => p.in === 'query')
-                    .map((p) => [p.name, p.schema ?? {}])),
+                    .map((p) => [p.name, p.schema ?? {}]),
+                ),
               }
             : undefined,
           headers: /** @type {any} */ (op).parameters
             ? {
                 type: 'object',
                 properties: Object.fromEntries(
-                  /** @type {any[]} */ (/** @type {any} */ (op).parameters ?? [])
+                  /** @type {any[]} */ (
+                    /** @type {any} */ (op).parameters ?? []
+                  )
                     .filter((p) => p.in === 'header')
                     .map((p) => [p.name.toLowerCase(), p.schema ?? {}]),
                 ),
-                required: /** @type {any[]} */ (/** @type {any} */ (op).parameters ?? [])
+                required: /** @type {any[]} */ (
+                  /** @type {any} */ (op).parameters ?? []
+                )
                   .filter((p) => p.in === 'header' && p.required)
                   .map((p) => p.name.toLowerCase()),
               }
@@ -471,9 +544,12 @@ export function buildApp({ db, vaultKey } = {}) {
             ? {
                 type: 'object',
                 properties: Object.fromEntries(
-                  /** @type {any[]} */ (/** @type {any} */ (op).parameters ?? [])
+                  /** @type {any[]} */ (
+                    /** @type {any} */ (op).parameters ?? []
+                  )
                     .filter((p) => p.in === 'path')
-                    .map((p) => [p.name, p.schema ?? {}])),
+                    .map((p) => [p.name, p.schema ?? {}]),
+                ),
               }
             : undefined,
           response: okSchema ? { [okCode]: okSchema } : undefined,
@@ -495,10 +571,17 @@ export function buildApp({ db, vaultKey } = {}) {
               typeof presented === 'string'
                 ? createHash('sha256').update(presented, 'utf8').digest()
                 : null;
-            if (!actual || actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+            if (
+              !actual ||
+              actual.length !== expected.length ||
+              !timingSafeEqual(actual, expected)
+            ) {
               return reply
                 .code(403)
-                .send({ code: 'csrf_rejected', message: 'missing or wrong CSRF token' });
+                .send({
+                  code: 'csrf_rejected',
+                  message: 'missing or wrong CSRF token',
+                });
             }
           }
         },
@@ -506,10 +589,24 @@ export function buildApp({ db, vaultKey } = {}) {
           if (!handler) {
             return reply
               .code(500)
-              .send({ code: 'internal_error', message: `unwired operation ${operationId}` });
+              .send({
+                code: 'internal_error',
+                message: `unwired operation ${operationId}`,
+              });
           }
-          const result = await handler({ db: database, req, reply, params: req.params, userId: req.userId });
-          if (!reply.sent && reply.statusCode === 200 && okCode && okCode !== '200') {
+          const result = await handler({
+            db: database,
+            req,
+            reply,
+            params: req.params,
+            userId: req.userId,
+          });
+          if (
+            !reply.sent &&
+            reply.statusCode === 200 &&
+            okCode &&
+            okCode !== '200'
+          ) {
             reply.code(Number(okCode));
           }
           return reply.send(result);

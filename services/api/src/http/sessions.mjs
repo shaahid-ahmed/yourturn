@@ -40,7 +40,9 @@ function digest(value) {
 export function requestPhoneCode(db, { phone, at }) {
   const now = at ?? new Date().toISOString();
   const row = db
-    .prepare('SELECT user_id, synthetic FROM app_user WHERE phone = ? AND deleted_at IS NULL')
+    .prepare(
+      'SELECT user_id, synthetic FROM app_user WHERE phone = ? AND deleted_at IS NULL',
+    )
     .get(phone);
   if (!row || row.synthetic !== 1) {
     throw new SessionError(
@@ -68,12 +70,13 @@ export function createSession(db, { challengeId, code, at }) {
     .get(challengeId);
   if (!row || row.consumed_at || row.expires_at <= now) return null;
   if (digest(code) !== row.code_digest) return null;
-  db.prepare('UPDATE phone_challenge SET consumed_at = ? WHERE challenge_id = ?').run(
-    now,
-    challengeId,
-  );
+  db.prepare(
+    'UPDATE phone_challenge SET consumed_at = ? WHERE challenge_id = ?',
+  ).run(now, challengeId);
   let user = db
-    .prepare('SELECT user_id FROM app_user WHERE phone = ? AND deleted_at IS NULL')
+    .prepare(
+      'SELECT user_id FROM app_user WHERE phone = ? AND deleted_at IS NULL',
+    )
     .get(row.phone);
   let isNewUser = false;
   if (!user) {
@@ -98,10 +101,9 @@ export function createSession(db, { challengeId, code, at }) {
  * @param {string} sessionId
  */
 export function endSession(db, sessionId) {
-  db.prepare('UPDATE session SET ended_at = ? WHERE session_id = ? AND ended_at IS NULL').run(
-    new Date().toISOString(),
-    sessionId,
-  );
+  db.prepare(
+    'UPDATE session SET ended_at = ? WHERE session_id = ? AND ended_at IS NULL',
+  ).run(new Date().toISOString(), sessionId);
 }
 
 /**

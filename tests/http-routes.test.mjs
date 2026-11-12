@@ -86,15 +86,25 @@ test('tracer: authenticated routes refuse anonymous callers', async () => {
 test('wave2: the signed-in user reads and updates their profile', async () => {
   const { app, db } = signedApp();
   const headers = await signIn(app);
-  const me = await app.inject({ method: 'GET', url: '/api/v1/me', headers: { cookie: headers.cookie } });
+  const me = await app.inject({
+    method: 'GET',
+    url: '/api/v1/me',
+    headers: { cookie: headers.cookie },
+  });
   assert.equal(me.statusCode, 200);
   const body = me.json();
   assert.equal(body.userId, 'u-1');
   assert.equal(body.phone, '+15550001111');
   assert.equal(body.paypalLinked, false);
   const updated = await app.inject({
-    method: 'PATCH', url: '/api/v1/me', headers,
-    payload: { firstName: 'Sam', bio: 'Bowling enjoyer', interests: ['active', 'food'] },
+    method: 'PATCH',
+    url: '/api/v1/me',
+    headers,
+    payload: {
+      firstName: 'Sam',
+      bio: 'Bowling enjoyer',
+      interests: ['active', 'food'],
+    },
   });
   assert.equal(updated.statusCode, 200);
   assert.equal(updated.json().bio, 'Bowling enjoyer');
@@ -104,16 +114,31 @@ test('wave2: the signed-in user reads and updates their profile', async () => {
 test('wave2: private limits round-trip and stay owner-only', async () => {
   const { app } = signedApp();
   const headers = await signIn(app);
-  const before = await app.inject({ method: 'GET', url: '/api/v1/me/private-limits', headers: { cookie: headers.cookie } });
+  const before = await app.inject({
+    method: 'GET',
+    url: '/api/v1/me/private-limits',
+    headers: { cookie: headers.cookie },
+  });
   assert.equal(before.statusCode, 200);
   assert.deepEqual(before.json().dietaryNeeds, []);
   const saved = await app.inject({
-    method: 'PUT', url: '/api/v1/me/private-limits', headers,
-    payload: { budgetPerHangoutCents: 2500, dietaryNeeds: ['vegetarian'], dislikes: ['nightlife'], maxTravelMinutes: 45 },
+    method: 'PUT',
+    url: '/api/v1/me/private-limits',
+    headers,
+    payload: {
+      budgetPerHangoutCents: 2500,
+      dietaryNeeds: ['vegetarian'],
+      dislikes: ['nightlife'],
+      maxTravelMinutes: 45,
+    },
   });
   assert.equal(saved.statusCode, 200);
   assert.equal(saved.json().budgetPerHangoutCents, 2500);
-  const after = await app.inject({ method: 'GET', url: '/api/v1/me/private-limits', headers: { cookie: headers.cookie } });
+  const after = await app.inject({
+    method: 'GET',
+    url: '/api/v1/me/private-limits',
+    headers: { cookie: headers.cookie },
+  });
   assert.equal(after.json().maxTravelMinutes, 45);
 });
 
@@ -121,14 +146,28 @@ test('wave2: permissions and interests', async () => {
   const { app } = signedApp();
   const headers = await signIn(app);
   const perms = await app.inject({
-    method: 'PUT', url: '/api/v1/me/permissions', headers,
-    payload: { contacts: 'granted', notifications: 'denied', calendar: 'not_asked' },
+    method: 'PUT',
+    url: '/api/v1/me/permissions',
+    headers,
+    payload: {
+      contacts: 'granted',
+      notifications: 'denied',
+      calendar: 'not_asked',
+    },
   });
   assert.equal(perms.statusCode, 200);
   assert.equal(perms.json().contacts, 'granted');
-  const interests = await app.inject({ method: 'GET', url: '/api/v1/me', headers: { cookie: headers.cookie } });
+  const interests = await app.inject({
+    method: 'GET',
+    url: '/api/v1/me',
+    headers: { cookie: headers.cookie },
+  });
   assert.equal(interests.json().permissions.notifications, 'denied');
-  const tags = await app.inject({ method: 'GET', url: '/api/v1/interests', headers: { cookie: headers.cookie } });
+  const tags = await app.inject({
+    method: 'GET',
+    url: '/api/v1/interests',
+    headers: { cookie: headers.cookie },
+  });
   assert.equal(tags.statusCode, 200);
   assert.ok(tags.json().interests.length > 5);
 });
@@ -140,17 +179,27 @@ test('wave2: contact matching finds only granted, seeded members', async () => {
   ).run('+15550002222');
   const headers = await signIn(app);
   const ungranted = await app.inject({
-    method: 'POST', url: '/api/v1/contacts/matches', headers,
+    method: 'POST',
+    url: '/api/v1/contacts/matches',
+    headers,
     payload: { phones: ['+15550002222'] },
   });
   assert.equal(ungranted.statusCode, 200);
   assert.deepEqual(ungranted.json().matches, []);
   await app.inject({
-    method: 'PUT', url: '/api/v1/me/permissions', headers,
-    payload: { contacts: 'granted', notifications: 'not_asked', calendar: 'not_asked' },
+    method: 'PUT',
+    url: '/api/v1/me/permissions',
+    headers,
+    payload: {
+      contacts: 'granted',
+      notifications: 'not_asked',
+      calendar: 'not_asked',
+    },
   });
   const matched = await app.inject({
-    method: 'POST', url: '/api/v1/contacts/matches', headers,
+    method: 'POST',
+    url: '/api/v1/contacts/matches',
+    headers,
     payload: { phones: ['+15550002222', '+19998887777'] },
   });
   assert.equal(matched.statusCode, 200);
@@ -162,8 +211,16 @@ test('wave2: contact matching finds only granted, seeded members', async () => {
 test('wave2: deleting the account ends the session', async () => {
   const { app } = signedApp();
   const headers = await signIn(app);
-  const del = await app.inject({ method: 'DELETE', url: '/api/v1/me', headers });
+  const del = await app.inject({
+    method: 'DELETE',
+    url: '/api/v1/me',
+    headers,
+  });
   assert.equal(del.statusCode, 204);
-  const me = await app.inject({ method: 'GET', url: '/api/v1/me', headers: { cookie: headers.cookie } });
+  const me = await app.inject({
+    method: 'GET',
+    url: '/api/v1/me',
+    headers: { cookie: headers.cookie },
+  });
   assert.equal(me.statusCode, 401);
 });
