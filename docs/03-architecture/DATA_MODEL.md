@@ -84,5 +84,6 @@ The kind names match the US-005 IOU ledger (PR #51) plus `adjustment`, so the du
 
 1. Migration 1 creates the core schema. It is applied with `migrate(db)` and tested on a scratch file in the system temp directory: apply, reopen, re-run as a no-op, `integrity_check` and `foreign_key_check`.
 2. Migration 2 (US-008) adds `ready_check` (one per hangout, with its closing time) and `reminder_sent` (append-only; one row per (kind, reference, member), so a reminder job never sends the same private reminder twice).
-3. **Never edit a shipped migration.** Add the next version; versions must be 1, 2, 3 … with no gaps, and a database newer than the code refuses to open.
-4. Seeding synthetic demo data into this schema is US-301 / `infra/seed`, not this task.
+3. Migration 3 (US-012) rebuilds `reminder_sent` to add the `booking_confirmation_needed` kind. SQLite cannot alter a CHECK, so the rows are copied into a new table and the append-only triggers are recreated.
+4. **Never edit a shipped migration.** Add the next version; versions must be 1, 2, 3 … with no gaps, and a database newer than the code refuses to open.
+5. Seeding synthetic demo data into this schema is US-301 / `infra/seed`, not this task.
