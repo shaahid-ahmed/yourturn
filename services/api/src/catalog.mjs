@@ -5,6 +5,7 @@ import { join, dirname } from 'path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
+/** @returns {any} */
 function loadCatalog() {
   const path = join(__dirname, '../../../tests/fixtures/nyc-catalog.json');
   return require(path);
@@ -20,7 +21,7 @@ const DOW_ORDER = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
  * @param {string}   [opts.borough]    exact borough match
  * @param {string}   [opts.dow]        day-of-week abbreviation: mon/tue/…/sun
  * @param {number}   [opts.groupSize]  must fit within venue maxGroupSize
- * @returns {object[]} matching events, each with venue embedded
+ * @returns {any[]} matching events, each with venue embedded
  */
 export function searchEvents(opts = {}) {
   const { tags, dietary, maxCents, borough, dow, groupSize } = opts;
@@ -68,7 +69,7 @@ export function searchEvents(opts = {}) {
  * @param {string}   [opts.borough]
  * @param {string}   [opts.dow]
  * @param {number}   [opts.groupSize]
- * @returns {object[]} matching venues
+ * @returns {any[]} matching venues
  */
 export function searchVenues(opts = {}) {
   const { tags, dietary, maxCentsPerPerson, borough, dow, groupSize } = opts;
@@ -104,7 +105,7 @@ export function searchVenues(opts = {}) {
 
 /**
  * @param {string} eventId
- * @returns {object|null} event with venue embedded, or null
+ * @returns {any} event with venue embedded, or null
  */
 export function getEventDetail(eventId) {
   const catalog = loadCatalog();
@@ -116,7 +117,7 @@ export function getEventDetail(eventId) {
 
 /**
  * @param {string} venueId
- * @returns {object|null} venue or null
+ * @returns {any} venue or null
  */
 export function getVenueDetail(venueId) {
   const catalog = loadCatalog();
@@ -142,7 +143,7 @@ export function getCatalogMeta() {
  * @param {string}   [pod.dow]         preferred day-of-week
  * @param {string[]} [pod.tags]        activity preferences
  * @param {number}   [limit=3]
- * @returns {object[]} up to `limit` events with venue embedded, sorted by cost asc
+ * @returns {any[]} up to `limit` events with venue embedded, sorted by cost asc
  */
 export function suggestToPod(pod, limit = 3) {
   const { size, dietary = [], budgetCents, dow, tags } = pod;
