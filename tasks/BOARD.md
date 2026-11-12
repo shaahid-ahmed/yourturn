@@ -49,7 +49,7 @@ The user requested initial scaffold creation across the tree. Orchestrator coord
 | UN-012 | Phase 4: demo — four holds, one capture, and the void replay                | demo-pitch           | UN-010                                                         | Under three minutes; the void replay shows no names; a recorded backup exists; every privacy claim in the pitch is the architectural one, not a cryptographic one                                                                                                                                                                                                                      | Human: Alan — Unclaimed           | —         |
 | UN-013 | ∥ Phase 1: phone-first design system and flows                              | product-designer     | UN-001                                                         | Mobile-first tokens, type scale and spacing; flows drawn at a phone width for onboarding, group view, the approve-your-share step and the void/"didn't come together" state; every screen specifies loading, empty, error and refused; WCAG 2.2 AA touch-target and contrast rules stated                                                                                              | Human: Alan — Unclaimed           | —         |
 | UN-014 | Phase 2: public HTTPS tunnel and return/cancel URLs for device testing      | sre-devops           | UN-004                                                         | A phone cannot reach 127.0.0.1: PayPal approval leaves the browser and returns via return_url, so a public HTTPS return/cancel pair is required to approve a share on a handset. Tunnel or hosted origin documented, URLs configurable per environment, and the same origin reused for the webhook listener (which also needs public HTTPS). A return-URL hit remains proof of nothing | ARCHIVED (ADR 0007) — was Shaahid | —         |
-| US-006 | ∥ Phase 2: member-to-member PayPal settlement                               | payments             | US-005, Q-010                                                  | Sandbox payment between two personal accounts; verified webhook before any effect; idempotency bound to target and body; failure returns to owed; gate closed                                                                                                                                                                                                                          | Human: Alan — Unclaimed           | —         |
+| US-006 | RETIRED (ADR 0008) — Phase 2: member-to-member PayPal settlement            | payments             | US-005, Q-010                                                  | Retired: payer pays the venue directly, app tracks IOUs only (ADR 0008); Q-010 closed by product choice; settle-up happens outside the app                                                                                                                                                                                                                                             | ARCHIVED (ADR 0008) — was Alan    | —         |
 
 Rows RV-002–RV-011 are review findings for the owners, not new product scope. They use the `RV-` prefix because `tests/repository.test.mjs` pins the task count at 42 YT rows. Orchestrator may renumber them as YT rows and update that test (Lane S).
 
@@ -156,12 +156,13 @@ Bootstrap artifact tasks closed on verified review, hosted CI and human main pro
 | US-016 | Phase 3: independent backend review | reviewer | US-005, US-006, US-015 | Non-author review; money branches covered; findings with owners | Human: Shaahid — DONE | review doc BACKEND_REVIEW_US016.md; gate 100/100, money lines 100, 4 findings fixed in review |
 | US-017 | Phase 3: deployment and recovery | sre-devops | US-016 | One-command run, health, reset, restart recovery, backup recording | Human: Shaahid — DONE | server.mjs + dev:api + health/reset/recovery/backup, 4 tests green |
 
+| US-015 | Phase 2: security and legal review | security, legal-compliance | US-001, US-006 | Threat model, webhook handling, authorization matrix, P2P transfer questions; unresolved risks block the gate | Human: Rohan — DONE (ADR 0008: P2P/webhook items moot — no handler, no transfer; threat model, authz matrix, abuse cases landed) | [#62](https://github.com/shaahid-ahmed/yourturn/pull/62) `security/us-015-security-legal-review` |
+
 ## BLOCKED
 
-| ID     | Title                              | Role                       | Depends on                                                                | Acceptance criteria                                                                                                                                                | Claimed by                                                                              | Branch/PR                                                                                        |
-| ------ | ---------------------------------- | -------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| US-015 | Phase 2: security and legal review | security, legal-compliance | US-001, US-006                                                            | Threat model, webhook handling, authorization matrix, P2P transfer questions; unresolved risks block the gate                                                      | Human: Rohan — security, legal-compliance, claude-opus-us015 (partial; waits on US-006) | [#62](https://github.com/shaahid-ahmed/yourturn/pull/62) `security/us-015-security-legal-review` |
-| YT-007 | Phase 0: human release gate        | orchestrator               | YT-001, YT-002, YT-003, YT-004, YT-005, YT-006; real GitHub owners/remote | Independent review, green hosted CI, initial rules/stack ratification, protected main/merge approval and explicit human Phase 1 authorization; resolve Q-001–Q-005 | Human: Shaahid — Unclaimed                                                              | —                                                                                                |
+| ID     | Title                       | Role         | Depends on                                                                | Acceptance criteria                                                                                                                                                | Claimed by                 | Branch/PR |
+| ------ | --------------------------- | ------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------- | --------- |
+| YT-007 | Phase 0: human release gate | orchestrator | YT-001, YT-002, YT-003, YT-004, YT-005, YT-006; real GitHub owners/remote | Independent review, green hosted CI, initial rules/stack ratification, protected main/merge approval and explicit human Phase 1 authorization; resolve Q-001–Q-005 | Human: Shaahid — Unclaimed | —         |
 
 ## LATER
 
@@ -275,27 +276,27 @@ Source of truth for every screen: `docs/02-design/source/Unspoken Experience and
 
 Shaahid holds no tasks in this lane. Each task below now belongs to the person named, and path ownership for a task moves with it. US-016 (independent backend review) is Vid's because he authors no core backend; Rohan reviews Vid's US-003, US-011 and US-012 instead.
 
-| ID     | Task                                            | Now owned by |
-| ------ | ----------------------------------------------- | ------------ |
-| US-001 | API contract for the UX-spec flow               | Rohan        |
-| US-002 | Data model and state machine                    | Rohan        |
-| US-003 | Subscription receipt verification               | Vid          |
-| US-004 | Pods, invites, contacts matching                | Rohan        |
-| US-005 | IOU ledger and balances                         | Alan         |
-| US-006 | Member-to-member PayPal settlement              | Alan         |
-| US-007 | Pod chat and real-time delivery                 | Rohan        |
-| US-008 | Polls and ready check                           | Rohan        |
-| US-009 | Planner: private budget checks and stretch asks | Alan         |
-| US-010 | NYC events catalog and detail                   | Alan         |
-| US-011 | Calendar integration                            | Vid          |
-| US-012 | Booking confirmation and reminders              | Vid          |
-| US-013 | Notifications and push                          | Rohan        |
-| US-014 | Public HTTPS origin                             | Vid          |
-| US-015 | Security and legal review                       | Rohan        |
-| US-016 | Independent backend review                      | Vid          |
-| US-017 | Deployment and recovery                         | Vid          |
-| US-018 | README and handoff                              | Vid          |
-| US-019 | HTTP routes for the contract                    | Rohan        |
+| ID     | Task                                                                 | Now owned by |
+| ------ | -------------------------------------------------------------------- | ------------ |
+| US-001 | API contract for the UX-spec flow                                    | Rohan        |
+| US-002 | Data model and state machine                                         | Rohan        |
+| US-003 | Subscription receipt verification                                    | Vid          |
+| US-004 | Pods, invites, contacts matching                                     | Rohan        |
+| US-005 | IOU ledger and balances                                              | Alan         |
+| US-006 | Member-to-member PayPal settlement — RETIRED (ADR 0008, never built) | —            |
+| US-007 | Pod chat and real-time delivery                                      | Rohan        |
+| US-008 | Polls and ready check                                                | Rohan        |
+| US-009 | Planner: private budget checks and stretch asks                      | Alan         |
+| US-010 | NYC events catalog and detail                                        | Alan         |
+| US-011 | Calendar integration                                                 | Vid          |
+| US-012 | Booking confirmation and reminders                                   | Vid          |
+| US-013 | Notifications and push                                               | Rohan        |
+| US-014 | Public HTTPS origin                                                  | Vid          |
+| US-015 | Security and legal review                                            | Rohan        |
+| US-016 | Independent backend review                                           | Vid          |
+| US-017 | Deployment and recovery                                              | Vid          |
+| US-018 | README and handoff                                                   | Vid          |
+| US-019 | HTTP routes for the contract                                         | Rohan        |
 
 Owns `services/api/**`, `docs/03-architecture/**`, `docs/decisions/**`, `docs/05-risk/THREAT_MODEL.md`, `docs/05-risk/COMPLIANCE.md`, `docs/06-ops/**`, `infra/**`, `tests/**` except fixtures, `.github/**`, `packages/shared/**`, `tasks/**`, `README.md`.
 
@@ -310,20 +311,20 @@ Owns `services/api/**`, `docs/03-architecture/**`, `docs/decisions/**`, `docs/05
 
 **Phase 2 — build (`∥` where marked)**
 
-| ID     | Task                                              | Acceptance criteria                                                                                                                                                                                                                                                                                                          |
-| ------ | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| US-005 | ∥ IOU ledger and balances                         | Balances derived from the ledger only; split sums exactly with the remainder rotating; `owed/pending/paid/failed` states; 100% branch coverage on money logic                                                                                                                                                                |
-| US-006 | ∥ Member-to-member PayPal settlement              | Sandbox payment between two personal accounts; verified webhook before any balance effect; idempotency bound to target and body; a failed payment returns the balance to `owed`; **gate closed** until Q-010 is answered                                                                                                     |
-| US-007 | ∥ Pod chat and real-time delivery                 | Message storage, pagination, push delivery, structured planner cards; the planner is a participant; no chat content in any other pod's response                                                                                                                                                                              |
-| US-008 | ∥ Polls and ready check                           | Activity shortlist, time poll, ready check; votes visible **with names**; a tie breaks on lower cost then earlier start; poll closing and reminder jobs                                                                                                                                                                      |
-| US-009 | ∥ Planner: private budget checks and stretch asks | Per-member check returns only feasible/not-feasible; a stretch ask goes to that member's private chat only; the group never sees the ask or the answer                                                                                                                                                                       |
-| US-010 | ∥ NYC events catalog and detail                   | Seeded catalog, search and filters (date, price, category, neighborhood), event detail, suggest-to-pod; every fixture visibly synthetic                                                                                                                                                                                      |
-| US-011 | ∥ Calendar integration                            | Google Calendar connect, free/busy-only reads, consent per calendar; event write after booking; **no calendar content visible to other members**                                                                                                                                                                             |
-| US-012 | Booking confirmation and reminders                | Simulated booking for seeded venues, labelled in the UI; confirmation required before anything is booked; reminder jobs; `BOOKING_FAILED` path offers the next-best plan                                                                                                                                                     |
-| US-013 | Notifications and push                            | Per-type switches (polls, reminders, private asks, money); private reminders never in pod chat; no notification is sent without Content + Behavioral approval                                                                                                                                                                |
-| US-014 | Public HTTPS origin                               | A phone cannot reach 127.0.0.1; one public HTTPS origin for return/cancel URLs and the webhook listener; URLs configurable per environment                                                                                                                                                                                   |
-| US-015 | Security and legal review                         | Threat model, webhook signature handling, authorization matrix, pooled-money and P2P transfer questions; unresolved risks block the gate                                                                                                                                                                                     |
-| US-019 | HTTP routes for the contract                      | Every openapi.json operation is served under /api/v1; requests and responses are validated against the contract; errors match the contract Error / PaymentGateError shapes; createSettlementPayment stays gated closed (409 payment_gate_blocked). Fastify per ADR 0002, which is not ratified yet (YT-007, held by Shaahid) |
+| ID     | Task                                                    | Acceptance criteria                                                                                                                                                                                                                                                                                                          |
+| ------ | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| US-005 | ∥ IOU ledger and balances                               | Balances derived from the ledger only; split sums exactly with the remainder rotating; `owed/pending/paid/failed` states; 100% branch coverage on money logic                                                                                                                                                                |
+| US-006 | RETIRED (ADR 0008) — Member-to-member PayPal settlement | Payer pays the venue directly; app tracks IOUs only; settle-up happens outside the app; settlement route stays 409                                                                                                                                                                                                           |
+| US-007 | ∥ Pod chat and real-time delivery                       | Message storage, pagination, push delivery, structured planner cards; the planner is a participant; no chat content in any other pod's response                                                                                                                                                                              |
+| US-008 | ∥ Polls and ready check                                 | Activity shortlist, time poll, ready check; votes visible **with names**; a tie breaks on lower cost then earlier start; poll closing and reminder jobs                                                                                                                                                                      |
+| US-009 | ∥ Planner: private budget checks and stretch asks       | Per-member check returns only feasible/not-feasible; a stretch ask goes to that member's private chat only; the group never sees the ask or the answer                                                                                                                                                                       |
+| US-010 | ∥ NYC events catalog and detail                         | Seeded catalog, search and filters (date, price, category, neighborhood), event detail, suggest-to-pod; every fixture visibly synthetic                                                                                                                                                                                      |
+| US-011 | ∥ Calendar integration                                  | Google Calendar connect, free/busy-only reads, consent per calendar; event write after booking; **no calendar content visible to other members**                                                                                                                                                                             |
+| US-012 | Booking confirmation and reminders                      | Simulated booking for seeded venues, labelled in the UI; confirmation required before anything is booked; reminder jobs; `BOOKING_FAILED` path offers the next-best plan                                                                                                                                                     |
+| US-013 | Notifications and push                                  | Per-type switches (polls, reminders, private asks, money); private reminders never in pod chat; no notification is sent without Content + Behavioral approval                                                                                                                                                                |
+| US-014 | Public HTTPS origin                                     | A phone cannot reach 127.0.0.1; one public HTTPS origin for return/cancel URLs and the webhook listener; URLs configurable per environment                                                                                                                                                                                   |
+| US-015 | Security and legal review                               | Threat model, webhook signature handling, authorization matrix, pooled-money and P2P transfer questions; unresolved risks block the gate                                                                                                                                                                                     |
+| US-019 | HTTP routes for the contract                            | Every openapi.json operation is served under /api/v1; requests and responses are validated against the contract; errors match the contract Error / PaymentGateError shapes; createSettlementPayment stays gated closed (409 payment_gate_blocked). Fastify per ADR 0002, which is not ratified yet (YT-007, held by Shaahid) |
 
 **Phase 3–4**
 
@@ -382,9 +383,9 @@ Owns `tests/e2e/**`, `tests/fixtures/**` (except the designer's source folder), 
 
 ## Open questions (current)
 
-- **Q-010 @payments @legal-compliance:** which PayPal product can pay a **personal** sandbox account, and does it work? The spec's own decision 4 offers an alternative: the payer pays the venue however the venue takes payment, and the app only tracks IOUs. If that alternative is chosen, no venue payment exists and Q-010 closes.
+- **Q-010 CLOSED (ADR 0008):** the spec alternative was chosen — the payer pays the venue directly however the venue accepts, the app tracks IOUs only. No PayPal product is integrated, so the question is answered by product choice. Reopens only with a human-directed real money flow (with Q-012 and US-006 together).
 - **Q-011 @human @product-manager:** decisions 1, 2, 4, 5, 6, 14 and 16 from the spec. These block backend code, not design. **Update (US-001, Nov 12):** the draft contract marks each as `x-open-decision` with a stated default — #6 only the payer confirms, #14 the split card is shared among that hangout's yes-members while running balances stay private to their parties, #5 a volunteer payer. Backend work proceeds against those defaults; the decisions remain open (see the ADR 0007 update).
-- **Q-012 @legal-compliance @payments:** the spec removes the platform-holds-funds design. A member-to-member transfer is a different legal question from a pooled pot, and it needs its own review.
+- **Q-012 CLOSED as moot (ADR 0008):** no in-app transfer exists, so there is no money-transmission question. Residual app-store/privacy items are ordinary app matters.
 - **Q-014 @human @product-manager (open):** three spec decisions have no default in the contract or code (listed in API.md): what happens when a pod drops below 3 members (decision 11, part); the payer dropping out after booking (decision 19; spec recommends the pod picks a new payer); and the single-yes double-check (decision 17; spec recommends the planner checks before going ahead). Today one yes moves the ready check on like any other count.
 - **Q-013 @privacy @behavioral-scientist:** the spec makes votes and yeses visible with names, which reverses the count-only rule. That is now a deliberate product choice and must be written down as such, not left as a contradiction.
 
@@ -417,6 +418,7 @@ Done:
   How to verify: `make check`; `node --test tests/authz-matrix.test.mjs`.
   Risks / gotchas: this review approves nothing. Each S- and L-item blocks the payment gate or a reachable deployment as listed. Stacked on US-013 (PR #61).
   Next step: Payments builds US-006 to requirements 1–7, then this task resumes to review that handler. Legal/counsel answers L-1 to L-5. Tech Writer places the disclaimer.
+  ADR 0008 resolution (2026-11-12): US-006 will never be built — payer pays the venue directly, app tracks IOUs only. Webhook review (S-1) and P2P items (L-1–L-5) are moot; Q-010/Q-012 closed. US-015 DONE on that basis.
 
 ### Handoff US-013: backend (Rohan, claude-opus-us013) → Content Designer + Behavioral Scientist (Alan) / Reviewer
 
