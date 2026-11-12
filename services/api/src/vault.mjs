@@ -114,8 +114,24 @@ export class ConstraintVault {
     return this.get(ownerId);
   }
 
-  /** @param {string} memberId */
-  forget(memberId) {
+  /** @param {string} memberId */ forget(memberId) {
     this.#records.delete(memberId);
+  }
+
+  /**
+   * Restore a sealed record read back from durable storage (e.g. after a
+   * restart wiped this process's memory). The record is only trusted after
+   * a successful decrypt with this instance's master key.
+   * @param {string} memberId
+   * @param {{ ciphertext: string, iv: string, tag: string }} record
+   */
+  load(memberId, record) {
+    this.decryptRecord(memberId, record);
+    this.#records.set(memberId, {
+      ...record,
+      memberId,
+      keyId: this.keyId,
+      updatedAt: new Date().toISOString(),
+    });
   }
 }
