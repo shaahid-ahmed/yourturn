@@ -81,7 +81,6 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 | US-304 | Phase 4: demo script and rehearsal | demo-pitch | US-302, US-202 | Under three minutes; honest labels; recorded backup | Human: Shaahid — IN PROGRESS | — |
 | US-305 | Phase 4: final QA and regression pass | qa | US-303, US-016, US-204 | Full suite green on CI; no unresolved release blocker | Human: Shaahid — IN PROGRESS | — |
 
-| US-014 | Phase 2: public HTTPS origin | sre-devops | US-006 | One public HTTPS origin for return/cancel and webhooks; configurable per environment | Human: Shaahid — IN PROGRESS | — |
 | US-016 | Phase 3: independent backend review | reviewer | US-005, US-006, US-015 | Non-author review; money branches covered; findings with owners | Human: Shaahid — IN PROGRESS | — |
 | US-017 | Phase 3: deployment and recovery | sre-devops | US-016 | One-command run, health, reset, restart recovery, backup recording | Human: Shaahid — IN PROGRESS | — |
 
@@ -154,6 +153,8 @@ Bootstrap artifact tasks closed on verified review, hosted CI and human main pro
 | US-012 | Phase 2: booking confirmation and reminders | backend | US-008, US-013 | Simulated booking labelled in the UI; confirmation before booking; reminder jobs; BOOKING_FAILED offers next-best | Human: Vid — DONE, merged #68 | [#68](https://github.com/shaahid-ahmed/yourturn/pull/68) `backend/us-012-booking` |
 
 | US-018 | Phase 4: README and handoff | tech-writer | US-017 | Fresh-clone instructions exercised; exact limitations; no scaffold-as-product claims | Human: Shaahid — DONE | README + STATUS rewritten; fresh-clone exercised (clone → npm ci → make check 344/344) |
+
+| US-014 | Phase 2: public HTTPS origin | sre-devops | US-006 | One public HTTPS origin for return/cancel and webhooks; configurable per environment | Human: Shaahid — DONE, merged #69 | [#69](https://github.com/shaahid-ahmed/yourturn/pull/69) `backend/us-014-public-origin` |
 
 ## BLOCKED
 
