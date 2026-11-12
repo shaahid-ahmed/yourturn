@@ -1,8 +1,7 @@
 'use client';
-// P14 — Settle up
-// For someone who owes: who they owe, how much, Pay with PayPal.
-// For the payer: each person who owes them and status (owed/pending/paid/failed).
-// Reminders are private per person — never go to the pod chat.
+// P24, Settle up. Review, confirm, result only after the server confirms.
+// The gate is closed in this demo: nothing fires, nothing marks paid.
+// Shares are displayed from the ledger, never computed here.
 import { useState } from 'react';
 import {
   Button,
@@ -12,6 +11,13 @@ import {
   BalanceChip,
   SandboxBanner,
 } from '@/components/ui';
+import {
+  LEDGER,
+  ME_ID,
+  formatMoney,
+  personName,
+  podById,
+} from '@/lib/heypal/seed';
 
 type BalanceStatus = 'owed' | 'pending' | 'paid' | 'failed';
 
@@ -23,48 +29,41 @@ interface Balance {
   status: BalanceStatus;
 }
 
-// Synthetic demo — viewing as "You" who owes Sam
-const MY_BALANCES: Balance[] = [
-  {
-    memberId: 'sam',
-    memberName: 'Sam',
-    hangout: 'Brooklyn Bowl · Nov 20',
-    amountCents: 3500,
-    status: 'owed',
-  },
-];
+// Derived from the ledger: lines where Janani owes the payer.
+const MY_BALANCES: Balance[] = LEDGER.filter(
+  (l) => l.status === 'open' && l.paidById !== ME_ID,
+).map((l) => ({
+  memberId: l.paidById,
+  memberName: personName(l.paidById),
+  hangout: `${l.planTitle} · ${podById(l.podId).name}`,
+  amountCents: l.eachCents,
+  status: 'owed',
+}));
 
-// What payer (Sam) sees — others owe Sam
-const PAYER_BALANCES: Balance[] = [
-  {
-    memberId: 'priya',
-    memberName: 'Priya',
-    hangout: 'Brooklyn Bowl · Nov 20',
-    amountCents: 3500,
-    status: 'paid',
-  },
-  {
-    memberId: 'me',
-    memberName: 'You',
-    hangout: 'Brooklyn Bowl · Nov 20',
-    amountCents: 3500,
-    status: 'owed',
-  },
-];
+// What the payer (Janani, for Jazz night) sees.
+const PAYER_BALANCES: Balance[] = LEDGER.filter(
+  (l) => l.status === 'open' && l.paidById === ME_ID,
+).flatMap((l) =>
+  l.memberIds
+    .filter((id) => id !== ME_ID)
+    .map((id) => ({
+      memberId: id,
+      memberName: personName(id),
+      hangout: `${l.planTitle} · ${podById(l.podId).name}`,
+      amountCents: l.eachCents,
+      status: 'owed' as BalanceStatus,
+    })),
+);
 
 const PAYMENT_GATE_OPEN = false;
-
-function formatDollars(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 export default function SettleUpPage() {
   const [myBalances, setMyBalances] = useState(MY_BALANCES);
   const [view, setView] = useState<'owe' | 'owed'>('owe');
 
-  // The payment gate is closed until US-006 (Q-010, Q-012). When it opens,
-  // a tap moves the balance to pending, and only PayPal's verified webhook
-  // may move it to paid. Nothing here ever marks a balance paid by itself.
+  // The payment gate is closed in this demo. When it opens, a tap moves
+  // the balance to pending, and only the verified confirmation may move
+  // it to paid. Nothing here ever marks a balance paid by itself.
   function initiatePayment(memberId: string) {
     if (!PAYMENT_GATE_OPEN) return;
     setMyBalances((prev) =>
@@ -77,21 +76,20 @@ export default function SettleUpPage() {
   }
 
   return (
-    <main className="flex flex-col min-h-dvh">
+    <main data-surface="white" className="flex flex-col min-h-dvh">
       <SandboxBanner />
       <ScreenHeader title="Settle up" back={<BackButton href="/money" />} />
 
-      {/* View toggle */}
-      <div className="flex border-b border-[var(--color-border)]">
+      <div className="flex border-b border-[var(--sky)]">
         {(['owe', 'owed'] as const).map((v) => (
           <button
             key={v}
             onClick={() => setView(v)}
             aria-pressed={view === v}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${
+            className={`flex-1 py-3 text-sm font-medium ${
               view === v
-                ? 'text-[var(--color-accent)] border-b-2 border-[var(--color-accent)]'
-                : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                ? 'text-[var(--ink)] border-b-2 border-[var(--deep)]'
+                : 'text-[var(--ink-muted)]'
             }`}
           >
             {v === 'owe' ? 'What I owe' : "What I'm owed"}
@@ -103,11 +101,11 @@ export default function SettleUpPage() {
         {view === 'owe' ? (
           myBalances.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-              <p className="text-lg font-semibold text-[var(--color-ink)]">
+              <p className="text-lg font-semibold text-[var(--ink)]">
                 All clear
               </p>
-              <p className="text-sm text-[var(--color-ink-muted)]">
-                You don't owe anyone right now.
+              <p className="text-sm text-[var(--ink-muted)]">
+                You do not owe anyone right now.
               </p>
             </div>
           ) : (
@@ -115,17 +113,17 @@ export default function SettleUpPage() {
               <Card key={b.memberId}>
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div>
-                    <p className="text-sm font-semibold text-[var(--color-ink)]">
+                    <p className="text-sm font-semibold text-[var(--ink)]">
                       You owe {b.memberName}
                     </p>
-                    <p className="text-xs text-[var(--color-ink-muted)]">
+                    <p className="text-[13px] text-[var(--ink-muted)]">
                       {b.hangout}
                     </p>
                   </div>
                   <BalanceChip status={b.status} />
                 </div>
-                <p className="text-xl font-bold text-[var(--color-ink)] mb-3">
-                  {formatDollars(b.amountCents)}
+                <p className="text-xl font-bold tabular text-[var(--ink)] mb-3">
+                  {formatMoney(b.amountCents)}
                 </p>
                 {b.status === 'owed' && (
                   <>
@@ -135,12 +133,12 @@ export default function SettleUpPage() {
                       aria-describedby={`gate-${b.memberId}`}
                       onClick={() => initiatePayment(b.memberId)}
                     >
-                      Pay with PayPal
+                      {`Pay ${formatMoney(b.amountCents)} to ${b.memberName}`}
                     </Button>
                     {!PAYMENT_GATE_OPEN && (
                       <p
                         id={`gate-${b.memberId}`}
-                        className="mt-2 text-sm text-[var(--color-ink-muted)]"
+                        className="mt-2 text-sm text-[var(--ink-muted)]"
                       >
                         Payments are off in this sandbox demo. Nothing is
                         charged, and your balance stays owed.
@@ -149,13 +147,13 @@ export default function SettleUpPage() {
                   </>
                 )}
                 {b.status === 'pending' && (
-                  <p className="text-sm text-[var(--color-ink-muted)]">
-                    Payment pending — waiting for PayPal confirmation…
+                  <p className="text-sm text-[var(--ink-muted)]">
+                    Payment pending. Waiting for PayPal confirmation.
                   </p>
                 )}
                 {b.status === 'paid' && (
                   <p className="text-sm text-[var(--color-status-paid)] font-medium">
-                    Paid ✓
+                    Paid
                   </p>
                 )}
                 {b.status === 'failed' && (
@@ -181,21 +179,21 @@ export default function SettleUpPage() {
               <Card key={b.memberId}>
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-semibold text-[var(--color-ink)]">
+                    <p className="text-sm font-semibold text-[var(--ink)]">
                       {b.memberName}
                     </p>
-                    <p className="text-xs text-[var(--color-ink-muted)]">
+                    <p className="text-[13px] text-[var(--ink-muted)]">
                       {b.hangout}
                     </p>
                   </div>
                   <BalanceChip status={b.status} />
                 </div>
-                <p className="text-lg font-bold text-[var(--color-ink)] mt-1">
-                  {formatDollars(b.amountCents)}
+                <p className="text-lg font-bold tabular text-[var(--ink)] mt-1">
+                  {formatMoney(b.amountCents)}
                 </p>
                 {b.status === 'owed' && (
-                  <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-                    Reminder sent privately to {b.memberName} — not to the pod
+                  <p className="mt-2 text-[13px] text-[var(--ink-muted)]">
+                    Reminder sent privately to {b.memberName}. Not to the pod
                     chat.
                   </p>
                 )}
