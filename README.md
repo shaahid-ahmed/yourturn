@@ -1,36 +1,37 @@
-# YourTurn
+# Unspoken (sandbox demo)
 
-Keep existing friend groups connected by sharing the work of hosting. The proposed product combines a rotating friendship fund, private reconnection suggestions and a host-approved venue plan.
+AI agents plan your friend group's hangouts without anyone having to say "I can't afford that." Built for a PayPal + AI hackathon. **Sandbox only: no real money moves, no live store billing, no production readiness.**
 
-**Current state: Phase 1 documentation authorized; runtime remains scaffold-only.** No circles API, authentication, database ledger, PayPal integration, AI graph, LLM copilot or booking exists yet. Product implementation and final contract freeze remain blocked on sandbox and policy decisions. Agents start at [AGENTS.md](AGENTS.md); humans see [tasks/STATUS.md](tasks/STATUS.md).
+## What is built (on `main`)
+
+- **Contract** (`docs/03-architecture/openapi.json`, v0.2.0-draft): 74 operations under `/api/v1`, pods, chat, polls, hangouts, balances, payments, calendar, subscription.
+- **Domain** (`services/api/src`): pods/invites, chat, polls/ready-check, IOU ledger + balances, NYC seeded catalog, subscriptions, calendar, booking, notifications, per-member vault. All TDD, integer cents, append-only ledger.
+- **HTTP layer** (`services/api/src/http`, landing in waves): spec-driven routes, session-cookie + CSRF auth, contract Error shapes, payment gate **closed** (`409 payment_gate_blocked`).
+- **App** (`apps/web`): Next.js phone-first UI, all 23 spec screens, design tokens, motion with reduced-motion equivalents, WCAG 2.2 AA app-stage audit (device screen-reader pass still outstanding).
 
 ## Run locally
 
-Prerequisites: Node 24 and npm 11; Make optional.
+Prerequisites: Node 24, npm 11. Fresh-clone verified (clone → `npm ci` → `make check` green).
 
 ```sh
-make install
-make check
-make seed
-make dev
+npm ci
+make check     # prettier + openapi lint + strict typecheck + all tests + secret scan
+make seed      # synthetic demo fixtures into ignored .local/
+make dev       # bootstrap status server on 127.0.0.1:3000 (infra only, no product routes)
 ```
 
-Equivalent commands are `npm ci`, `npm run check`, `npm run seed`, `npm run dev`. The server binds loopback port 3000 (`PORT=3001 make dev` changes it) and shows **setup status, not the product**. GET `/health` is an infrastructure check. Ctrl-C stops it. Seed writes only synthetic scaffold data to ignored `.local/demo-seed.json`.
+`npm test` runs the contract, domain, HTTP and accessibility suites (344 tests). The product HTTP app has no long-running server yet — routes are exercised via injection until US-019 lands fully.
 
-## Intended stack
+## Exact limitations (read before demoing)
 
-TypeScript/npm workspaces, planned Next.js + Tailwind web, Fastify API, SQLite local demo and TypeScript AI modules. [ADR 0002](docs/decisions/0002-stack.md) records the provisional choice. Bootstrap installs only development tooling; framework installation follows approved contracts.
-
-## Safety and compliance disclaimer
-
-Sandbox demonstration only; not a live financial service, legal assessment or production-ready system. No real funds or live PayPal credentials. The proposed pooled-fund, venue-payment and forfeiture arrangements are **not verified or approved**. Payments/Legal and the human must resolve them before any money-flow implementation. The red/green graph demo must use visibly synthetic people until privacy and behavioral approvals resolve real-user visibility. A score is not a validated measure of friendship. No actual venue booking or completed sandbox transaction is claimed.
+- **No real money.** The payment gate is closed: settlement answers `409`, no PayPal order/authorize/capture/void runs anywhere. The IOU ledger tracks balances between friends only.
+- **No real billing.** The $15 plan verifies against a local HMAC sandbox stand-in, never Apple/Google. No store purchase has been made.
+- **No inbound webhooks.** PayPal webhooks answer `401`; no signature verification runs, so no provider event can ever take effect.
+- **No public origin.** Return/cancel URLs and the webhook listener need public HTTPS (US-014 open); phones cannot reach `127.0.0.1`.
+- **Simulated booking.** "Booked" in the demo carries the notice label; no venue was contacted.
+- **Fixtures are synthetic.** Every person, price and schedule is fictional.
+- **Blocked on humans:** Q-010 (which PayPal product pays a personal account), Q-011 (six spec decisions incl. who pays the venue and who sees balances), device screen-reader pass, release gate YT-007.
 
 ## Collaborate
 
-Private GitHub repository: `shaahid-ahmed/yourturn`. The human approved bootstrap `10bc1d7` on `main`; hosted CI passed. Phase 1 drafting uses `orchestrator/phase-1-contracts`, not direct edits to main. CODEOWNERS activation and protected-branch settings remain separate work; no future main merge is authorized by the Phase 1 drafting request. See BOARD.md for blockers, dependencies and role claims.
-
-> Clone the repo, read `AGENTS.md`, take role `<role>`, and claim the next unclaimed task for that role on `tasks/BOARD.md`.
-
-## Demo link
-
-Not deployed. A demo URL and recorded backup will be added only after final human approval.
+Private repo `shaahid-ahmed/yourturn`. Four lanes: Shaahid (backend/money/infra), Alan (app/pods/AI), Vid (design/motion/a11y), Rohan (QA/fixtures/demo). Board: `tasks/BOARD.md` (CURRENT PLAN section). Rules: `agents/RULES.md`. Never edit another lane's paths — open a board row instead. Never merge to `main` without explicit human approval.
