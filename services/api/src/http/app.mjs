@@ -76,6 +76,15 @@ import {
   resolveSession,
   SessionError,
 } from './sessions.mjs';
+import {
+  listOwnCalendarAccounts as calListAccounts,
+  startCalendarConnect as calStartConnect,
+  disconnectCalendarAccount as calDisconnect,
+  setPlannerCalendarAccess as calSetPlannerAccess,
+  getOwnCalendar as calGetOwn,
+  addEventToOwnCalendar as calAddEvent,
+  NO_PROVIDER,
+} from '../calendar.mjs';
 
 const SPEC_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -524,7 +533,7 @@ function currentUser(database, vault, userId) {
 }
 
 /**
- * @param {{ db?: any, vaultKey?: string, publicOrigin?: string, receiptVerifier?: any, webhookKey?: string }} [options] vaultKey is 64 hex chars;
+ * @param {{ db?: any, vaultKey?: string, publicOrigin?: string, receiptVerifier?: any, webhookKey?: string, calendarProvider?: any, calendarStateKey?: string | Buffer }} [options] vaultKey is 64 hex chars;
  * a random key is generated when omitted, so private limits do not survive
  * a restart. Production must load a persistent key. publicOrigin is the
  * public HTTPS origin (US-014, e.g. a tunnel URL) used for invite links and
@@ -543,6 +552,8 @@ export function buildApp({
   publicOrigin,
   receiptVerifier,
   webhookKey,
+  calendarProvider,
+  calendarStateKey,
 } = {}) {
   const database =
     db ??
@@ -567,6 +578,10 @@ export function buildApp({
     webhookKey ??
     (process.env.UNSPOKEN_SANDBOX_WEBHOOK_KEY ||
       randomBytes(32).toString('hex'));
+  const calProvider = calendarProvider ?? NO_PROVIDER;
+  const calKey =
+    calendarStateKey ??
+    (process.env.UNSPOKEN_CALENDAR_STATE_KEY || randomBytes(32));
   errorHandler(app, database);
 
   const spec = loadSpec();
@@ -1132,6 +1147,69 @@ export function buildApp({
         duplicate: !row,
         effectsApplied: false,
       };
+    },
+
+    // ---- wave: calendar (US-019) -----------------------------------------
+
+    listOwnCalendarAccounts: async ({ userId }) =>
+      calListAccounts(database, { userId }),
+
+    startCalendarConnect: async ({ req, userId }) => {
+      const now = new Date().toISOString();
+      return calStartConnect({
+        userId,
+        at: now,
+        provider: calProvider,
+        stateKey: calKey,
+      });
+    },
+
+    disconnectCalendarAccount: async ({ params, reply, userId }) => {
+      calDisconnect(database, {
+        userId,
+        calendarAccountId: params.calendarAccountId,
+        provider: calProvider,
+      });
+      reply.code(204);
+      return;
+    },
+
+    setPlannerCalendarAccess: async ({ req, params, userId }) => {
+      const account = calSetPlannerAccess(database, {
+        userId,
+        calendarAccountId: params.calendarAccountId,
+        calendarId: params.calendarId,
+        plannerMayRead: req.body.plannerMayRead,
+      });
+      const cal = account.calendars.find(
+        (c) => c.calendarId === params.calendarId,
+      );
+      if (!cal) {
+        const err = /** @type {any} */ (new Error('calendar not found'));
+        err.code = 'not_found';
+        throw err;
+      }
+      return cal;
+    },
+
+    getOwnCalendar: async ({ req, userId }) => {
+      const q = req.query ?? {};
+      return calGetOwn(database, {
+        userId,
+        from: String(q.from),
+        to: String(q.to),
+        provider: calProvider,
+      });
+    },
+
+    addEventToOwnCalendar: async ({ req, reply, userId }) => {
+      calAddEvent(database, {
+        userId,
+        eventId: req.body.eventId,
+        provider: calProvider,
+      });
+      reply.code(204);
+      return;
     },
   };
 
