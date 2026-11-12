@@ -50,8 +50,20 @@ export function createHangout(db, { hangoutId, podId, actorUserId, at }) {
  * @returns {{ state: string, version: number }}
  */
 export function applyHangoutEvent(db, input) {
+  return inTransaction(db, () => applyHangoutEventInTransaction(db, input));
+}
+
+/**
+ * The same as applyHangoutEvent, for a caller that already holds a write
+ * transaction, so the state change commits together with its other writes.
+ *
+ * @param {DatabaseSync} db
+ * @param {Parameters<typeof applyHangoutEvent>[1]} input
+ * @returns {{ state: string, version: number }}
+ */
+export function applyHangoutEventInTransaction(db, input) {
   const { hangoutId, event, expectedVersion, actorUserId, at, guards } = input;
-  return inTransaction(db, () => {
+  {
     const row = /** @type {{ state: string, version: number } | undefined} */ (
       db
         .prepare('SELECT state, version FROM hangout WHERE hangout_id = ?')
@@ -79,7 +91,7 @@ export function applyHangoutEvent(db, input) {
       'INSERT INTO hangout_transition (hangout_id, seq, from_state, to_state, event, actor_user_id, at) VALUES (?, ?, ?, ?, ?, ?, ?)',
     ).run(hangoutId, seq, row.state, next, event, actorUserId, at);
     return { state: next, version };
-  });
+  }
 }
 
 /**
