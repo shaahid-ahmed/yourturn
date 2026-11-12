@@ -4,7 +4,8 @@
 import { useState } from 'react';
 import { EmptyState, Button } from '@/components/ui';
 
-type PodStage = 'none' | 'planning' | 'poll_open' | 'booking_pending' | 'payments_open';
+type PodStage =
+  'none' | 'planning' | 'poll_open' | 'booking_pending' | 'payments_open';
 
 interface DemoPod {
   id: string;
@@ -24,9 +25,27 @@ const STAGE_LABEL: Record<PodStage, string> = {
 
 // Synthetic demo pods
 const DEMO_PODS: DemoPod[] = [
-  { id: 'pod-1', name: 'Friday crew', memberCount: 4, stage: 'poll_open', hasPrivateDot: false },
-  { id: 'pod-2', name: 'Work pals', memberCount: 3, stage: 'planning', hasPrivateDot: true },
-  { id: 'pod-3', name: 'Cousins', memberCount: 5, stage: 'none', hasPrivateDot: false },
+  {
+    id: 'pod-1',
+    name: 'Friday crew',
+    memberCount: 4,
+    stage: 'poll_open',
+    hasPrivateDot: false,
+  },
+  {
+    id: 'pod-2',
+    name: 'Work pals',
+    memberCount: 3,
+    stage: 'planning',
+    hasPrivateDot: true,
+  },
+  {
+    id: 'pod-3',
+    name: 'Cousins',
+    memberCount: 5,
+    stage: 'none',
+    hasPrivateDot: false,
+  },
 ];
 
 // Approximate positions on a 390-wide canvas
@@ -49,7 +68,11 @@ export default function HomePage() {
             heading="Your first pod is waiting"
             body="A pod is a friend group of 3–8 people. Create one to start planning together."
             action={
-              <Button onClick={() => { window.location.href = '/pods/create'; }}>
+              <Button
+                onClick={() => {
+                  window.location.href = '/pods/create';
+                }}
+              >
                 Create a pod
               </Button>
             }
@@ -74,7 +97,12 @@ export default function HomePage() {
           <PodBubble
             key={pod.id}
             pod={pod}
-            position={BUBBLE_POSITIONS[i] ?? { top: `${20 + i * 25}%`, left: `${10 + i * 20}%` }}
+            position={
+              BUBBLE_POSITIONS[i] ?? {
+                top: `${20 + i * 25}%`,
+                left: `${10 + i * 20}%`,
+              }
+            }
           />
         ))}
       </section>
@@ -84,7 +112,13 @@ export default function HomePage() {
   );
 }
 
-function PodBubble({ pod, position }: { pod: DemoPod; position: { top: string; left: string } }) {
+function PodBubble({
+  pod,
+  position,
+}: {
+  pod: DemoPod;
+  position: { top: string; left: string };
+}) {
   const hasStage = pod.stage !== 'none';
   return (
     <a
@@ -111,10 +145,16 @@ function PodBubble({ pod, position }: { pod: DemoPod; position: { top: string; l
 
       {/* Label */}
       <div className="text-center max-w-[90px]">
-        <p className="text-xs font-medium text-[var(--color-ink)] truncate">{pod.name}</p>
-        <p className="text-xs text-[var(--color-ink-muted)]">{pod.memberCount} members</p>
+        <p className="text-xs font-medium text-[var(--color-ink)] truncate">
+          {pod.name}
+        </p>
+        <p className="text-xs text-[var(--color-ink-muted)]">
+          {pod.memberCount} members
+        </p>
         {hasStage && (
-          <p className="text-xs text-[var(--color-accent)] font-medium">{STAGE_LABEL[pod.stage]}</p>
+          <p className="text-xs text-[var(--color-accent)] font-medium">
+            {STAGE_LABEL[pod.stage]}
+          </p>
         )}
       </div>
     </a>
@@ -128,7 +168,16 @@ function PlusButton() {
       className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--color-accent)] text-white flex items-center justify-center shadow-xl hover:bg-[#174F76] active:scale-95 transition-all"
       aria-label="Create a new pod"
     >
-      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      >
         <path d="M12 5v14M5 12h14" />
       </svg>
     </a>
@@ -147,14 +196,16 @@ function HubBar() {
       aria-label="Hub navigation"
       className="flex items-center justify-around px-2 h-14 border-b border-[var(--color-border)] bg-[var(--color-surface)]"
     >
-      {items.map(item => (
+      {items.map((item) => (
         <a
           key={item.href}
           href={item.href}
           className="flex flex-col items-center gap-0.5 min-w-[44px] min-h-[44px] justify-center text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors"
           aria-label={item.label}
         >
-          <span aria-hidden="true" className="text-lg">{item.icon}</span>
+          <span aria-hidden="true" className="text-lg">
+            {item.icon}
+          </span>
           <span className="text-xs">{item.label}</span>
         </a>
       ))}

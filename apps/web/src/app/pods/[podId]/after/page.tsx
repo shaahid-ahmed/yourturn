@@ -5,12 +5,24 @@ import { useState } from 'react';
 import { Button, ScreenHeader, BackButton, Card } from '@/components/ui';
 
 const RATINGS = [
-  { value: 'loved', label: '❤️ Loved it', description: 'More like this, please' },
-  { value: 'fine', label: '👍 Fine', description: 'Was okay, no strong feeling' },
-  { value: 'not_for_me', label: '👎 Not for me', description: 'Skip this type next time' },
+  {
+    value: 'loved',
+    label: '❤️ Loved it',
+    description: 'More like this, please',
+  },
+  {
+    value: 'fine',
+    label: '👍 Fine',
+    description: 'Was okay, no strong feeling',
+  },
+  {
+    value: 'not_for_me',
+    label: '👎 Not for me',
+    description: 'Skip this type next time',
+  },
 ] as const;
 
-type Rating = typeof RATINGS[number]['value'];
+type Rating = (typeof RATINGS)[number]['value'];
 
 export default function AfterHangoutPage() {
   const [rating, setRating] = useState<Rating | null>(null);
@@ -27,16 +39,26 @@ export default function AfterHangoutPage() {
         {!submitted ? (
           <>
             <div>
-              <h2 className="text-xl font-bold text-[var(--color-ink)]">Brooklyn Bowl</h2>
-              <p className="text-sm text-[var(--color-ink-muted)]">Friday crew · Nov 20</p>
+              <h2 className="text-xl font-bold text-[var(--color-ink)]">
+                Brooklyn Bowl
+              </h2>
+              <p className="text-sm text-[var(--color-ink-muted)]">
+                Friday crew · Nov 20
+              </p>
             </div>
 
             <p className="text-sm text-[var(--color-ink-muted)]">
-              Your rating goes only to your planner so it can tune future suggestions. It is never shared with the pod or shown to other members.
+              Your rating goes only to your planner so it can tune future
+              suggestions. It is never shared with the pod or shown to other
+              members.
             </p>
 
-            <div className="flex flex-col gap-3" role="group" aria-label="Rate this hangout">
-              {RATINGS.map(r => (
+            <div
+              className="flex flex-col gap-3"
+              role="group"
+              aria-label="Rate this hangout"
+            >
+              {RATINGS.map((r) => (
                 <button
                   key={r.value}
                   type="button"
@@ -48,10 +70,16 @@ export default function AfterHangoutPage() {
                       : 'border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]'
                   }`}
                 >
-                  <span className="text-2xl" aria-hidden="true">{r.label.split(' ')[0]}</span>
+                  <span className="text-2xl" aria-hidden="true">
+                    {r.label.split(' ')[0]}
+                  </span>
                   <div>
-                    <p className="text-sm font-medium text-[var(--color-ink)]">{r.label.split(' ').slice(1).join(' ')}</p>
-                    <p className="text-xs text-[var(--color-ink-muted)]">{r.description}</p>
+                    <p className="text-sm font-medium text-[var(--color-ink)]">
+                      {r.label.split(' ').slice(1).join(' ')}
+                    </p>
+                    <p className="text-xs text-[var(--color-ink-muted)]">
+                      {r.description}
+                    </p>
                   </div>
                 </button>
               ))}
@@ -67,12 +95,21 @@ export default function AfterHangoutPage() {
           </>
         ) : (
           <Card className="flex flex-col items-center gap-4 py-8 text-center">
-            <span className="text-4xl" aria-hidden="true">✓</span>
-            <p className="text-lg font-semibold text-[var(--color-ink)]">Thanks!</p>
+            <span className="text-4xl" aria-hidden="true">
+              ✓
+            </span>
+            <p className="text-lg font-semibold text-[var(--color-ink)]">
+              Thanks!
+            </p>
             <p className="text-sm text-[var(--color-ink-muted)]">
               Your rating was sent to your planner only. The group won't see it.
             </p>
-            <Button variant="secondary" onClick={() => { window.location.href = '/home'; }}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                window.location.href = '/home';
+              }}
+            >
               Back to home
             </Button>
           </Card>

@@ -30,13 +30,13 @@ export default function CreatePodPage() {
   const [nameError, setNameError] = useState('');
   const [selError, setSelError] = useState('');
 
-  const filtered = DEMO_CONTACTS.filter(c =>
+  const filtered = DEMO_CONTACTS.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   function toggleContact(id: string) {
-    setSelected(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   }
 
@@ -72,17 +72,29 @@ export default function CreatePodPage() {
       <ScreenHeader
         title={step === 'pick' ? 'Create a pod' : 'Name your pod'}
         back={
-          step === 'pick'
-            ? <BackButton href="/home" />
-            : (
-              <button
-                className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)]"
-                onClick={() => setStep('pick')}
-                aria-label="Back to contact picker"
+          step === 'pick' ? (
+            <BackButton href="/home" />
+          ) : (
+            <button
+              className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)]"
+              onClick={() => setStep('pick')}
+              aria-label="Back to contact picker"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16l-6-6 6-6"/></svg>
-              </button>
-            )
+                <path d="M12 16l-6-6 6-6" />
+              </svg>
+            </button>
+          )
         }
       />
 
@@ -92,17 +104,29 @@ export default function CreatePodPage() {
             <Input
               label="Search contacts"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name"
             />
             <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
               {totalWithCreator} of 8 members selected (including you)
             </p>
-            {selError && <p className="mt-1 text-sm text-[var(--color-danger)]" role="alert">{selError}</p>}
+            {selError && (
+              <p
+                className="mt-1 text-sm text-[var(--color-danger)]"
+                role="alert"
+              >
+                {selError}
+              </p>
+            )}
           </div>
 
-          <ul className="flex-1 overflow-y-auto divide-y divide-[var(--color-border)]" role="listbox" aria-label="Contacts" aria-multiselectable="true">
-            {filtered.map(c => (
+          <ul
+            className="flex-1 overflow-y-auto divide-y divide-[var(--color-border)]"
+            role="listbox"
+            aria-label="Contacts"
+            aria-multiselectable="true"
+          >
+            {filtered.map((c) => (
               <li key={c.id}>
                 <button
                   type="button"
@@ -122,14 +146,26 @@ export default function CreatePodPage() {
                     {c.name[0]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[var(--color-ink)] truncate">{c.name}</p>
+                    <p className="text-sm font-medium text-[var(--color-ink)] truncate">
+                      {c.name}
+                    </p>
                     <p className="text-xs text-[var(--color-ink-muted)]">
                       {c.onApp ? 'On Unspoken' : 'Invite by link'}
                     </p>
                   </div>
                   {selected.includes(c.id) && (
-                    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 10l5 5 7-7"/>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      aria-hidden="true"
+                      fill="none"
+                      stroke="var(--color-accent)"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M4 10l5 5 7-7" />
                     </svg>
                   )}
                 </button>
@@ -143,33 +179,44 @@ export default function CreatePodPage() {
             </Button>
             <p className="mt-3 text-xs text-center text-[var(--color-ink-muted)]">
               Declined contacts? You can still{' '}
-              <button className="underline text-[var(--color-accent)]" onClick={() => { alert('Demo — invite link: unspoken.app/join/abc123'); }}>
+              <button
+                className="underline text-[var(--color-accent)]"
+                onClick={() => {
+                  alert('Demo — invite link: unspoken.app/join/abc123');
+                }}
+              >
                 share an invite link
-              </button>.
+              </button>
+              .
             </p>
           </div>
         </div>
       )}
 
       {step === 'name' && (
-        <form onSubmit={handleCreate} className="flex flex-col flex-1 px-4 pt-6 pb-8 gap-5">
+        <form
+          onSubmit={handleCreate}
+          className="flex flex-col flex-1 px-4 pt-6 pb-8 gap-5"
+        >
           <Input
             label="Pod name"
             value={podName}
-            onChange={e => setPodName(e.target.value)}
+            onChange={(e) => setPodName(e.target.value)}
             error={nameError}
             placeholder="Friday crew"
             autoFocus
           />
           <p className="text-sm text-[var(--color-ink-muted)]">
             {selected.length + 1} members: you
-            {selected.map(id => {
-              const c = DEMO_CONTACTS.find(x => x.id === id);
+            {selected.map((id) => {
+              const c = DEMO_CONTACTS.find((x) => x.id === id);
               return c ? `, ${c.name.split(' ')[0]}` : '';
             })}
           </p>
           <div className="mt-auto">
-            <Button fullWidth type="submit">Create pod</Button>
+            <Button fullWidth type="submit">
+              Create pod
+            </Button>
           </div>
         </form>
       )}

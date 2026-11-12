@@ -56,48 +56,62 @@ export default function MoneyPage() {
 
   return (
     <main className="flex flex-col min-h-dvh">
-      <ScreenHeader
-        title="Money"
-        back={<BackButton href="/home" />}
-      />
+      <ScreenHeader title="Money" back={<BackButton href="/home" />} />
 
       {/* Totals */}
       <div className="grid grid-cols-2 divide-x divide-[var(--color-border)] border-b border-[var(--color-border)]">
         <div className="px-4 py-4">
           <p className="text-xs text-[var(--color-ink-muted)] mb-1">You owe</p>
-          <p className="text-2xl font-bold text-[var(--color-ink)]">{formatDollars(totalOwe)}</p>
+          <p className="text-2xl font-bold text-[var(--color-ink)]">
+            {formatDollars(totalOwe)}
+          </p>
         </div>
         <div className="px-4 py-4">
-          <p className="text-xs text-[var(--color-ink-muted)] mb-1">You are owed</p>
-          <p className="text-2xl font-bold text-[var(--color-ink)]">{formatDollars(totalOwed)}</p>
+          <p className="text-xs text-[var(--color-ink-muted)] mb-1">
+            You are owed
+          </p>
+          <p className="text-2xl font-bold text-[var(--color-ink)]">
+            {formatDollars(totalOwed)}
+          </p>
         </div>
       </div>
 
       <p className="px-4 py-2 text-xs text-[var(--color-ink-muted)] border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-        Balances are computed from the append-only ledger. No amount is stored as a mutable sum.
+        Balances are computed from the append-only ledger. No amount is stored
+        as a mutable sum.
       </p>
 
       {/* List */}
       <div className="flex flex-col gap-3 px-4 py-5">
-        {BALANCES.map(b => (
+        {BALANCES.map((b) => (
           <a key={b.hangoutId} href="/money/settle" className="block">
             <Card className="hover:border-[var(--color-accent)] transition-colors">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-[var(--color-ink)]">{b.hangoutName}</p>
-                  <p className="text-xs text-[var(--color-ink-muted)]">{b.podName} · {b.date}</p>
+                  <p className="text-sm font-semibold text-[var(--color-ink)]">
+                    {b.hangoutName}
+                  </p>
+                  <p className="text-xs text-[var(--color-ink-muted)]">
+                    {b.podName} · {b.date}
+                  </p>
                 </div>
                 <BalanceChip status={b.status} />
               </div>
               <div className="mt-2 flex gap-4">
                 {b.youOwe !== null && (
-                  <p className="text-sm text-[var(--color-ink)]">You owe <strong>{formatDollars(b.youOwe)}</strong></p>
+                  <p className="text-sm text-[var(--color-ink)]">
+                    You owe <strong>{formatDollars(b.youOwe)}</strong>
+                  </p>
                 )}
                 {b.youAreOwed !== null && (
-                  <p className="text-sm text-[var(--color-ink)]">You are owed <strong>{formatDollars(b.youAreOwed)}</strong></p>
+                  <p className="text-sm text-[var(--color-ink)]">
+                    You are owed <strong>{formatDollars(b.youAreOwed)}</strong>
+                  </p>
                 )}
                 {b.youOwe === null && b.youAreOwed === null && (
-                  <p className="text-sm text-[var(--color-ink-muted)]">Settled</p>
+                  <p className="text-sm text-[var(--color-ink-muted)]">
+                    Settled
+                  </p>
                 )}
               </div>
             </Card>

@@ -34,12 +34,11 @@ export default function SplashPage() {
         >
           <circle cx="40" cy="40" r="36" stroke="white" strokeWidth="3" />
           <circle cx="40" cy="40" r="20" fill="white" opacity="0.15" />
-          <path
-            d="M28 40 Q40 24 52 40 Q40 56 28 40Z"
-            fill="white"
-          />
+          <path d="M28 40 Q40 24 52 40 Q40 56 28 40Z" fill="white" />
         </svg>
-        <span className="text-white text-2xl font-bold tracking-tight">Unspoken</span>
+        <span className="text-white text-2xl font-bold tracking-tight">
+          Unspoken
+        </span>
       </div>
     </main>
   );

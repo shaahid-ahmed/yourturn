@@ -21,7 +21,8 @@ export function Button({
   const base =
     'inline-flex items-center justify-center gap-2 rounded-lg font-medium text-base min-h-[44px] px-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   const variants: Record<ButtonVariant, string> = {
-    primary: 'bg-[var(--color-accent)] text-white hover:bg-[#174F76] active:bg-[#0F3A5A]',
+    primary:
+      'bg-[var(--color-accent)] text-white hover:bg-[#174F76] active:bg-[#0F3A5A]',
     secondary:
       'border border-[var(--color-border)] bg-transparent text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)] active:bg-[#E0E8EE]',
     destructive:
@@ -47,21 +48,36 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-export function Input({ label, hint, error, id, className = '', ...rest }: InputProps) {
+export function Input({
+  label,
+  hint,
+  error,
+  id,
+  className = '',
+  ...rest
+}: InputProps) {
   const inputId = id ?? label.toLowerCase().replace(/\s+/g, '-');
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={inputId} className="text-sm font-medium text-[var(--color-ink)]">
+      <label
+        htmlFor={inputId}
+        className="text-sm font-medium text-[var(--color-ink)]"
+      >
         {label}
       </label>
       {hint && (
-        <p id={`${inputId}-hint`} className="text-xs text-[var(--color-ink-muted)]">
+        <p
+          id={`${inputId}-hint`}
+          className="text-xs text-[var(--color-ink-muted)]"
+        >
           {hint}
         </p>
       )}
       <input
         id={inputId}
-        aria-describedby={hint ? `${inputId}-hint` : error ? `${inputId}-error` : undefined}
+        aria-describedby={
+          hint ? `${inputId}-hint` : error ? `${inputId}-error` : undefined
+        }
         aria-invalid={!!error}
         className={`min-h-[44px] rounded-lg border px-4 py-2 text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] focus-visible:ring-offset-2 ${
           error
@@ -95,7 +111,9 @@ export function ScreenHeader({
   return (
     <header className="flex items-center justify-between gap-3 px-4 h-14 border-b border-[var(--color-border)] sticky top-0 bg-white z-10">
       <div className="w-10">{back}</div>
-      <h1 className="text-lg font-semibold text-[var(--color-ink)] truncate">{title}</h1>
+      <h1 className="text-lg font-semibold text-[var(--color-ink)] truncate">
+        {title}
+      </h1>
       <div className="w-10 flex justify-end">{right}</div>
     </header>
   );
@@ -107,7 +125,13 @@ export function LockBadge() {
       className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] bg-[var(--color-surface-sunken)] px-2 py-0.5 rounded-full"
       aria-label="Private — only you and your planner see this"
     >
-      <svg width="10" height="12" viewBox="0 0 10 12" aria-hidden="true" fill="currentColor">
+      <svg
+        width="10"
+        height="12"
+        viewBox="0 0 10 12"
+        aria-hidden="true"
+        fill="currentColor"
+      >
         <path d="M8 5H7V3.5a2.5 2.5 0 0 0-5 0V5H1a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1ZM4 3.5a1 1 0 0 1 2 0V5H4V3.5Zm1 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
       </svg>
       Only you &amp; your planner
@@ -115,7 +139,11 @@ export function LockBadge() {
   );
 }
 
-export function BalanceChip({ status }: { status: 'blocked' | 'owed' | 'pending' | 'paid' | 'failed' }) {
+export function BalanceChip({
+  status,
+}: {
+  status: 'blocked' | 'owed' | 'pending' | 'paid' | 'failed';
+}) {
   const labels: Record<typeof status, string> = {
     blocked: 'Blocked',
     owed: 'Owed',
@@ -124,13 +152,23 @@ export function BalanceChip({ status }: { status: 'blocked' | 'owed' | 'pending'
     failed: 'Failed',
   };
   return (
-    <span className={`chip chip--${status}`} role="status" aria-label={`Balance status: ${labels[status]}`}>
+    <span
+      className={`chip chip--${status}`}
+      role="status"
+      aria-label={`Balance status: ${labels[status]}`}
+    >
       {labels[status]}
     </span>
   );
 }
 
-export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export function Card({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div
       className={`rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm ${className}`}
@@ -140,9 +178,22 @@ export function Card({ children, className = '' }: { children: React.ReactNode; 
   );
 }
 
-export function StepIndicator({ current, total }: { current: number; total: number }) {
+export function StepIndicator({
+  current,
+  total,
+}: {
+  current: number;
+  total: number;
+}) {
   return (
-    <div className="flex items-center gap-1.5" aria-label={`Step ${current} of ${total}`} role="progressbar" aria-valuenow={current} aria-valuemin={1} aria-valuemax={total}>
+    <div
+      className="flex items-center gap-1.5"
+      aria-label={`Step ${current} of ${total}`}
+      role="progressbar"
+      aria-valuenow={current}
+      aria-valuemin={1}
+      aria-valuemax={total}
+    >
       {Array.from({ length: total }, (_, i) => (
         <div
           key={i}
@@ -164,31 +215,74 @@ export function BackButton({ href }: { href: string }) {
       className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)] -ml-1"
       aria-label="Go back"
     >
-      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M12 16l-6-6 6-6" />
       </svg>
     </a>
   );
 }
 
-export function PlannerCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+export function PlannerCard({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className={`rounded-2xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] p-4 ${className}`}>
+    <div
+      className={`rounded-2xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] p-4 ${className}`}
+    >
       <div className="flex items-center gap-2 mb-3">
-        <div className="w-8 h-8 rounded-full bg-[var(--color-accent)] flex items-center justify-center text-white text-xs font-bold" aria-hidden="true">AI</div>
-        <span className="text-sm font-medium text-[var(--color-ink-muted)]">Planner</span>
+        <div
+          className="w-8 h-8 rounded-full bg-[var(--color-accent)] flex items-center justify-center text-white text-xs font-bold"
+          aria-hidden="true"
+        >
+          AI
+        </div>
+        <span className="text-sm font-medium text-[var(--color-ink-muted)]">
+          Planner
+        </span>
       </div>
       {children}
     </div>
   );
 }
 
-export function EmptyState({ icon, heading, body, action }: { icon?: string; heading: string; body: string; action?: React.ReactNode }) {
+export function EmptyState({
+  icon,
+  heading,
+  body,
+  action,
+}: {
+  icon?: string;
+  heading: string;
+  body: string;
+  action?: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 p-8 text-center min-h-[200px]">
-      {icon && <span className="text-4xl" aria-hidden="true">{icon}</span>}
-      <h2 className="text-lg font-semibold text-[var(--color-ink)]">{heading}</h2>
-      <p className="text-sm text-[var(--color-ink-muted)] max-w-[280px]">{body}</p>
+      {icon && (
+        <span className="text-4xl" aria-hidden="true">
+          {icon}
+        </span>
+      )}
+      <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+        {heading}
+      </h2>
+      <p className="text-sm text-[var(--color-ink-muted)] max-w-[280px]">
+        {body}
+      </p>
       {action}
     </div>
   );

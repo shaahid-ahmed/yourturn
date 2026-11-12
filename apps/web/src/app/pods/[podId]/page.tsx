@@ -3,7 +3,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { PlannerCard, Card, Button, BalanceChip } from '@/components/ui';
 
-type MessageKind = 'text' | 'activity_shortlist' | 'time_poll' | 'ready_check' | 'booking_confirm' | 'payer_split';
+type MessageKind =
+  | 'text'
+  | 'activity_shortlist'
+  | 'time_poll'
+  | 'ready_check'
+  | 'booking_confirm'
+  | 'payer_split';
 
 interface Message {
   id: string;
@@ -122,7 +128,9 @@ const INITIAL_MESSAGES: Message[] = [
 export default function PodChatPage() {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
-  const [myActivityVotes, setMyActivityVotes] = useState<Record<string, boolean>>({});
+  const [myActivityVotes, setMyActivityVotes] = useState<
+    Record<string, boolean>
+  >({});
   const [myTimeVotes, setMyTimeVotes] = useState<Record<string, boolean>>({});
   const [myReadyState, setMyReadyState] = useState<boolean | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
@@ -134,26 +142,33 @@ export default function PodChatPage() {
 
   function sendMessage() {
     if (!input.trim()) return;
-    setMessages(prev => [
+    setMessages((prev) => [
       ...prev,
-      { id: `m${Date.now()}`, senderId: 'me', senderName: 'You', kind: 'text', text: input, ts: 'Now' },
+      {
+        id: `m${Date.now()}`,
+        senderId: 'me',
+        senderName: 'You',
+        kind: 'text',
+        text: input,
+        ts: 'Now',
+      },
     ]);
     setInput('');
   }
 
   function voteActivity(activityId: string, vote: boolean) {
-    setMyActivityVotes(prev => ({ ...prev, [activityId]: vote }));
+    setMyActivityVotes((prev) => ({ ...prev, [activityId]: vote }));
   }
 
   function voteTime(slotId: string) {
-    setMyTimeVotes(prev => ({ ...prev, [slotId]: !prev[slotId] }));
+    setMyTimeVotes((prev) => ({ ...prev, [slotId]: !prev[slotId] }));
   }
 
   function handleReadyCheck(answer: boolean) {
     setMyReadyState(answer);
     if (answer) {
       // After ready check, show booking confirmation card
-      setMessages(prev => [
+      setMessages((prev) => [
         ...prev,
         {
           id: `m${Date.now()}`,
@@ -175,8 +190,8 @@ export default function PodChatPage() {
 
   function confirmBooking() {
     setBookingConfirmed(true);
-    setMessages(prev =>
-      prev.map(m =>
+    setMessages((prev) =>
+      prev.map((m) =>
         m.kind === 'booking_confirm' && m.bookingDetails
           ? { ...m, bookingDetails: { ...m.bookingDetails, status: 'booked' } }
           : m,
@@ -186,7 +201,7 @@ export default function PodChatPage() {
 
   // Demo: inject time poll
   function addTimePoll() {
-    setMessages(prev => [
+    setMessages((prev) => [
       ...prev,
       {
         id: `m${Date.now()}`,
@@ -204,7 +219,7 @@ export default function PodChatPage() {
   }
 
   function addReadyCheck() {
-    setMessages(prev => [
+    setMessages((prev) => [
       ...prev,
       {
         id: `m${Date.now()}`,
@@ -222,25 +237,50 @@ export default function PodChatPage() {
     <main className="flex flex-col h-dvh">
       {/* Header */}
       <header className="flex items-center gap-3 px-4 h-14 border-b border-[var(--color-border)] bg-[var(--color-surface)] sticky top-0 z-10">
-        <a href="/home" className="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-[var(--color-surface-sunken)]" aria-label="Back to home">
-          <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16l-6-6 6-6"/></svg>
+        <a
+          href="/home"
+          className="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-[var(--color-surface-sunken)]"
+          aria-label="Back to home"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 16l-6-6 6-6" />
+          </svg>
         </a>
         <a href="/pods/pod-1/settings" className="flex-1 min-w-0">
-          <h1 className="text-base font-semibold text-[var(--color-ink)] truncate">Friday crew</h1>
+          <h1 className="text-base font-semibold text-[var(--color-ink)] truncate">
+            Friday crew
+          </h1>
           <p className="text-xs text-[var(--color-ink-muted)]">
-            {MEMBERS.map(m => m.name).join(', ')}
+            {MEMBERS.map((m) => m.name).join(', ')}
           </p>
         </a>
       </header>
 
       {/* Next hangout bar */}
       <div className="px-4 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] text-xs text-[var(--color-ink-muted)]">
-        Next hangout: <strong className="text-[var(--color-ink)]">Fri Nov 20</strong> · Brooklyn Bowl (pending)
+        Next hangout:{' '}
+        <strong className="text-[var(--color-ink)]">Fri Nov 20</strong> ·
+        Brooklyn Bowl (pending)
       </div>
 
       {/* Message stream */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-3" role="log" aria-label="Pod chat messages" aria-live="polite">
-        {messages.map(msg => (
+      <div
+        className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-3"
+        role="log"
+        aria-label="Pod chat messages"
+        aria-live="polite"
+      >
+        {messages.map((msg) => (
           <ChatMessage
             key={msg.id}
             msg={msg}
@@ -258,10 +298,16 @@ export default function PodChatPage() {
 
         {/* Demo controls */}
         <div className="flex flex-col gap-2 mt-4 px-2 opacity-70">
-          <p className="text-xs text-center text-[var(--color-ink-muted)]">— Demo actions —</p>
+          <p className="text-xs text-center text-[var(--color-ink-muted)]">
+            — Demo actions —
+          </p>
           <div className="flex gap-2 flex-wrap justify-center">
-            <Button variant="ghost" onClick={addTimePoll}>Add time poll</Button>
-            <Button variant="ghost" onClick={addReadyCheck}>Add ready check</Button>
+            <Button variant="ghost" onClick={addTimePoll}>
+              Add time poll
+            </Button>
+            <Button variant="ghost" onClick={addReadyCheck}>
+              Add ready check
+            </Button>
           </div>
         </div>
       </div>
@@ -272,8 +318,13 @@ export default function PodChatPage() {
           <input
             type="text"
             value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
             placeholder="Message Friday crew…"
             className="flex-1 min-h-[44px] rounded-xl border border-[var(--color-border)] px-4 text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]"
             aria-label="Message input"
@@ -284,8 +335,18 @@ export default function PodChatPage() {
             className="w-11 h-11 rounded-xl bg-[var(--color-accent)] text-white flex items-center justify-center disabled:opacity-50 hover:bg-[#174F76] transition-colors"
             aria-label="Send message"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 16L16 10 4 4v5l8 1-8 1v5z"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 20 20"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 16L16 10 4 4v5l8 1-8 1v5z" />
             </svg>
           </button>
         </div>
@@ -321,18 +382,22 @@ function ChatMessage({
   if (isPlanner && msg.kind === 'activity_shortlist' && msg.activities) {
     return (
       <PlannerCard>
-        <p className="text-sm font-medium text-[var(--color-ink)] mb-3">Here are three options for Friday. Votes are visible to everyone.</p>
+        <p className="text-sm font-medium text-[var(--color-ink)] mb-3">
+          Here are three options for Friday. Votes are visible to everyone.
+        </p>
         <div className="flex flex-col gap-3">
-          {msg.activities.map(a => (
+          {msg.activities.map((a) => (
             <ActivityCard
               key={a.id}
               activity={a}
               myVote={myActivityVotes[a.id]}
-              onVote={v => onVoteActivity(a.id, v)}
+              onVote={(v) => onVoteActivity(a.id, v)}
             />
           ))}
         </div>
-        <p className="mt-3 text-xs text-[var(--color-ink-muted)]">No option says "budget-friendly" or "why this one."</p>
+        <p className="mt-3 text-xs text-[var(--color-ink-muted)]">
+          No option says "budget-friendly" or "why this one."
+        </p>
       </PlannerCard>
     );
   }
@@ -340,9 +405,11 @@ function ChatMessage({
   if (isPlanner && msg.kind === 'time_poll' && msg.timeSlots) {
     return (
       <PlannerCard>
-        <p className="text-sm font-medium text-[var(--color-ink)] mb-3">When works best? Votes close in 24 hours.</p>
+        <p className="text-sm font-medium text-[var(--color-ink)] mb-3">
+          When works best? Votes close in 24 hours.
+        </p>
         <div className="flex flex-col gap-2">
-          {msg.timeSlots.map(slot => (
+          {msg.timeSlots.map((slot) => (
             <button
               key={slot.id}
               onClick={() => onVoteTime(slot.id)}
@@ -355,7 +422,8 @@ function ChatMessage({
             >
               <span>{slot.label}</span>
               <span className="text-xs opacity-80">
-                {slot.votes.length} vote{slot.votes.length !== 1 ? 's' : ''}{slot.votes.length > 0 ? ` · ${slot.votes.join(', ')}` : ''}
+                {slot.votes.length} vote{slot.votes.length !== 1 ? 's' : ''}
+                {slot.votes.length > 0 ? ` · ${slot.votes.join(', ')}` : ''}
               </span>
             </button>
           ))}
@@ -368,13 +436,27 @@ function ChatMessage({
     const checkedIn = myReadyState !== null;
     return (
       <PlannerCard>
-        <p className="text-sm font-medium text-[var(--color-ink)] mb-1">Are you in?</p>
-        <p className="text-sm text-[var(--color-ink-muted)] mb-3">{msg.readyPlan}</p>
-        <p className="text-xs text-[var(--color-ink-muted)] mb-3">Anyone who says yes shares the cost. No pressure.</p>
+        <p className="text-sm font-medium text-[var(--color-ink)] mb-1">
+          Are you in?
+        </p>
+        <p className="text-sm text-[var(--color-ink-muted)] mb-3">
+          {msg.readyPlan}
+        </p>
+        <p className="text-xs text-[var(--color-ink-muted)] mb-3">
+          Anyone who says yes shares the cost. No pressure.
+        </p>
         {!checkedIn ? (
           <div className="flex gap-3">
-            <Button fullWidth onClick={() => onReadyCheck(true)}>Yes, I&apos;m in</Button>
-            <Button fullWidth variant="secondary" onClick={() => onReadyCheck(false)}>Not this time</Button>
+            <Button fullWidth onClick={() => onReadyCheck(true)}>
+              Yes, I&apos;m in
+            </Button>
+            <Button
+              fullWidth
+              variant="secondary"
+              onClick={() => onReadyCheck(false)}
+            >
+              Not this time
+            </Button>
           </div>
         ) : (
           <p className="text-sm text-[var(--color-ink-muted)]">
@@ -389,25 +471,40 @@ function ChatMessage({
     const bd = msg.bookingDetails;
     return (
       <PlannerCard>
-        <p className="text-sm font-medium text-[var(--color-ink)] mb-3">Shall I book this?</p>
+        <p className="text-sm font-medium text-[var(--color-ink)] mb-3">
+          Shall I book this?
+        </p>
         <div className="rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] p-3 mb-3 flex flex-col gap-1 text-sm">
-          <p><strong>{bd.venue}</strong></p>
-          <p className="text-[var(--color-ink-muted)]">{bd.when} · {bd.headCount} people</p>
-          <p>Est. total: <strong>${bd.estTotal}</strong></p>
+          <p>
+            <strong>{bd.venue}</strong>
+          </p>
+          <p className="text-[var(--color-ink-muted)]">
+            {bd.when} · {bd.headCount} people
+          </p>
+          <p>
+            Est. total: <strong>${bd.estTotal}</strong>
+          </p>
         </div>
         {bd.status === 'waiting_confirm' && !bookingConfirmed && (
           <>
             <p className="text-xs text-[var(--color-ink-muted)] mb-3">
-              This is not a payment and not a reservation. I won't book anything until you confirm.
+              This is not a payment and not a reservation. I won't book anything
+              until you confirm.
             </p>
-            <Button fullWidth onClick={onConfirmBooking}>Confirm — book it</Button>
+            <Button fullWidth onClick={onConfirmBooking}>
+              Confirm — book it
+            </Button>
           </>
         )}
         {(bd.status === 'booked' || bookingConfirmed) && (
-          <p className="text-sm text-green-700 font-medium">Booked ✓ — calendar blocked</p>
+          <p className="text-sm text-green-700 font-medium">
+            Booked ✓ — calendar blocked
+          </p>
         )}
         {bd.status === 'could_not_book' && (
-          <p className="text-sm text-[var(--color-danger)]">Could not book — I'll offer the next-best plan.</p>
+          <p className="text-sm text-[var(--color-danger)]">
+            Could not book — I'll offer the next-best plan.
+          </p>
         )}
       </PlannerCard>
     );
@@ -417,12 +514,21 @@ function ChatMessage({
   return (
     <div className={`flex gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
       {!isMe && (
-        <div className="w-7 h-7 rounded-full bg-[var(--color-surface-sunken)] border border-[var(--color-border)] flex items-center justify-center text-xs font-semibold text-[var(--color-ink-muted)] shrink-0 mt-1" aria-hidden="true">
+        <div
+          className="w-7 h-7 rounded-full bg-[var(--color-surface-sunken)] border border-[var(--color-border)] flex items-center justify-center text-xs font-semibold text-[var(--color-ink-muted)] shrink-0 mt-1"
+          aria-hidden="true"
+        >
           {msg.senderName[0]}
         </div>
       )}
-      <div className={`max-w-[75%] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}>
-        {!isMe && <p className="text-xs text-[var(--color-ink-muted)] px-1">{msg.senderName}</p>}
+      <div
+        className={`max-w-[75%] flex flex-col gap-0.5 ${isMe ? 'items-end' : 'items-start'}`}
+      >
+        {!isMe && (
+          <p className="text-xs text-[var(--color-ink-muted)] px-1">
+            {msg.senderName}
+          </p>
+        )}
         <div
           className={`rounded-2xl px-4 py-2.5 text-sm ${
             isMe
@@ -452,25 +558,41 @@ function ActivityCard({
     <Card className="flex flex-col gap-2">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-semibold text-[var(--color-ink)]">{activity.title}</p>
-          <p className="text-xs text-[var(--color-ink-muted)]">{activity.venue}</p>
-          <p className="text-xs text-[var(--color-ink-muted)]">{activity.date}</p>
+          <p className="text-sm font-semibold text-[var(--color-ink)]">
+            {activity.title}
+          </p>
+          <p className="text-xs text-[var(--color-ink-muted)]">
+            {activity.venue}
+          </p>
+          <p className="text-xs text-[var(--color-ink-muted)]">
+            {activity.date}
+          </p>
         </div>
-        <p className="text-sm font-semibold text-[var(--color-ink)] shrink-0">~${activity.estCostPerPerson}/person</p>
+        <p className="text-sm font-semibold text-[var(--color-ink)] shrink-0">
+          ~${activity.estCostPerPerson}/person
+        </p>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {activity.tags.map(t => (
-          <span key={t} className="px-2 py-0.5 bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-full text-xs text-[var(--color-ink-muted)]">{t}</span>
+        {activity.tags.map((t) => (
+          <span
+            key={t}
+            className="px-2 py-0.5 bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-full text-xs text-[var(--color-ink-muted)]"
+          >
+            {t}
+          </span>
         ))}
       </div>
       <div className="flex items-center justify-between gap-3 mt-1">
         <p className="text-xs text-[var(--color-ink-muted)]">
-          {activity.votes.length} vote{activity.votes.length !== 1 ? 's' : ''}{activity.votes.length > 0 ? ` · ${activity.votes.join(', ')}` : ''}
+          {activity.votes.length} vote{activity.votes.length !== 1 ? 's' : ''}
+          {activity.votes.length > 0 ? ` · ${activity.votes.join(', ')}` : ''}
         </p>
         {!voted ? (
           <Button onClick={() => onVote(true)}>Vote</Button>
         ) : (
-          <span className="text-sm text-[var(--color-accent)] font-medium">Voted ✓</span>
+          <span className="text-sm text-[var(--color-accent)] font-medium">
+            Voted ✓
+          </span>
         )}
       </div>
     </Card>

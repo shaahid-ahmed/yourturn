@@ -1,16 +1,17 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
-  --color-ink: #13212B;
-  --color-ink-muted: #4A5A66;
-  --color-surface: #FFFFFF;
-  --color-surface-sunken: #F2F5F7;
-  --color-border: #64727C;
-  --color-accent: #1F5F8B;
-  --color-accent-contrast: #FFFFFF;
-  --color-danger: #9B1C1C;
-  --color-focus: #0B3C5D;
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --color-ink: #13212b;
+  --color-ink-muted: #4a5a66;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f2f5f7;
+  --color-border: #64727c;
+  --color-accent: #1f5f8b;
+  --color-accent-contrast: #ffffff;
+  --color-danger: #9b1c1c;
+  --color-focus: #0b3c5d;
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
@@ -82,7 +83,7 @@ body {
 /* Minimum tap target */
 .btn,
 button,
-[role="button"],
+[role='button'],
 a,
 input,
 select {
@@ -101,8 +102,23 @@ select {
   font-weight: 500;
   white-space: nowrap;
 }
-.chip--blocked { background: #EBE4E2; color: #5A3A30; }
-.chip--owed    { background: #FFF3CD; color: #7A5500; }
-.chip--pending { background: #D6E8F5; color: #1A4A6B; }
-.chip--paid    { background: #D4EDDA; color: #155724; }
-.chip--failed  { background: #F8D7DA; color: #721C24; }
+.chip--blocked {
+  background: #ebe4e2;
+  color: #5a3a30;
+}
+.chip--owed {
+  background: #fff3cd;
+  color: #7a5500;
+}
+.chip--pending {
+  background: #d6e8f5;
+  color: #1a4a6b;
+}
+.chip--paid {
+  background: #d4edda;
+  color: #155724;
+}
+.chip--failed {
+  background: #f8d7da;
+  color: #721c24;
+}
