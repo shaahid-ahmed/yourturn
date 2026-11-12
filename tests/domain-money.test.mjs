@@ -382,3 +382,9 @@ test('US-016: an idempotency slot always binds actor, operation and key', () => 
     /already recorded/,
   );
 });
+
+test('US-016: a provider missing any port method is rejected at construction', async () => {
+  const { assertProvider } =
+    await import('../services/api/src/payments/provider.mjs');
+  assert.throws(() => assertProvider({}), /must implement/);
+});

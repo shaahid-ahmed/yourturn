@@ -18,9 +18,10 @@ npm ci
 make check     # prettier + openapi lint + strict typecheck + all tests + secret scan
 make seed      # synthetic demo fixtures into ignored .local/
 make dev       # bootstrap status server on 127.0.0.1:3000 (infra only, no product routes)
+npm run dev:api  # product API on 127.0.0.1:3001 (SQLite in .local/); --reset starts empty, --backup snapshots first
 ```
 
-`npm test` runs the contract, domain, HTTP and accessibility suites (344 tests). The product HTTP app has no long-running server yet — routes are exercised via injection until US-019 lands fully.
+`npm test` runs the contract, domain, HTTP and accessibility suites (360+ tests, including server run/health/reset/recovery/backup). Routes are also exercised via injection.
 
 ## Exact limitations (read before demoing)
 
