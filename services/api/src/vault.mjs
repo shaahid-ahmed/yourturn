@@ -127,6 +127,11 @@ export class ConstraintVault {
    */
   load(memberId, record) {
     this.decryptRecord(memberId, record);
-    this.#records.set(memberId, { ...record, keyId: this.keyId });
+    this.#records.set(memberId, {
+      ...record,
+      memberId,
+      keyId: this.keyId,
+      updatedAt: new Date().toISOString(),
+    });
   }
 }
