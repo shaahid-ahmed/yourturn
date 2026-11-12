@@ -1,94 +1,90 @@
-# YourTurn architecture
+# Unspoken architecture
 
-**Status:** `v0.1.0-draft` for YT-009; design only. **No product service, database, AI module or payment integration is implemented.** The only running code is the Phase 0 setup server. Freeze is YT-014; ADR [0004](../decisions/0004-phase-1-contracts.md) records the contract decision, ADR [0002](../decisions/0002-stack.md) the stack.
-**Owner:** Architect.
+**Status:** draft for US-001/US-002; design plus a migrated schema. **No HTTP route, AI call, calendar call, app-store call or payment is implemented.** The contract is [openapi.json](openapi.json) `0.2.0-draft` ([API.md](API.md)); the schema is in [DATA_MODEL.md](DATA_MODEL.md). [ADR 0007](../decisions/0007-ux-spec-supersedes-payment-flow.md) records the product flow, and [ADR 0002](../decisions/0002-stack.md) records the stack.
+**Owner:** Architect (Rohan for US-001/US-002).
+
+This replaces the YourTurn circle/turn/Payouts architecture, which ADR 0006 and ADR 0007 superseded.
 
 ## System boundaries
 
 ```text
-            ┌───────────────────────────── loopback only ─────────────────────────────┐
-            │                                                                         │
-  browser ──┤  apps/web (Next.js)  ──HTTP/JSON──▶  services/api (Fastify, /api/v1)    │
-            │      session cookie + CSRF              │        │           │          │
-            │                                         │        │           │          │
-            │                            ┌────────────┘        │           └────────┐ │
-            │                            ▼                     ▼                    ▼ │
-            │                   SQLite (demo data)   services/ai (in-process)  fixtures │
-            │                                         graph/ + copilot/        (synthetic)│
-            └─────────────────────────────────────────────────┬───────────────────────┘
-                                                              │ outbound, gated closed
-                                                              ▼
-                                                   PayPal **sandbox** (not yet contacted)
+  phone app ──HTTPS/JSON + SSE──▶ services/api (/api/v1) ──▶ SQLite (node:sqlite)
+  (apps/web,       session cookie          │   │   │   │
+   phone-first)    + CSRF                  │   │   │   └──▶ planner (services/ai, in-process)
+                                           │   │   └──────▶ Google Calendar (free/busy, event write)
+                                           │   └──────────▶ app-store receipt check (sandbox)
+                                           └──────────────▶ PayPal sandbox (gated closed)
+                                                 ▲
+                                    verified webhooks only
 ```
 
-**Four boundaries that matter.**
+**Six boundaries that matter.**
 
-1. **Browser ↔ API.** The only client-facing surface. All authorization, consent filtering and money validation happen server-side; the browser is never trusted for membership, host identity, budget or demo-mode selection.
-2. **API ↔ AI.** `services/ai` is an in-process library (graph scoring, copilot validation), not a reachable endpoint. Consequence: there is no URL at which a caller could request a tie score or a prompt completion while bypassing consent and authorization checks.
-3. **API ↔ provider.** Outbound only, sandbox only, and **closed**: payment-executing paths return `payment_gate_blocked` until YT-006 evidence plus human money-flow approval. Inbound webhooks are verified before any effect.
-4. **Real data ↔ synthetic demo data.** Numeric graph values are served only from a versioned fixture by `/demo/graph`. No request parameter switches the data source, so real member data cannot be rendered through the "synthetic" path.
+1. **Phone ↔ API.** The only client surface. Membership, payer, yes-member and balance-party checks happen server-side on every request; the client is never trusted for any of them. Non-members of a pod get `404`.
+2. **API ↔ planner.** The planner (`services/ai`) is an in-process library, not a reachable endpoint. It receives first names, interests, group activities and the catalog, plus a per-member private check that returns only works / doesn't work. It never receives emails, phone numbers or payment data, and it **never moves money**: its output is structured JSON validated against a schema, and only deterministic code after a member action changes state.
+3. **API ↔ PayPal.** Outbound only, sandbox only, and **closed**: `createSettlementPayment` returns `payment_gate_blocked` until Q-010 / US-006 and human money-flow approval. Inbound webhooks are signature-verified before any ledger entry, status change or notification, and deduplicated by event id.
+4. **API ↔ Google Calendar.** Free/busy reads only, from calendars the member opted into one at a time, plus one event write per yes-member after booking. Event content is never read, and no member ever sees another member's calendar.
+5. **API ↔ app store.** Sandbox receipts only; the $15 plan gates the planner and is separate from hangout money.
+6. **Private ↔ pod.** Private limits, stretch asks, the private planner chat and ratings belong to one member and their planner. They are stored where no pod-scoped query can reach them (no pod column) and are unreachable from any pod route in the contract.
 
-**Components.**
+## Components
 
-| Path                        | Role                                                                   | Phase 1 state                                             |
-| --------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------- |
-| `apps/web`                  | Next.js + Tailwind UI, server-rendered; no direct DB access            | Not installed; builds against `openapi.json` after freeze |
-| `services/api`              | Fastify HTTP API, authorization, persistence, ledger, webhook ingress  | Not implemented                                           |
-| `services/api/src/payments` | Provider calls, state machine, signature verification (Payments-owned) | Not implemented; gate closed                              |
-| `services/ai/graph`         | Tie-strength and drift heuristics over consented signals               | Not implemented                                           |
-| `services/ai/copilot`       | Prompt construction, schema validation, bounded retry                  | Not implemented                                           |
-| `packages/shared`           | Types generated from `openapi.json` after freeze                       | Intentionally empty                                       |
-| `infra`                     | Setup server, seed, local tooling                                      | Phase 0 scaffold only                                     |
+| Path                                     | Role                                                                                                 | State                                                                      |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `apps/web`                               | Phone-first client for the 23 screens                                                                | Lane A (US-101–US-105); builds against `openapi.json`                      |
+| `services/api/src/db`                    | Schema migrations and database opening (`node:sqlite`)                                               | **US-002: migrated and tested on a scratch file**                          |
+| `services/api/src/hangout-lifecycle.mjs` | The hangout transition table, matching the contract; durable apply in `db/hangout-store.mjs`         | **US-002: tested for every state and event pair**                          |
+| `services/api/src/pods.mjs`              | Pods, invitations, single-use invite links and contact matching over the schema                      | **US-004: tested; no HTTP route yet**                                      |
+| `services/api/src/chat.mjs`              | Pod chat, planner cards, the private planner chat and the pod-scoped event bus                       | **US-007: tested; no HTTP/SSE route yet**                                  |
+| `services/api/src/polls.mjs`             | Activity shortlist, time poll, ready check, closing and private reminder jobs                        | **US-008: tested; jobs take the time as input; no scheduler or route yet** |
+| `services/api/src/notifications.mjs`     | Per-type switches, device tokens, the Content + Behavioral send gate, and pointer-only push dispatch | **US-013: tested; gate closed for every kind; no provider wired**          |
+| `services/api/src/*.mjs`                 | ADR 0006 in-memory domain core (money, ledger, vault, tally, constraints)                            | Exists; retired flow; not wired to the new schema                          |
+| `services/api/src/payments`              | Provider port, gate, settlement (Payments-owned)                                                     | Gate closed; member-to-member settlement is US-006                         |
+| `services/api` routes                    | HTTP API per the contract                                                                            | Not implemented (US-004, US-007, US-008, US-013 and others)                |
+| `services/ai`                            | Planner: constraint extraction, coordinator, private budget checks                                   | Lane A (US-009, US-106)                                                    |
+| `packages/shared`                        | Types generated from `openapi.json`                                                                  | Not generated yet                                                          |
+| `infra`                                  | Dev server, seed, tooling                                                                            | Scaffold                                                                   |
 
 ## Auth and tenant isolation
 
-- **Identity.** Demo sessions select a seeded synthetic member. No password, email, OAuth or real identity is handled, so there is no credential store to protect in the demo.
-- **Impersonation is acceptable only on loopback (XR-20).** Any caller can start a session as any seeded member, including the current host. On a reachable host that means anyone could approve a plan and, once the payment gate opened, create a venue payment. A real identity model is therefore a **precondition for YT-032 (hosted demo) and for opening the payment gate**, not a later improvement, and Security must map it in YT-023.
-- **Operator actions are out of band (XR-19).** Advancing a turn and resetting fixtures are seed/script actions run by the operator against the local database; they are deliberately **not** HTTP operations, because an HTTP route would need an operator authorization model the demo does not have. Declining an invitation has no route yet and is filed for the next contract revision.
-- **Session.** `HttpOnly`, `SameSite=Strict` cookie, `Secure` when served over TLS, with a server-side session record and expiry. Mutating requests require a matching `X-CSRF-Token`.
-- **Per-request authorization.** Every circle-scoped request re-derives the caller's membership from the database. Client-supplied member or circle claims are ignored. Non-members get `404`, identical to a missing circle, so membership is not disclosed by status code.
-- **Host-scoped actions.** Suggestions, approval and payment creation re-check "is the caller the host of _this_ turn" inside the same transaction that performs the action, so a turn change between read and write cannot be exploited.
-- **Self-scoped actions.** Consent, pause, leave and attendance exist only as `/members/me` routes. There is no admin or host override, so no privileged path to another member's privacy state exists.
-- **Secrets.** Future sandbox credentials live in ignored local configuration, are read server-side only, and are never sent to the browser, a prompt, a fixture, a log line or an error body. Threat modelling is Security's (YT-023).
+- **Identity.** Phone number plus a code. In the demo no text message is sent and only seeded synthetic numbers can sign in. A real verification provider is a precondition for any reachable deployment (US-014) and for opening the payment gate.
+- **Session.** `HttpOnly`, `SameSite=Strict` cookie, `Secure` over TLS, server-side `session` row with expiry; mutating requests need a matching `X-CSRF-Token`. Codes and CSRF tokens are stored as digests.
+- **Per-request authorization.** Pod membership, the payer of a hangout, the yes-members and the parties to a balance are re-derived from the database inside the write transaction. Client-supplied ids are never trusted as claims.
+- **Self-scoped routes.** Everything under `/me` acts only on the caller's own rows; there is no admin override.
+- **Secrets.** Sandbox credentials, calendar OAuth tokens and the vault master key live in ignored local configuration and are referenced (`credential_ref`), never stored in the database, a prompt, a log or an error body.
 
 ## Data flows
 
-**A. Join and agree.** Invitation → acceptance (size check inside transaction) → membership version bump. Tracking consent is a **separate** later choice, defaulting off. Contribution proposal → per-member explicit agreements bound to proposal and membership version → `agreed` only when every current accepted member has agreed. Aggregate progress is returned; individual dissent is not attributed.
+**A. Sign in and set up (P1–P4).** Phone code → session. Profile and interests are plain rows; private limits are sealed into the vault. Calendar and PayPal are links only.
 
-**B. Turn and plan.** Turns are derived from accepted-member order plus member-id tie-break. The host requests suggestions; the API assembles a minimal prompt (first names, plan-relevant preferences, budget, fixed venue list) with no emails, payment data, hardship information or tie values, validates the model output against the plan schema, retries once on invalid output, and returns **exactly three** plans or an explicit unavailable outcome. A manual fixed-list path is always available.
+**B. Build a pod (P5–P6).** Contacts are matched by phone and unmatched numbers are discarded. Invitations and single-use links hold places, so joined members plus pending places never exceed 8. Planning needs 3 joined members.
 
-**C. Approval.** The host approves one immutable plan version; deterministic code records a full snapshot (plan, version, venue, total cents, turn, host). The model cannot approve, spend or book. Approval responses state explicitly that approval is neither payment nor reservation.
+**C. Plan (P7–P11).** The planner builds a shortlist from interests and group activities, then runs the private check per member. A member whose budget an option exceeds gets a stretch ask in their private chat only. The activity poll, then the time poll, run with named votes. The ready check collects yes/no; any number of yeses is enough.
 
-**D. Money (gated).** Contribution subscription and venue payment both route through `services/api/src/payments`, both currently return `payment_gate_blocked`, and neither has a simulated-success path. When the gate is opened by a human, a verified provider webhook — signature checked **before** any effect, deduplicated by provider event id — is the only thing that may append a ledger entry. The pot is always re-derived by summing entries.
+**D. Book (P12).** A yes-member with a linked PayPal account volunteers as payer, and the payer confirms (Q-011.6 default). The booking is **simulated** for seeded venues and labelled as such; a failure offers the next-best plan.
 
-**E. Graph — gated closed (XR-01).** Real-member tie values are **not computed at all** while Q-002 is open. The earlier draft relied on non-persistence, but inference about real people is itself the thing Behavioral says it cannot approve; a graph gate now mirrors the payment gate, and while it is closed no tie- or drift-derived value is computed, stored, returned or used as prompt input, and no guidance names a pair. If a deployment requires graph input for suggestions it returns `503 graph_gate_blocked` rather than degrading silently.
+**E. Split and settle (P13–P15).** The payer confirms the split; one `balance_created` ledger entry per owing yes-member is appended in one transaction. Balances are always derived. Settlement through PayPal is gated closed; when opened, only a verified webhook can mark a payment captured, and a failure returns the balance to owed.
 
-**Limit of the contract, stated plainly (OSS-02).** A contract test can prove that no graph-derived field crosses the API boundary — `CreatePlanSuggestionsRequest` is `additionalProperties: false` over closed enums, and no response carries a tie value. It **cannot** prove what the server puts in a prompt internally, because prompt construction is in-process and invisible to the spec. So the strongest claim in XR-01 — "no tie- or drift-derived input reaches the prompt" — is currently enforced by a gate flag and a promise, not by a check. YT-019 and YT-020 must therefore ship a **service-level test that asserts the exact assembled prompt** against a fixture and fails if any field outside the closed input vocabulary appears in it. Until that test exists, treat the claim as unverified rather than satisfied. When the gate is eventually opened, values would be transient, filtered to pairs where both members have tracking on, and never persisted, returned numerically or exported. The demo visualization reads the synthetic fixture and is labelled as fictional, with a text equivalent and a non-color cue.
+## Failure modes
 
-## Failure modes and reconciliation
-
-| Failure                                       | Required behavior                                                                                                                                                      |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Model returns invalid JSON                    | One bounded regeneration, then explicit `unavailable`; never a partial list presented as success                                                                       |
-| Model returns four plans or an off-list venue | Rejected by schema/venue validation before the host sees it                                                                                                            |
-| Webhook signature invalid or missing          | `401`, no ledger entry, no status change. (No valid event causes a notification either: **no notification is emitted by any path**, because none is approved — XR-28.) |
-| Duplicate verified webhook                    | Unique `provider_event_id` constraint ⇒ at most one entry; `duplicate: true, effectsApplied: false`                                                                    |
-| Out-of-order provider events                  | Reconcile by reading provider state; arrival order is never authoritative                                                                                              |
-| Provider timeout after a possible capture     | Attempt stays non-final; reconcile by provider readback before claiming success or retrying                                                                            |
-| Two concurrent host approvals                 | Serialized transaction with in-transaction budget re-derivation; the loser gets `409`/`422`                                                                            |
-| Retried mutating request                      | `Idempotency-Key` replay of the stored first response                                                                                                                  |
-| Plan or amount changed after approval         | `approval_stale`; re-approval required                                                                                                                                 |
-| Member leaves mid-cycle                       | Exit always succeeds; affected turns suspend and report `suspended_pending_rule`                                                                                       |
-| Consent withdrawn mid-cycle                   | Edges incident to that member excluded on the next computation; cached artifacts invalidated first                                                                     |
-| Database write fails mid-operation            | Whole transaction rolls back; no partial money or consent effect persists                                                                                              |
-| Payment gate closed                           | Honest `payment_gate_blocked` with blocking task ids; never a fake success screen                                                                                      |
-
-**Reconciliation stance.** Provider state is authoritative over local state for anything money-related, and local state is never upgraded to "succeeded" without a verified event or an explicit readback. Any unreconciled attempt is displayed as unverified rather than resolved optimistically.
+| Failure                            | Required behavior                                                                                   |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------- |
+| No plan fits                       | `NO_PLAN`; the planner offers to widen the window or area and never says whose limit blocked a plan |
+| Nobody votes by the close          | Extend once, then close                                                                             |
+| Nobody says yes                    | The plan closes and the planner offers the next-best option                                         |
+| Booking fails                      | `BOOKING_FAILED`; the planner offers the next-best plan                                             |
+| A member says yes, then leaves     | Their ledger entries stay until settled                                                             |
+| Payment fails                      | A verified `payment_failed` entry; the balance is owed again and the member is told privately       |
+| Webhook signature invalid          | `401`, no row written anywhere                                                                      |
+| Webhook delivered twice            | `(provider_event_id, kind)` uniqueness ⇒ at most one entry; `202 duplicate`                         |
+| Retried money request              | Idempotency record replays the first response; a different body or target is `422`                  |
+| Concurrent confirmations           | `hangout.version` checked inside the transaction; the loser gets `409`                              |
+| Database write fails mid-operation | The transaction rolls back; no partial money, membership or consent effect persists                 |
+| Subscription ends                  | Pods and history stay readable; the planner stops planning                                          |
 
 ## Deployment boundary
 
-- **Now:** local only. `make dev` serves the Phase 0 setup page on loopback; there is no product service to deploy, no container image, no hosted database and no public URL.
-- **Planned (YT-032, needs separate human approval):** a sandbox-only demo environment with secrets injected at runtime, loopback-equivalent access control, health check and reset procedure. No production environment, no live credentials, no billable autoscaling.
-- **Never in this project:** live PayPal credentials, real user data, public sign-up, or exposing the unauthenticated setup server to the internet.
-- **Webhook ingress** requires a publicly reachable URL, which is the main reason a hosted environment may be needed at all; until then webhook handling is exercised only by locally constructed signed-payload tests, which prove handler logic and not provider behavior.
-- **CI** runs lint, strict typecheck, tests and a secret scan on GitHub Actions. Hosted CI success is evidence about the repository, not about any deployed environment.
+- **Now:** local only. `make dev` serves the setup page on loopback. The schema is exercised by tests on scratch files, not by a running service.
+- **Planned:** one public HTTPS origin for the phone, return URLs and the webhook listener (US-014); deployment and recovery (US-017). Both need separate human approval.
+- **Never in this project:** live PayPal credentials, live app-store billing, real user data, or a real venue booking.
+- **CI** runs Prettier, the Redocly OpenAPI lint, strict typecheck, tests (including the scratch-file migration test) and a secret scan. Hosted CI success is evidence about the repository, not about a deployed environment.

@@ -1,3 +1,7 @@
+// Contract tests for the Unspoken UX-spec flow (US-001, ADR 0007).
+// They replace the retired YourTurn circle/turn/Payouts suite. They are
+// structural checks against the committed document, not evidence that any
+// route is implemented.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -11,6 +15,9 @@ const specPath = new URL(
 function loadSpec() {
   return JSON.parse(readFileSync(specPath, 'utf8'));
 }
+
+const METHODS = ['get', 'post', 'put', 'patch', 'delete'];
+const MUTATING = ['post', 'put', 'patch', 'delete'];
 
 /**
  * Collect every [path, node] pair in the document.
@@ -46,17 +53,63 @@ function resolveRef(spec, ref) {
   return node;
 }
 
-test('contract document is parseable OpenAPI 3.1 marked as an unfrozen draft', () => {
+/**
+ * Every operation as { route, method, operation }.
+ * @param {any} spec
+ */
+function operations(spec) {
+  /** @type {{ route: string, method: string, operation: any }[]} */
+  const list = [];
+  for (const [route, item] of Object.entries(spec.paths))
+    for (const method of METHODS)
+      if (item[method]) list.push({ route, method, operation: item[method] });
+  return list;
+}
+
+/**
+ * Names of every schema reachable from a node, following $refs.
+ * @param {any} spec
+ * @param {any} node
+ * @param {Set<string>} seen
+ */
+function reachableSchemas(spec, node, seen = new Set()) {
+  for (const [, child] of walk(node)) {
+    if (!child || typeof child !== 'object' || typeof child.$ref !== 'string')
+      continue;
+    let target = resolveRef(spec, child.$ref);
+    const match = child.$ref.match(/^#\/components\/schemas\/(.+)$/);
+    if (match) {
+      if (seen.has(match[1])) continue;
+      seen.add(match[1]);
+    } else if (target === undefined) continue;
+    reachableSchemas(spec, target, seen);
+  }
+  return seen;
+}
+
+/** @param {any} spec @param {string} operationId */
+function findOperation(spec, operationId) {
+  const found = operations(spec).find(
+    ({ operation }) => operation.operationId === operationId,
+  );
+  assert.ok(found, `missing operation ${operationId}`);
+  return found;
+}
+
+test('contract is parseable OpenAPI 3.1, an unfrozen draft under ADR 0007', () => {
   const spec = loadSpec();
   assert.equal(spec.openapi, '3.1.0');
-  assert.equal(spec.info.version, '0.1.0-draft');
+  assert.equal(spec.info.version, '0.2.0-draft');
   assert.equal(spec.info['x-contract-status'], 'draft');
   assert.equal(spec.info['x-frozen'], false);
+  assert.equal(spec.info['x-task'], 'US-001');
+  assert.equal(spec.info['x-adr'], '0007');
+  assert.match(spec.info['x-architect-approval'].approvedBy, /Architect/);
   assert.equal(spec.servers.length, 1);
   assert.match(spec.servers[0].url, /^http:\/\/127\.0\.0\.1:\d+\/api\/v1$/);
 });
 
-test('every local $ref resolves and every operation is documented', () => {
+test('every local $ref resolves and every operation is fully documented', () => {
   const spec = loadSpec();
   for (const [where, node] of walk(spec)) {
     if (node && typeof node === 'object' && typeof node.$ref === 'string') {
@@ -67,489 +120,448 @@ test('every local $ref resolves and every operation is documented', () => {
       );
     }
   }
-  const methods = ['get', 'post', 'put', 'patch', 'delete'];
-  /** @type {Set<string>} */
-  const operationIds = new Set();
-  let operationCount = 0;
-  for (const [route, item] of Object.entries(spec.paths)) {
-    const present = methods.filter((method) => item[method]);
-    assert.ok(present.length > 0, `${route}: no operations`);
-    for (const method of present) {
-      const operation = item[method];
-      operationCount += 1;
-      assert.ok(
-        operation.operationId,
-        `${route} ${method}: missing operationId`,
+  const ids = new Set();
+  const list = operations(spec);
+  for (const { route, method, operation } of list) {
+    const label = `${method.toUpperCase()} ${route}`;
+    assert.ok(operation.operationId, `${label}: missing operationId`);
+    assert.ok(
+      !ids.has(operation.operationId),
+      `duplicate ${operation.operationId}`,
+    );
+    ids.add(operation.operationId);
+    assert.ok(operation.summary, `${operation.operationId}: missing summary`);
+    assert.equal(
+      operation.tags?.length,
+      1,
+      `${operation.operationId}: one tag`,
+    );
+    for (const [status, response] of Object.entries(operation.responses)) {
+      assert.match(
+        status,
+        /^[1-5]\d\d$/,
+        `${operation.operationId}: ${status}`,
       );
       assert.ok(
-        !operationIds.has(operation.operationId),
-        `duplicate ${operation.operationId}`,
+        response.$ref || response.description,
+        `${operation.operationId} ${status}`,
       );
-      operationIds.add(operation.operationId);
-      assert.ok(operation.summary, `${operation.operationId}: missing summary`);
-      assert.ok(
-        Object.keys(operation.responses ?? {}).length > 0,
-        `${operation.operationId}: no responses`,
-      );
-      for (const [status, response] of Object.entries(operation.responses)) {
-        assert.match(
-          status,
-          /^[1-5]\d\d$/,
-          `${operation.operationId}: odd status ${status}`,
-        );
-        assert.ok(
-          response.$ref || response.description,
-          `${operation.operationId} ${status}: missing description`,
-        );
-      }
     }
+    for (const status of ['429', '500'])
+      assert.ok(
+        operation.responses[status],
+        `${operation.operationId}: no ${status}`,
+      );
   }
-  assert.ok(
-    operationCount >= 20,
-    `expected a complete surface, found ${operationCount}`,
-  );
+  // The documented count in API.md must match the document.
+  assert.equal(list.length, 74, 'operation count must match API.md');
 });
 
-test('money is always integer cents with the agreed bounds and USD currency', () => {
+test('every mutating operation needs a session and a CSRF token, except the webhook', () => {
+  const spec = loadSpec();
+  const unauthenticated = new Set([
+    'requestPhoneCode',
+    'createSession',
+    'receiveProviderWebhook',
+  ]);
+  for (const { method, operation } of operations(spec)) {
+    const id = operation.operationId;
+    if (unauthenticated.has(id)) {
+      assert.deepEqual(operation.security, [], `${id}: must be explicit`);
+      continue;
+    }
+    assert.equal(operation.security, undefined, `${id}: inherits the session`);
+    assert.ok(operation.responses['401'], `${id}: needs 401`);
+    if (!MUTATING.includes(method)) continue;
+    const params = (operation.parameters ?? []).map(
+      (/** @type {any} */ p) => p.$ref,
+    );
+    assert.ok(
+      params.includes('#/components/parameters/CsrfToken'),
+      `${id}: CSRF`,
+    );
+    assert.ok(operation.responses['403'], `${id}: needs 403`);
+  }
+});
+
+test('the retired hold/capture/void, pot, circle and Payouts surface is gone', () => {
+  const spec = loadSpec();
+  const text = JSON.stringify(spec);
+  for (const state of [
+    'COMMITTING',
+    'SETTLING',
+    'VOIDING',
+    'NOT_HAPPENING',
+    'SETTLEMENT_FAILED',
+  ])
+    assert.ok(!text.includes(state), `retired state ${state} still present`);
+  const retired =
+    /capture|void|authoriz|hold|circle|turn|payout|pot|contribution|venue-?payment/i;
+  for (const { route, operation } of operations(spec)) {
+    assert.doesNotMatch(route, retired, `retired route ${route}`);
+    assert.doesNotMatch(
+      operation.operationId,
+      retired,
+      `retired ${operation.operationId}`,
+    );
+  }
+  for (const name of Object.keys(spec.components.schemas))
+    assert.doesNotMatch(
+      name,
+      /circle|turn|payout|pot|contribution|graph/i,
+      `retired schema ${name}`,
+    );
+});
+
+test('the hangout state list is exactly the ADR 0007 list', () => {
+  const spec = loadSpec();
+  assert.deepEqual(spec.components.schemas.HangoutState.enum, [
+    'PLANNING',
+    'STRETCH_ASKS',
+    'ACTIVITY_VOTE',
+    'TIME_VOTE',
+    'READY_CHECK',
+    'AWAITING_CONFIRMATION',
+    'BOOKING',
+    'BOOKED',
+    'BALANCES_OPEN',
+    'SETTLED',
+    'NO_PLAN',
+    'BOOKING_FAILED',
+  ]);
+});
+
+test('money is integer cents in USD everywhere', () => {
   const spec = loadSpec();
   const schemas = spec.components.schemas;
   assert.equal(schemas.Currency.const, 'USD');
   assert.equal(schemas.AmountCents.type, 'integer');
-  assert.equal(schemas.ContributionAmountCents.type, 'integer');
-  // The 1500 ceiling is from the product brief; the floor is an undecided draft
-  // proposal (D-P01), so assert that a documented floor exists, not its value (XR-27).
-  assert.equal(schemas.ContributionAmountCents.maximum, 1500);
-  assert.equal(schemas.ContributionAmountCents.default, 500);
-  assert.ok(Number.isInteger(schemas.ContributionAmountCents.minimum));
-  assert.ok(schemas.ContributionAmountCents.minimum > 0);
-  assert.match(schemas.ContributionAmountCents.description, /draft proposal/i);
-
-  const moneyRefs = new Set([
-    '#/components/schemas/AmountCents',
-    '#/components/schemas/ContributionAmountCents',
-  ]);
-  for (const [where, node] of walk(spec)) {
-    if (!/\.properties\.[A-Za-z]*[Cc]ents$/.test(where)) continue;
-    const isMoneyRef =
-      typeof node.$ref === 'string' && moneyRefs.has(node.$ref);
-    assert.ok(
-      isMoneyRef || node.type === 'integer',
-      `${where}: monetary field must be integer cents, got ${JSON.stringify(node).slice(0, 80)}`,
-    );
-  }
-  for (const [where, node] of walk(spec)) {
-    if (node && typeof node === 'object' && node.type === 'number') {
-      assert.ok(
-        where.startsWith('$.components.schemas.SyntheticGraph'),
-        `${where}: floating-point numbers are only allowed in the synthetic graph`,
-      );
-    }
-  }
-});
-
-test('a successful suggestion set is exactly three plans or an explicit unavailable outcome', () => {
-  const { components } = loadSpec();
-  const set = components.schemas.SuggestionSet;
-  assert.equal(set.properties.plans.minItems, 3);
-  assert.equal(set.properties.plans.maxItems, 3);
-  assert.equal(set.properties.retriesUsed.maximum, 1);
-  assert.deepEqual(set.properties.outcome.enum, ['three_plans', 'unavailable']);
-  assert.equal(set.oneOf.length, 2);
-  const shapes = set.oneOf.map((/** @type {any} */ branch) => [
-    branch.required?.[0],
-    branch.not?.required?.[0],
-  ]);
-  assert.deepEqual(shapes, [
-    ['plans', 'unavailableReason'],
-    ['unavailableReason', 'plans'],
-  ]);
-});
-
-test('approval, payment and attendance never assert payment, reservation or penalty', () => {
-  const { components } = loadSpec();
-  const approval = components.schemas.PlanApproval.properties;
-  assert.equal(approval.isPayment.const, false);
-  assert.equal(approval.isReservation.const, false);
-  assert.equal(approval.approvedBy.const, 'deterministic_host_action');
-  const payment = components.schemas.PaymentState.properties;
-  assert.equal(payment.reservationConfirmed.const, false);
-  assert.equal(payment.attendanceConfirmed.const, false);
-  assert.equal(payment.environment.const, 'sandbox');
+  assert.equal(schemas.AmountCents.minimum, 0);
   assert.equal(
-    components.schemas.AttendanceState.properties.penaltyApplied.const,
-    false,
+    schemas.BudgetCents.multipleOf,
+    100,
+    'budgets are whole dollars',
   );
-  assert.equal(
-    components.schemas.SubscriptionState.properties.environment.const,
-    'sandbox',
-  );
-  assert.equal(
-    components.schemas.Venue.properties.availabilityKnown.const,
-    false,
-  );
-});
-
-test('numeric closeness values exist only in the labelled synthetic graph', () => {
-  const spec = loadSpec();
-  const graph = spec.components.schemas.SyntheticGraph;
-  assert.equal(graph.properties.synthetic.const, true);
-  assert.equal(
-    graph.properties.nodes.items.properties.nodeId.pattern,
-    '^synthetic-',
-  );
-  const edge = graph.properties.edges.items;
-  assert.ok(
-    edge.required.includes('textEquivalent'),
-    'every edge needs a text equivalent',
-  );
-  assert.ok(
-    edge.required.includes('stateLabel'),
-    'every edge needs a non-color state label',
-  );
-  assert.equal(edge.properties.strength.maximum, 1);
-
-  const closeness =
-    /\.properties\.(strength|score|tieStrength|closeness|driftScore|rank)$/;
-  for (const [where] of walk(spec)) {
-    if (!closeness.test(where)) continue;
-    assert.ok(
-      where.startsWith('$.components.schemas.SyntheticGraph'),
-      `${where}: closeness values may not appear outside the synthetic graph`,
-    );
-  }
-  assert.equal(
-    spec.paths['/demo/graph'].get.parameters.find(
-      (/** @type {any} */ parameter) => parameter.name === 'scene',
-    ).schema.enum.length,
-    2,
-    'demo scenes are a closed set, not a data-source switch',
-  );
-});
-
-test('pause collects no reason and privacy pending states stay explicit', () => {
-  const { components } = loadSpec();
-  const pause = components.schemas.PauseRequest;
-  assert.equal(pause.additionalProperties, false);
-  for (const name of Object.keys(pause.properties)) {
-    assert.doesNotMatch(
-      name,
-      /reason|why|hardship|explain|note/i,
-      `PauseRequest.${name}`,
-    );
-  }
-  assert.deepEqual(
-    components.schemas.ParticipationState.properties.collectionEffect.enum,
-    ['policy_pending'],
-  );
-  assert.equal(
-    components.schemas.ParticipationState.properties.reasonCollected.const,
-    false,
-  );
-  assert.deepEqual(
-    components.schemas.ConsentState.properties.ownDataAccess.enum,
-    ['policy_pending'],
-  );
-  assert.deepEqual(
-    components.schemas.LeaveResult.properties.forfeitPolicy.enum,
-    ['disclosed_proposal_pending_review'],
-  );
-  assert.equal(
-    components.schemas.LeaveResult.properties.providerCancellationClaimed.const,
-    false,
-  );
-  assert.equal(
-    components.schemas.LeaveResult.properties.refundClaimed.const,
-    false,
-  );
-  assert.equal(
-    components.schemas.ConsentState.properties.trackingEnabled.default,
-    false,
-  );
-});
-
-test('payment-executing operations document a closed gate and no simulated success', () => {
-  const spec = loadSpec();
-  const gated = [
-    ['/circles/{circleId}/subscriptions', 'post'],
-    ['/circles/{circleId}/turns/{turnId}/venue-payments', 'post'],
-  ];
-  for (const [route, method] of gated) {
-    const operation = spec.paths[route][method];
-    assert.equal(
-      operation.responses['409'].$ref,
-      '#/components/responses/PaymentGateBlocked',
-      `${operation.operationId}: must document the closed payment gate`,
-    );
-  }
-  assert.equal(
-    spec.components.schemas.PaymentGateError.allOf[1].properties.gate.$ref,
-    '#/components/schemas/GateState',
-    'the payment gate must reuse the shared gate shape',
-  );
-  const gate = spec.components.schemas.GateState.properties;
-  assert.equal(gate.open.const, false);
-  assert.equal(gate.humanApprovalRecorded.const, false);
-  assert.ok(
-    spec.components.schemas.Error.properties.code.enum.includes(
-      'payment_gate_blocked',
+  assert.equal(schemas.SubscriptionState.properties.priceCents.const, 1500);
+  const centsRefs = new Set(
+    ['AmountCents', 'SignedAmountCents', 'BudgetCents'].map(
+      (name) => `#/components/schemas/${name}`,
     ),
   );
-  const states =
-    spec.components.schemas.SubscriptionState.properties.state.enum;
-  for (const required of [
-    'blocked',
-    'created',
-    'approved',
-    'active',
-    'payment_received',
-  ]) {
-    assert.ok(
-      states.includes(required),
-      `subscription state ${required} must be distinct`,
+  /** @param {any} node */
+  const isCents = (node) =>
+    node.type === 'integer' ||
+    centsRefs.has(node.$ref) ||
+    (node.oneOf ?? []).every(
+      (/** @type {any} */ b) => b.type === 'null' || isCents(b),
     );
+  let seen = 0;
+  for (const [where, node] of walk(spec)) {
+    if (!/\.properties\.[A-Za-z]*Cents$/.test(where)) continue;
+    seen += 1;
+    assert.ok(isCents(node), `${where}: must be integer cents`);
   }
+  for (const { operation } of operations(spec))
+    for (const param of operation.parameters ?? [])
+      if (/Cents$/.test(param.name ?? ''))
+        assert.ok(isCents(param.schema), `${param.name}: integer cents`);
+  assert.ok(seen >= 15, `expected many money fields, saw ${seen}`);
+  // No number type anywhere except the NYC map coordinates.
+  for (const [where, node] of walk(spec))
+    if (node && node.type === 'number')
+      assert.match(
+        where,
+        /Event\.properties\.location\.properties\.(lat|lng)$/,
+        where,
+      );
 });
 
-test('the venue is paid by Payouts, with fees recorded and PENDING distinct from success', () => {
+test('Q-011 decisions 5, 6 and 14 are marked open with the approved defaults', () => {
   const spec = loadSpec();
-  const payment = spec.components.schemas.PaymentState;
-  assert.deepEqual(payment.properties.state.enum, [
-    'blocked',
-    'payout_pending',
-    'unverified',
-    'payout_success',
-    'payout_denied',
+  const open = spec.info['x-open-decisions'];
+  for (const decision of [1, 2, 4, 5, 6, 14, 16])
+    assert.ok(
+      open.some(
+        (/** @type {any} */ d) =>
+          d.question === 'Q-011' &&
+          d.decision === decision &&
+          d.status === 'open',
+      ),
+      `Q-011.${decision} missing from info`,
+    );
+
+  const payer = findOperation(spec, 'volunteerAsPayer').operation;
+  assert.equal(payer['x-open-decision'].decision, 5);
+  assert.match(payer['x-open-decision'].contractDefault, /volunteer/i);
+
+  const confirm = findOperation(spec, 'confirmBooking').operation;
+  assert.equal(confirm['x-open-decision'].decision, 6);
+  assert.match(confirm['x-open-decision'].contractDefault, /only the payer/i);
+  assert.match(confirm.responses['403'].description, /not_payer/);
+
+  // #14 middle default: the split card is shared among the hangout's
+  // yes-members (P13); running balances stay private to their parties.
+  for (const id of ['getSplit', 'listOwnBalances', 'getOwnBalance']) {
+    const operation = findOperation(spec, id).operation;
+    assert.equal(operation['x-open-decision'].decision, 14, id);
+    assert.equal(operation['x-open-decision'].status, 'open', id);
+    assert.match(
+      operation['x-open-decision'].contractDefault,
+      /every yes-member of a hangout sees every share/i,
+    );
+    assert.match(
+      operation['x-open-decision'].contractDefault,
+      /only balances they are a party to/i,
+    );
+  }
+  const split = spec.components.schemas.Split;
+  assert.equal(split['x-open-decision'].decision, 14);
+  assert.match(
+    split.properties.shares.description,
+    /every yes-member of this hangout/i,
+  );
+  assert.match(
+    findOperation(spec, 'getSplit').operation.description,
+    /anyone else receives 404/,
+  );
+  // The split card shows shares, never a running balance or its status.
+  const splitReach = reachableSchemas(spec, split);
+  for (const name of ['Balance', 'BalanceSummary', 'BalanceStatus'])
+    assert.ok(!splitReach.has(name), `Split must not expose ${name}`);
+  // Running balances are only under /me; there is no pod-wide ledger route.
+  for (const { route, operation } of operations(spec)) {
+    assert.doesNotMatch(route, /^\/pods\/[^/]+\/(ledger|balances)/, route);
+    const reached = new Set();
+    for (const response of Object.values(operation.responses))
+      reachableSchemas(spec, response, reached);
+    if (reached.has('Balance') || reached.has('BalanceSummary'))
+      assert.match(route, /^\/me\/balances/, `${operation.operationId}`);
+  }
+  // Only the payer may confirm the split or change its total.
+  for (const id of ['confirmSplit', 'setActualTotal'])
+    assert.match(
+      findOperation(spec, id).operation.responses['403'].description,
+      /not_payer/,
+    );
+});
+
+test('private limits, stretch asks, ratings and calendars reach no pod-scoped response', () => {
+  const spec = loadSpec();
+  const privateSchemas = [
+    'PrivateLimits',
+    'SetPrivateLimitsRequest',
+    'StretchAsk',
+    'PlannerChatMessage',
+    'SetRatingRequest',
+    'CalendarAccount',
+    'OwnCalendar',
+    'BudgetCents',
+    'DietaryNeed',
+  ];
+  for (const { route, operation } of operations(spec)) {
+    if (route.startsWith('/me/') || route === '/me') continue;
+    const reached = new Set();
+    for (const response of Object.values(operation.responses))
+      reachableSchemas(spec, response, reached);
+    for (const name of privateSchemas)
+      assert.ok(!reached.has(name), `${operation.operationId} exposes ${name}`);
+  }
+  // A rating is sent from a pod route but returns nothing.
+  const rate = findOperation(spec, 'rateOwnHangout').operation;
+  assert.equal(rate.responses['204'].content, undefined);
+  // No phone number in any schema about another person.
+  for (const name of [
+    'UserRef',
+    'PodMember',
+    'PollVote',
+    'ReadyAnswer',
+    'Balance',
+    'Split',
+    'PodMessage',
+  ])
+    assert.ok(
+      !reachableSchemas(spec, spec.components.schemas[name]).has('PhoneE164'),
+      `${name} must not carry a phone number`,
+    );
+});
+
+test('no card or hangout explains a fit, a budget or a missing option', () => {
+  const spec = loadSpec();
+  const forbidden =
+    /^(reason|rationale|why|whyThis|fit|fits|feasible|budgetFriendly|label|excluded|blockedBy)/i;
+  for (const name of [
+    'ShortlistOption',
+    'Poll',
+    'PollOption',
+    'Hangout',
+    'ReadyCheck',
+    'CardRef',
+    'PodMessage',
+  ]) {
+    for (const [where, node] of walk(spec.components.schemas[name]))
+      if (/\.properties$/.test(where))
+        for (const key of Object.keys(node))
+          assert.doesNotMatch(key, forbidden, `${name}.${key}`);
+  }
+  assert.match(
+    spec.components.schemas.ShortlistOption.description,
+    /budget-friendly/,
+  );
+});
+
+test('votes and ready-check answers are visible with names (Q-013)', () => {
+  const spec = loadSpec();
+  const { PollVote, ReadyAnswer, Poll } = spec.components.schemas;
+  for (const schema of [PollVote, ReadyAnswer]) {
+    assert.ok(schema.required.includes('userId'));
+    assert.ok(schema.required.includes('firstName'));
+    assert.equal(schema['x-visibility'], 'pod-with-names');
+  }
+  assert.match(PollVote.description, /Q-013/);
+  assert.match(
+    Poll.description,
+    /lower per-person estimate wins, then the earlier start/,
+  );
+});
+
+test('pods hold 3 to 8 people and invite links are single use', () => {
+  const spec = loadSpec();
+  const { Pod, CreatePodRequest, InviteLink, PodSummary } =
+    spec.components.schemas;
+  assert.equal(Pod.properties.minMembers.const, 3);
+  assert.equal(Pod.properties.maxMembers.const, 8);
+  assert.equal(Pod.properties.members.maxItems, 8);
+  assert.equal(Pod.properties.memberCount.maximum, 8);
+  assert.equal(PodSummary.properties.memberCount.maximum, 8);
+  assert.equal(CreatePodRequest.properties.inviteUserIds.maxItems, 7);
+  assert.equal(CreatePodRequest.properties.inviteUserIds.minItems, 0);
+  assert.equal(InviteLink.properties.singleUse.const, true);
+  assert.match(
+    findOperation(spec, 'acceptInviteLink').operation.responses['409']
+      .description,
+    /invite_link_used/,
+  );
+  assert.match(
+    findOperation(spec, 'startHangout').operation.responses['409'].description,
+    /pod_too_small/,
+  );
+});
+
+test('every pod-scoped route can answer 404 so membership is not disclosed', () => {
+  const spec = loadSpec();
+  for (const { route, operation } of operations(spec))
+    if (route.startsWith('/pods/{podId}'))
+      assert.ok(operation.responses['404'], `${operation.operationId}: no 404`);
+});
+
+test('bookings are simulated and labelled, never a real reservation', () => {
+  const spec = loadSpec();
+  const { Booking, ShortlistOption, Event } = spec.components.schemas;
+  assert.equal(Booking.properties.simulated.const, true);
+  assert.match(Booking.properties.simulatedLabel.const, /No real reservation/);
+  assert.equal(ShortlistOption.properties.synthetic.const, true);
+  assert.equal(Event.properties.synthetic.const, true);
+});
+
+test('balances use the spec statuses and settlement is gated closed with a required key', () => {
+  const spec = loadSpec();
+  const schemas = spec.components.schemas;
+  assert.deepEqual(schemas.BalanceStatus.enum, [
+    'owed',
+    'pending',
+    'paid',
     'failed',
   ]);
-  // Orders/Checkout cannot spend collected funds, so no order field may linger.
-  assert.equal(payment.properties.providerOrderId, undefined);
-  assert.ok(
-    payment.properties.providerPayoutBatchId,
-    'payout batch id must be representable',
-  );
-  assert.ok(
-    payment.required.includes('feeCents'),
-    'provider fee must always be reported',
-  );
-  assert.equal(
-    payment.properties.feeCents.$ref,
-    '#/components/schemas/AmountCents',
-  );
-
-  const kinds = spec.components.schemas.LedgerEntry.properties.kind.enum;
-  for (const kind of ['venue_payment_sent', 'provider_fee']) {
-    assert.ok(kinds.includes(kind), `ledger must record ${kind}`);
-  }
-  assert.ok(
-    !kinds.includes('venue_payment_captured'),
-    'capture wording belongs to Orders, not Payouts',
-  );
-
-  const create =
-    spec.paths['/circles/{circleId}/turns/{turnId}/venue-payments'].post;
-  assert.match(create.description, /Payouts/);
-  assert.match(create.description, /PENDING/);
-  assert.match(create.description, /never implies a venue reservation/i);
-  assert.equal(payment.properties.reservationConfirmed.const, false);
-});
-
-test('cross-review fixes: synthetic money cannot gate a real payment (XR-03, XR-05)', () => {
-  const { components } = loadSpec();
-  const ledger = components.schemas.Ledger.properties;
-  for (const field of [
-    'potCentsDerived',
-    'potCentsVerified',
-    'potCentsSynthetic',
-  ]) {
-    assert.equal(
-      ledger[field].$ref,
-      '#/components/schemas/SignedAmountCents',
-      field,
-    );
-  }
   assert.match(
-    ledger.potCentsVerified.description,
-    /ONLY figure any payment-path budget check may use/,
+    schemas.Balance.description,
+    /never stored|No balance is stored/i,
   );
-  assert.match(ledger.potCentsDerived.description, /display only/i);
-  // A signed sum must not be typed as non-negative, or a deficit becomes unrepresentable.
-  assert.equal(components.schemas.SignedAmountCents.minimum, undefined);
-  const circle = components.schemas.Circle;
   assert.equal(
-    circle.properties.potCentsVerified.$ref,
-    '#/components/schemas/SignedAmountCents',
+    schemas.SettlementPayment.properties.environment.const,
+    'sandbox',
   );
-  for (const field of ['potCentsDerived', 'potCentsVerified', 'potLabel']) {
-    assert.ok(
-      circle.required.includes(field),
-      `Circle must always carry ${field}`,
-    );
-  }
-  assert.ok(components.schemas.Ledger.required.includes('potLabel'));
-});
-
-test('cross-review fixes: real-member graph inference is gated closed (XR-01, XR-02)', () => {
-  const spec = loadSpec();
-  const gate = spec.components.schemas.GateState.properties;
-  assert.equal(gate.open.const, false);
-  assert.equal(gate.humanApprovalRecorded.const, false);
-  assert.ok(
-    spec.components.responses.GraphGateBlocked,
-    'a graph gate response must exist',
-  );
-  assert.ok(
-    spec.components.schemas.Error.properties.code.enum.includes(
-      'graph_gate_blocked',
-    ),
-  );
-  const suggestions =
-    spec.paths['/circles/{circleId}/turns/{turnId}/plan-suggestions'].post;
+  assert.match(schemas.SettlementPayment.description, /verified webhook/);
+  const { operation } = findOperation(spec, 'createSettlementPayment');
   assert.equal(
-    suggestions.responses['503'].content['application/json'].schema.$ref,
-    '#/components/schemas/GraphGateError',
+    operation.responses['409'].$ref,
+    '#/components/responses/PaymentGateBlocked',
   );
-  assert.match(
-    suggestions.description,
-    /NO tie- or drift-derived input reaches the prompt/,
-  );
-  // Host-facing copy must be a server-chosen key, never model free text.
-  const plan = spec.components.schemas.Plan.properties;
-  assert.equal(plan.rationale, undefined, 'free-text rationale must be gone');
-  assert.ok(
-    Array.isArray(plan.rationaleKey.enum) && plan.rationaleKey.enum.length > 0,
-  );
-  for (const key of plan.rationaleKey.enum) {
-    assert.doesNotMatch(
-      key,
-      /drift|fad|risk|warn|score|rank/i,
-      `rationale key ${key}`,
-    );
-  }
-});
-
-test('cross-review fixes: prompt inputs are closed vocabularies (XR-13)', () => {
-  const request = loadSpec().components.schemas.CreatePlanSuggestionsRequest;
-  assert.equal(request.additionalProperties, false);
-  assert.equal(
-    request.properties.availabilityNote,
-    undefined,
-    'free-text note must be gone',
-  );
-  for (const field of ['availability', 'preferences']) {
-    assert.ok(
-      Array.isArray(request.properties[field].items.enum),
-      `${field} must be a closed set`,
-    );
-  }
-  assert.ok(
-    request.properties.maxBudgetCents,
-    'client may only lower the server budget',
-  );
-  assert.match(request.properties.maxBudgetCents.description, /never raise/i);
-});
-
-test('cross-review fixes: pause, peer view and turn states stop pre-deciding policy (XR-07, XR-08, XR-22, XR-23)', () => {
-  const { components } = loadSpec();
-  const members = components.schemas.Circle.properties.members;
-  assert.equal(members.maxItems, 6);
-  assert.equal(
-    members.items.properties.state.const,
-    'accepted',
-    'peer view must not expose invited, left or paused',
-  );
-  assert.ok(components.schemas.Circle.properties.pendingInvitationCount);
   assert.deepEqual(
-    components.schemas.Circle.properties.participationStateVisibility.enum,
-    ['policy_pending'],
+    operation['x-payment-gate'].blockingQuestions.includes('Q-010'),
+    true,
   );
-  assert.ok(
-    !components.schemas.Turn.properties.state.enum.includes('skipped'),
-    'skipped presumes an undecided host-decline rule',
-  );
-});
-
-test('cross-review fixes: unverified payment state and complete refusals exist (XR-14, XR-18, XR-24, XR-11)', () => {
-  const spec = loadSpec();
-  assert.ok(
-    spec.components.schemas.PaymentState.properties.state.enum.includes(
-      'unverified',
-    ),
-  );
-  assert.ok(
-    spec.components.schemas.SubscriptionState.properties.state.enum.includes(
-      'unverified',
-    ),
-  );
-  assert.ok(
-    spec.components.schemas.Error.properties.constraint,
-    'refusals need structured bounds',
-  );
-  assert.ok(
-    spec.paths['/circles/{circleId}/contribution-proposals'].post.responses[
-      '409'
-    ],
-    'a stale membership version must be refusable',
-  );
-  const manual = spec.paths['/circles/{circleId}/turns/{turnId}/plans'];
-  assert.ok(manual, 'the non-AI plan path needs an operation');
-  assert.equal(manual.post.operationId, 'createManualPlan');
-  for (const [route, method] of [
-    ['/circles/{circleId}/turns/{turnId}/approvals', 'post'],
-    ['/circles/{circleId}/turns/{turnId}/venue-payments', 'post'],
+  assert.equal(schemas.GateState.properties.open.const, false);
+  assert.equal(schemas.GateState.properties.humanApprovalRecorded.const, false);
+  for (const id of [
+    'createSettlementPayment',
+    'confirmSplit',
+    'setActualTotal',
   ]) {
-    assert.match(spec.paths[route][method].description, /circle_not_ready/);
-  }
-});
-
-test('cross-review fixes: every operation declares rate-limit and server-error responses (XR-27)', () => {
-  const spec = loadSpec();
-  const methods = ['get', 'post', 'put', 'patch', 'delete'];
-  let count = 0;
-  for (const [route, item] of Object.entries(spec.paths)) {
-    for (const method of methods.filter((m) => item[m])) {
-      count += 1;
-      for (const status of ['429', '500']) {
-        assert.ok(
-          item[method].responses[status],
-          `${route} ${method}: missing ${status}`,
-        );
-      }
-    }
-  }
-  assert.equal(count, 24, 'operation count must match what the docs claim');
-});
-
-test('cross-review fixes: the payment gate waits on Q-006, not only on sandbox evidence (XR-06)', () => {
-  const spec = loadSpec();
-  for (const [route, method] of [
-    ['/circles/{circleId}/subscriptions', 'post'],
-    ['/circles/{circleId}/turns/{turnId}/venue-payments', 'post'],
-  ]) {
-    const description = spec.paths[route][method].description;
-    assert.match(description, /Q-006/, `${route}: Q-006 must gate the payment`);
-    assert.match(
-      description,
-      /YT-025/,
-      `${route}: the legal assessment must gate the payment`,
+    const params = findOperation(spec, id).operation.parameters.map(
+      (/** @type {any} */ p) => p.$ref,
+    );
+    assert.ok(
+      params.includes('#/components/parameters/IdempotencyKeyRequired'),
+      `${id}: key required`,
     );
   }
+  assert.equal(
+    spec.components.parameters.IdempotencyKeyRequired.required,
+    true,
+  );
+  // Exactly one operation can move money.
+  const moneyMovers = operations(spec).filter(
+    ({ operation }) => operation['x-payment-gate'],
+  );
+  assert.deepEqual(
+    moneyMovers.map(({ operation }) => operation.operationId),
+    ['createSettlementPayment'],
+  );
 });
 
 test('webhook ingress is unauthenticated by design but verified before effects', () => {
   const spec = loadSpec();
-  const webhook = spec.paths['/webhooks/paypal'].post;
-  assert.deepEqual(webhook.security, []);
-  assert.ok(webhook.responses['401'], 'invalid signature must be rejectable');
+  const { operation } = findOperation(spec, 'receiveProviderWebhook');
+  assert.deepEqual(operation.security, []);
+  assert.match(
+    operation.responses['401'].description,
+    /webhook_signature_invalid/,
+  );
+  assert.match(operation.description, /before any ledger entry/);
+  assert.match(operation.description, /safe to run twice/);
   const ack = spec.components.schemas.WebhookAcknowledgement.properties;
   assert.equal(ack.signatureVerified.const, true);
-  assert.ok(
-    spec.components.schemas.WebhookAcknowledgement.required.includes(
-      'duplicate',
-    ),
+  assert.ok(ack.duplicate);
+});
+
+test('notifications have exactly four switches and nothing is sent without approval', () => {
+  const spec = loadSpec();
+  const settings = spec.components.schemas.NotificationSettings;
+  assert.deepEqual(Object.keys(settings.properties), [
+    'polls',
+    'reminders',
+    'privateAsks',
+    'money',
+  ]);
+  assert.deepEqual(settings.required, [
+    'polls',
+    'reminders',
+    'privateAsks',
+    'money',
+  ]);
+  assert.equal(spec.info['x-notification-send-gate'].open, false);
+  assert.match(settings.description, /never posted in pod chat/);
+});
+
+test('the subscription is a sandbox app-store plan separate from hangout money', () => {
+  const spec = loadSpec();
+  const sub = spec.components.schemas.SubscriptionState;
+  assert.equal(sub.properties.environment.const, 'sandbox');
+  assert.equal(sub.properties.period.const, 'month');
+  assert.deepEqual(
+    sub['x-open-decision'].map((/** @type {any} */ d) => d.decision),
+    [1, 2],
   );
-  assert.ok(
-    spec.components.schemas.WebhookAcknowledgement.required.includes(
-      'effectsApplied',
-    ),
-  );
+  const reached = reachableSchemas(spec, sub);
+  assert.ok(!reached.has('Balance') && !reached.has('SettlementPayment'));
 });
