@@ -52,7 +52,13 @@
       "borough": "Brooklyn",
       "address": "Breeze Hill, Prospect Park, Brooklyn, NY 11225",
       "tags": ["food", "outdoor"],
-      "dietaryOptions": ["vegetarian", "vegan", "gluten-free", "halal", "kosher"],
+      "dietaryOptions": [
+        "vegetarian",
+        "vegan",
+        "gluten-free",
+        "halal",
+        "kosher"
+      ],
       "priceRangeCentsPerPerson": [1500, 3000],
       "maxGroupSize": 8,
       "travelMinutesFromMidtown": 35,
@@ -207,7 +213,13 @@
       "endsAt": "2026-11-21T17:00:00-05:00",
       "estCostPerPersonCents": 2500,
       "tags": ["food", "outdoor"],
-      "dietaryOptions": ["vegetarian", "vegan", "gluten-free", "halal", "kosher"]
+      "dietaryOptions": [
+        "vegetarian",
+        "vegan",
+        "gluten-free",
+        "halal",
+        "kosher"
+      ]
     },
     {
       "eventId": "evt-004",

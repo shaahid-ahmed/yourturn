@@ -38,7 +38,10 @@ describe('searchEvents', () => {
     const results = searchEvents({ tags: ['active'] });
     assert.ok(results.length > 0, 'expect at least one active event');
     for (const r of results) {
-      assert.ok(r.tags.includes('active'), `event ${r.eventId} must include active tag`);
+      assert.ok(
+        r.tags.includes('active'),
+        `event ${r.eventId} must include active tag`,
+      );
     }
   });
 
@@ -46,20 +49,29 @@ describe('searchEvents', () => {
     const results = searchEvents({ dietary: ['vegan'] });
     assert.ok(results.length > 0, 'expect at least one vegan event');
     for (const r of results) {
-      assert.ok(r.dietaryOptions.includes('vegan'), `event ${r.eventId} must include vegan`);
+      assert.ok(
+        r.dietaryOptions.includes('vegan'),
+        `event ${r.eventId} must include vegan`,
+      );
     }
   });
 
   it('filters by maxCents', () => {
     const results = searchEvents({ maxCents: 2000 });
     for (const r of results) {
-      assert.ok(r.estCostPerPersonCents <= 2000, `event ${r.eventId} cost exceeds cap`);
+      assert.ok(
+        r.estCostPerPersonCents <= 2000,
+        `event ${r.eventId} cost exceeds cap`,
+      );
     }
   });
 
   it('zero-cost event is included below any positive cap', () => {
     const results = searchEvents({ maxCents: 100 });
-    assert.ok(results.some(r => r.estCostPerPersonCents === 0), 'free event must appear');
+    assert.ok(
+      results.some((r) => r.estCostPerPersonCents === 0),
+      'free event must appear',
+    );
   });
 
   it('filters by borough', () => {
@@ -81,8 +93,12 @@ describe('searchEvents', () => {
   it('filters by dow — mon closed venue excluded', () => {
     // Brooklyn Bowl is closed mon/tue; this confirms a venue closed on mon is excluded
     const results = searchEvents({ dow: 'mon' });
-    const bowlEvent = results.find(r => r.venueId === 'v-brooklyn-bowl');
-    assert.equal(bowlEvent, undefined, 'Brooklyn Bowl (closed mon) must not appear');
+    const bowlEvent = results.find((r) => r.venueId === 'v-brooklyn-bowl');
+    assert.equal(
+      bowlEvent,
+      undefined,
+      'Brooklyn Bowl (closed mon) must not appear',
+    );
   });
 
   it('filters by groupSize', () => {
@@ -98,7 +114,11 @@ describe('searchEvents', () => {
   });
 
   it('combined filter: vegan + outdoor + fri', () => {
-    const results = searchEvents({ dietary: ['vegan'], tags: ['outdoor'], dow: 'fri' });
+    const results = searchEvents({
+      dietary: ['vegan'],
+      tags: ['outdoor'],
+      dow: 'fri',
+    });
     for (const r of results) {
       assert.ok(r.dietaryOptions.includes('vegan'));
       assert.ok(r.tags.includes('outdoor'));
@@ -198,7 +218,10 @@ describe('suggestToPod', () => {
   });
 
   it('respects custom limit', () => {
-    const results = suggestToPod({ size: 4, dietary: [], budgetCents: 10000 }, 2);
+    const results = suggestToPod(
+      { size: 4, dietary: [], budgetCents: 10000 },
+      2,
+    );
     assert.ok(results.length <= 2);
   });
 
@@ -206,7 +229,8 @@ describe('suggestToPod', () => {
     const results = suggestToPod({ size: 4, dietary: [], budgetCents: 10000 });
     for (let i = 1; i < results.length; i++) {
       assert.ok(
-        results[i].estCostPerPersonCents >= results[i - 1].estCostPerPersonCents,
+        results[i].estCostPerPersonCents >=
+          results[i - 1].estCostPerPersonCents,
         'results must be sorted by cost asc',
       );
     }
@@ -215,38 +239,70 @@ describe('suggestToPod', () => {
   it('filters out events exceeding pod budget', () => {
     const results = suggestToPod({ size: 4, dietary: [], budgetCents: 1000 });
     for (const r of results) {
-      assert.ok(r.estCostPerPersonCents <= 1000, `cost ${r.estCostPerPersonCents} exceeds 1000`);
+      assert.ok(
+        r.estCostPerPersonCents <= 1000,
+        `cost ${r.estCostPerPersonCents} exceeds 1000`,
+      );
     }
   });
 
   it('filters by pod dietary needs', () => {
-    const results = suggestToPod({ size: 4, dietary: ['vegan'], budgetCents: 10000 });
+    const results = suggestToPod({
+      size: 4,
+      dietary: ['vegan'],
+      budgetCents: 10000,
+    });
     for (const r of results) {
-      assert.ok(r.dietaryOptions.includes('vegan'), `event ${r.eventId} must support vegan`);
+      assert.ok(
+        r.dietaryOptions.includes('vegan'),
+        `event ${r.eventId} must support vegan`,
+      );
     }
   });
 
   it('free event appears for tight budget pod', () => {
-    const results = suggestToPod({ size: 4, dietary: [], budgetCents: 500 }, 10);
-    assert.ok(results.some(r => r.estCostPerPersonCents === 0), 'free event must be suggested');
+    const results = suggestToPod(
+      { size: 4, dietary: [], budgetCents: 500 },
+      10,
+    );
+    assert.ok(
+      results.some((r) => r.estCostPerPersonCents === 0),
+      'free event must be suggested',
+    );
   });
 
   it('pod larger than max venue capacity returns no results', () => {
-    const results = suggestToPod({ size: 99, dietary: [], budgetCents: 100000 }, 10);
+    const results = suggestToPod(
+      { size: 99, dietary: [], budgetCents: 100000 },
+      10,
+    );
     assert.equal(results.length, 0);
   });
 
   it('filters by dow preference', () => {
-    const results = suggestToPod({ size: 2, dietary: [], budgetCents: 10000, dow: 'fri' });
+    const results = suggestToPod({
+      size: 2,
+      dietary: [],
+      budgetCents: 10000,
+      dow: 'fri',
+    });
     for (const r of results) {
       assert.ok(r.venue.hours.fri, `venue ${r.venueId} must be open fri`);
     }
   });
 
   it('filters by tag preference', () => {
-    const results = suggestToPod({ size: 4, dietary: [], budgetCents: 10000, tags: ['outdoor'] });
+    const results = suggestToPod({
+      size: 4,
+      dietary: [],
+      budgetCents: 10000,
+      tags: ['outdoor'],
+    });
     for (const r of results) {
-      assert.ok(r.tags.includes('outdoor'), `event ${r.eventId} must have outdoor tag`);
+      assert.ok(
+        r.tags.includes('outdoor'),
+        `event ${r.eventId} must have outdoor tag`,
+      );
     }
   });
 });
@@ -264,8 +320,17 @@ describe('listTags', () => {
 
   it('contains expected tags from fixture', () => {
     const tags = listTags();
-    for (const expected of ['active', 'food', 'outdoor', 'nightlife', 'cultural']) {
-      assert.ok(tags.includes(expected), `expected tag ${expected} to be present`);
+    for (const expected of [
+      'active',
+      'food',
+      'outdoor',
+      'nightlife',
+      'cultural',
+    ]) {
+      assert.ok(
+        tags.includes(expected),
+        `expected tag ${expected} to be present`,
+      );
     }
   });
 });
@@ -283,8 +348,17 @@ describe('listDietaryOptions', () => {
 
   it('contains expected dietary options from fixture', () => {
     const opts = listDietaryOptions();
-    for (const expected of ['vegan', 'vegetarian', 'gluten-free', 'halal', 'kosher']) {
-      assert.ok(opts.includes(expected), `expected ${expected} in dietary options`);
+    for (const expected of [
+      'vegan',
+      'vegetarian',
+      'gluten-free',
+      'halal',
+      'kosher',
+    ]) {
+      assert.ok(
+        opts.includes(expected),
+        `expected ${expected} in dietary options`,
+      );
     }
   });
 });

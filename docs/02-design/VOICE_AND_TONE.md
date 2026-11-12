@@ -54,18 +54,18 @@ The only place reconnection guidance appears is the host's own turn, phrased as 
 
 Required phrasings for the states in FLOWS S-06 and the gated contract responses:
 
-| State                          | Required meaning the copy must carry                                                                           |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| Payment gate closed            | "Payments are turned off in this demo." Say that nothing was charged and that real payment is not enabled yet (Q-010). |
-| Approval recorded              | "Approved. This isn't a payment, and nothing is reserved with the venue yet."                                          |
-| Owed                           | "You owe [payer name] $X.XX." State the amount and who the payer is; do not imply it has been paid.                   |
-| Pending                        | "Your payment is on its way." Name the step precisely; do not imply completion or that anything is reserved.           |
-| Paid                           | "Payment received." Never "booked", "reserved" or "confirmed with the venue".                                          |
-| Failed                         | "The payment didn't go through. You still owe this amount." Offer a retry where one exists.                            |
-| Validation error               | Name the field and the limit: "Enter an amount between $1.00 and $15.00." Keep what was typed.                 |
-| Non-member / not found         | Reveal nothing: "We couldn't find that." No circle name, size or member names.                                 |
-| Not the host                   | "Only this month's host can do this." No host-only guidance in the message.                                    |
-| Server error                   | "Something went wrong on our side. Nothing was changed." No provider payloads, ids or secrets.                 |
+| State                  | Required meaning the copy must carry                                                                                   |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Payment gate closed    | "Payments are turned off in this demo." Say that nothing was charged and that real payment is not enabled yet (Q-010). |
+| Approval recorded      | "Approved. This isn't a payment, and nothing is reserved with the venue yet."                                          |
+| Owed                   | "You owe [payer name] $X.XX." State the amount and who the payer is; do not imply it has been paid.                    |
+| Pending                | "Your payment is on its way." Name the step precisely; do not imply completion or that anything is reserved.           |
+| Paid                   | "Payment received." Never "booked", "reserved" or "confirmed with the venue".                                          |
+| Failed                 | "The payment didn't go through. You still owe this amount." Offer a retry where one exists.                            |
+| Validation error       | Name the field and the limit: "Enter an amount between $1.00 and $15.00." Keep what was typed.                         |
+| Non-member / not found | Reveal nothing: "We couldn't find that." No circle name, size or member names.                                         |
+| Not the host           | "Only this month's host can do this." No host-only guidance in the message.                                            |
+| Server error           | "Something went wrong on our side. Nothing was changed." No provider payloads, ids or secrets.                         |
 
 Standing money/demo disclosures: every money screen states sandbox-demo status and the currency; the forfeit text is always labelled a **proposal pending review**, never a rule; the pot is always labelled a conceptual budget with no verified funding; synthetic data is labelled fictional wherever it appears.
 

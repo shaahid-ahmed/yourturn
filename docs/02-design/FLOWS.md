@@ -7,17 +7,17 @@ Every flow below specifies the empty, loading, error and permission states, beca
 
 ## Screen and state inventory
 
-| Screen                         | Purpose                               | States                                                                               |
-| ------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------ |
-| S-01 Invitation                | Accept or decline membership          | loading, invitation valid, already resolved, circle full, declined                   |
+| Screen                         | Purpose                               | States                                                                                                               |
+| ------------------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| S-01 Invitation                | Accept or decline membership          | loading, invitation valid, already resolved, circle full, declined                                                   |
 | S-02 Circle home               | Members, readiness, pot, current turn | loading, not-ready (<3 accepted), awaiting agreement, ready, empty plan state, `policy_pending` (peer-visible pause) |
-| S-03 Contribution agreement    | Propose and agree an amount           | loading, proposing, invalid amount, awaiting others, agreed, invalidated by change   |
-| S-04 Your turn (host)          | Request plans, review, approve        | no suggestions yet, generating, three plans, unavailable, manual list, approved, host-declined |
-| S-05 Plan detail               | One plan's venue and total            | loading, within budget, over budget, stale version                                   |
-| S-06 Balance status            | Honest IOU balance state              | blocked (gate closed, Q-010), owed, pending, paid, failed                            |
-| S-07 Privacy and participation | Consent, pause, leave                 | tracking off (default), tracking on, paused, leave confirmation, left                |
-| S-08 Demo graph                | Synthetic drift illustration          | loading, before scene, after scene, reduced-motion, fixture missing                  |
-| S-09 Error / permission        | Honest refusal                        | not found (also covers non-member), not host, validation, rate limited, server error |
+| S-03 Contribution agreement    | Propose and agree an amount           | loading, proposing, invalid amount, awaiting others, agreed, invalidated by change                                   |
+| S-04 Your turn (host)          | Request plans, review, approve        | no suggestions yet, generating, three plans, unavailable, manual list, approved, host-declined                       |
+| S-05 Plan detail               | One plan's venue and total            | loading, within budget, over budget, stale version                                                                   |
+| S-06 Balance status            | Honest IOU balance state              | blocked (gate closed, Q-010), owed, pending, paid, failed                                                            |
+| S-07 Privacy and participation | Consent, pause, leave                 | tracking off (default), tracking on, paused, leave confirmation, left                                                |
+| S-08 Demo graph                | Synthetic drift illustration          | loading, before scene, after scene, reduced-motion, fixture missing                                                  |
+| S-09 Error / permission        | Honest refusal                        | not found (also covers non-member), not host, validation, rate limited, server error                                 |
 
 **Navigation.** Mobile-first, single primary column. Top-level destinations: Circle home (S-02), Your turn (S-04, visible to everyone but actionable only by the host), Privacy and participation (S-07). S-08 is reachable from an explicitly labelled "Demo" entry, never presented as the member's own data. No modal traps: every overlay is dismissible by Escape and a visible Cancel.
 
@@ -110,17 +110,17 @@ S-02 or S-07 ──[Leave circle]──▶ confirmation ──[Confirm]──▶
 
 Every screen below lists the user stories it implements. A screen with no story has no authorized scope; a story with no screen has no designed path.
 
-| Screen | Stories served |
-| ------ | -------------- |
-| S-01 Invitation | US-001 (join circle) |
-| S-02 Circle home | US-001 (member list), US-002 (agreement status), US-003 (host turn display), US-004 (pot display), US-005 (pause peer-view), US-014 (pause/leave discovery) |
-| S-03 Contribution agreement | US-002 (propose and agree amount) |
-| S-04 Your turn (host) | US-009 (three plans or honest none), US-010 (approval) |
-| S-05 Plan detail | US-009 (plan details), US-010 (approval confirmation) |
-| S-06 Balance status | US-011 (payment truth) |
-| S-07 Privacy and participation | US-005 (pause), US-006 (leave), US-007 (tracking consent), US-008 (withdrawal), US-014 (exit controls) |
-| S-08 Demo graph | US-012 (synthetic graph) |
-| S-09 Error / permission | US-001, US-003, US-006, US-013 (accessibility), US-014 (refusals) |
+| Screen                         | Stories served                                                                                                                                              |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S-01 Invitation                | US-001 (join circle)                                                                                                                                        |
+| S-02 Circle home               | US-001 (member list), US-002 (agreement status), US-003 (host turn display), US-004 (pot display), US-005 (pause peer-view), US-014 (pause/leave discovery) |
+| S-03 Contribution agreement    | US-002 (propose and agree amount)                                                                                                                           |
+| S-04 Your turn (host)          | US-009 (three plans or honest none), US-010 (approval)                                                                                                      |
+| S-05 Plan detail               | US-009 (plan details), US-010 (approval confirmation)                                                                                                       |
+| S-06 Balance status            | US-011 (payment truth)                                                                                                                                      |
+| S-07 Privacy and participation | US-005 (pause), US-006 (leave), US-007 (tracking consent), US-008 (withdrawal), US-014 (exit controls)                                                      |
+| S-08 Demo graph                | US-012 (synthetic graph)                                                                                                                                    |
+| S-09 Error / permission        | US-001, US-003, US-006, US-013 (accessibility), US-014 (refusals)                                                                                           |
 
 **Unmapped stories:** US-013 (accessibility) cross-cuts all screens and is not bound to a single screen.
 

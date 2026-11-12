@@ -25,29 +25,39 @@ const DOW_ORDER = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 export function searchEvents(opts = {}) {
   const { tags, dietary, maxCents, borough, dow, groupSize } = opts;
   const catalog = loadCatalog();
-  const venueMap = Object.fromEntries(catalog.venues.map(v => [v.venueId, v]));
+  const venueMap = Object.fromEntries(
+    catalog.venues.map((v) => [v.venueId, v]),
+  );
 
-  return catalog.events.filter(evt => {
-    const venue = venueMap[evt.venueId];
-    if (!venue) return false;
+  return catalog.events
+    .filter((evt) => {
+      const venue = venueMap[evt.venueId];
+      if (!venue) return false;
 
-    if (tags?.length && !tags.some(t => evt.tags.includes(t))) return false;
+      if (tags?.length && !tags.some((t) => evt.tags.includes(t))) return false;
 
-    if (dietary?.length && !dietary.every(d => evt.dietaryOptions.includes(d))) return false;
+      if (
+        dietary?.length &&
+        !dietary.every((d) => evt.dietaryOptions.includes(d))
+      )
+        return false;
 
-    if (maxCents !== undefined && evt.estCostPerPersonCents > maxCents) return false;
+      if (maxCents !== undefined && evt.estCostPerPersonCents > maxCents)
+        return false;
 
-    if (borough && venue.borough !== borough) return false;
+      if (borough && venue.borough !== borough) return false;
 
-    if (dow) {
-      const slot = venue.hours[dow];
-      if (!slot) return false;
-    }
+      if (dow) {
+        const slot = venue.hours[dow];
+        if (!slot) return false;
+      }
 
-    if (groupSize !== undefined && groupSize > venue.maxGroupSize) return false;
+      if (groupSize !== undefined && groupSize > venue.maxGroupSize)
+        return false;
 
-    return true;
-  }).map(evt => ({ ...evt, venue: venueMap[evt.venueId] }));
+      return true;
+    })
+    .map((evt) => ({ ...evt, venue: venueMap[evt.venueId] }));
 }
 
 /**
@@ -64,12 +74,20 @@ export function searchVenues(opts = {}) {
   const { tags, dietary, maxCentsPerPerson, borough, dow, groupSize } = opts;
   const catalog = loadCatalog();
 
-  return catalog.venues.filter(venue => {
-    if (tags?.length && !tags.some(t => venue.tags.includes(t))) return false;
+  return catalog.venues.filter((venue) => {
+    if (tags?.length && !tags.some((t) => venue.tags.includes(t))) return false;
 
-    if (dietary?.length && !dietary.every(d => venue.dietaryOptions.includes(d))) return false;
+    if (
+      dietary?.length &&
+      !dietary.every((d) => venue.dietaryOptions.includes(d))
+    )
+      return false;
 
-    if (maxCentsPerPerson !== undefined && venue.priceRangeCentsPerPerson[1] > maxCentsPerPerson) return false;
+    if (
+      maxCentsPerPerson !== undefined &&
+      venue.priceRangeCentsPerPerson[1] > maxCentsPerPerson
+    )
+      return false;
 
     if (borough && venue.borough !== borough) return false;
 
@@ -90,8 +108,8 @@ export function searchVenues(opts = {}) {
  */
 export function getEventDetail(eventId) {
   const catalog = loadCatalog();
-  const venue = Object.fromEntries(catalog.venues.map(v => [v.venueId, v]));
-  const evt = catalog.events.find(e => e.eventId === eventId);
+  const venue = Object.fromEntries(catalog.venues.map((v) => [v.venueId, v]));
+  const evt = catalog.events.find((e) => e.eventId === eventId);
   if (!evt) return null;
   return { ...evt, venue: venue[evt.venueId] };
 }
@@ -102,7 +120,7 @@ export function getEventDetail(eventId) {
  */
 export function getVenueDetail(venueId) {
   const catalog = loadCatalog();
-  return catalog.venues.find(v => v.venueId === venueId) ?? null;
+  return catalog.venues.find((v) => v.venueId === venueId) ?? null;
 }
 
 /**
@@ -149,8 +167,8 @@ export function suggestToPod(pod, limit = 3) {
 export function listTags() {
   const catalog = loadCatalog();
   const tagSet = new Set();
-  for (const v of catalog.venues) v.tags.forEach(t => tagSet.add(t));
-  for (const e of catalog.events) e.tags.forEach(t => tagSet.add(t));
+  for (const v of catalog.venues) v.tags.forEach((t) => tagSet.add(t));
+  for (const e of catalog.events) e.tags.forEach((t) => tagSet.add(t));
   return [...tagSet].sort();
 }
 
@@ -161,7 +179,9 @@ export function listTags() {
 export function listDietaryOptions() {
   const catalog = loadCatalog();
   const dietSet = new Set();
-  for (const v of catalog.venues) v.dietaryOptions.forEach(d => dietSet.add(d));
-  for (const e of catalog.events) e.dietaryOptions.forEach(d => dietSet.add(d));
+  for (const v of catalog.venues)
+    v.dietaryOptions.forEach((d) => dietSet.add(d));
+  for (const e of catalog.events)
+    e.dietaryOptions.forEach((d) => dietSet.add(d));
   return [...dietSet].sort();
 }
