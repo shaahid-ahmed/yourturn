@@ -4,7 +4,7 @@
     "title": "YourTurn API",
     "version": "0.1.0-draft",
     "summary": "Draft contract for a sandbox-only rotating-host demo.",
-    "description": "DRAFT. Not frozen, not implemented, and not approved for money movement. Payment-executing operations are gated closed and return payment_gate_blocked until human money-flow approval exists. The venue is paid with the Payouts API from the collector balance, not with Orders/Checkout (ADR 0005, verified in sandbox). Graph numbers come only from labelled synthetic fixtures. See docs/decisions/0004-phase-1-contracts.md and 0005-venue-payment-via-payouts.md.",
+    "description": "DRAFT. Not frozen, not implemented, and not approved for money movement. Payment-executing operations are gated closed and return payment_gate_blocked until human money-flow approval exists. The venue is paid with the Payouts API from the collector balance, not with Orders/Checkout (ADR 0005, verified in sandbox). Graph numbers come only from labelled synthetic fixtures. See docs/decisions/0004-phase-1-contracts.md and 0005-venue-payment-via-payouts.md. No notification, reminder or nudge is emitted by any operation: notification copy and timing require joint Content Designer and Behavioral Scientist approval, which does not exist (XR-28).",
     "x-contract-status": "draft",
     "x-frozen": false,
     "x-owner": "architect",
@@ -90,6 +90,26 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       },
@@ -111,6 +131,26 @@
           },
           "403": {
             "$ref": "#/components/responses/CsrfRejected"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -134,6 +174,26 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthenticated"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -157,6 +217,26 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthenticated"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -188,6 +268,26 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -241,6 +341,26 @@
                 }
               }
             }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -278,6 +398,26 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       },
@@ -318,6 +458,36 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "The supplied membershipVersion is stale, or an agreed proposal already exists and the supersession policy is undecided. A new proposal does NOT silently cancel an agreed amount: the agreed version stays in force until the new one is fully agreed, and repeated proposals are rate-limited to avoid pressuring a dissenter (XR-24; Trust & Safety, YT-026)."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -384,6 +554,26 @@
                 }
               }
             }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -437,6 +627,26 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -490,6 +700,26 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -543,6 +773,26 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -574,6 +824,26 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -597,7 +867,7 @@
         "tags": ["turn"],
         "operationId": "createPlanSuggestions",
         "summary": "Request plan suggestions for the caller's own turn.",
-        "description": "Success returns exactly three distinct plans drawn from the fixed venue list and within the conceptual budget. Schema-invalid model output triggers one bounded regeneration, then an explicit unavailable result. A shorter list is never returned as success. Suggestions cannot book or spend.",
+        "description": "Success returns exactly three distinct plans, each on a different fixed-list venue, priced from venue data and within the SERVER-derived verified budget; a client may only request a lower cap (XR-12). Schema-invalid model output triggers one bounded regeneration, then an explicit unavailable result; a shorter list is never success. While the graph gate is closed (Q-002), NO tie- or drift-derived input reaches the prompt and no guidance names a pair (XR-01, XR-02). Host-facing copy comes from a closed rationaleKey vocabulary, never model prose. Suggestions cannot book or spend.",
         "requestBody": {
           "required": true,
           "content": {
@@ -639,14 +909,44 @@
             "$ref": "#/components/responses/NotFound"
           },
           "409": {
-            "description": "Circle is not ready: fewer than three accepted members, or no agreed contribution version.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "description": "Circle is not ready (fewer than three accepted members or no agreed contribution), carrying constraint.minMembers."
+          },
+          "503": {
+            "description": "The real-member graph gate is closed and this deployment requires graph input for suggestions. Returned instead of silently degrading.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphGateError"
+                }
+              }
             }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -670,7 +970,7 @@
         "tags": ["turn"],
         "operationId": "approvePlan",
         "summary": "Host approves one exact immutable plan version.",
-        "description": "Deterministic code records the plan version, venue, total cents and turn. Approval is not a payment and not a reservation. A later change to plan, venue or amount makes the approval stale.",
+        "description": "Deterministic code records the plan version, venue, total cents and turn. Approval is not a payment and not a reservation. A later change to plan, venue or amount makes the approval stale. Refused with circle_not_ready, carrying constraint.minMembers, if the circle has fewer than three accepted members or no agreed contribution for the current membership version (XR-18).",
         "requestBody": {
           "required": true,
           "content": {
@@ -712,7 +1012,7 @@
             "$ref": "#/components/responses/NotFound"
           },
           "409": {
-            "description": "Plan version, venue or amount no longer matches the approved snapshot.",
+            "description": "The turn is not current or is suspended, or a different approval already exists for this turn.",
             "content": {
               "application/json": {
                 "schema": {
@@ -722,7 +1022,7 @@
             }
           },
           "422": {
-            "description": "Plan total exceeds the derived conceptual budget.",
+            "description": "Cannot record the approval: the plan total exceeds the verified budget (potCentsVerified), the circle is not ready (constraint.minMembers), or the snapshot is already stale. Staleness is always 422 (XR-10).",
             "content": {
               "application/json": {
                 "schema": {
@@ -730,6 +1030,26 @@
                 }
               }
             }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -786,6 +1106,26 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -817,6 +1157,26 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -837,7 +1197,7 @@
         "tags": ["money"],
         "operationId": "startContributionSubscription",
         "summary": "Begin the caller's contribution subscription (gated closed).",
-        "description": "Returns payment_gate_blocked while the server-side gate is closed. Only a human may open the gate after YT-006 evidence and money-flow approval. No request field, header or client flag can open it, and no simulated success exists.",
+        "description": "Returns payment_gate_blocked while the server-side gate is closed. Only a human may open the gate after YT-006 evidence and money-flow approval. No request field, header or client flag can open it, and no simulated success exists. The gate opens only when ALL of these hold: YT-006 sandbox evidence, the YT-025 legal assessment, a Q-006 decision on pause and cancellation effects, and explicit human money-flow approval. A pause that failed to stop a charge would be coercive, so Q-006 is a precondition, not a follow-up (XR-06).",
         "responses": {
           "202": {
             "description": "Accepted for provider interaction. Unreachable while the gate is closed.",
@@ -860,6 +1220,26 @@
           },
           "409": {
             "$ref": "#/components/responses/PaymentGateBlocked"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       },
@@ -884,6 +1264,26 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -907,7 +1307,7 @@
         "tags": ["money"],
         "operationId": "createVenuePayment",
         "summary": "Pay the venue from the pot with Payouts (gated closed).",
-        "description": "Deterministic code only, from a non-stale approval. Sends a Payouts batch from the collector balance to the venue account; Orders/Checkout cannot spend collected funds (ADR 0005). Returns payment_gate_blocked while the gate is closed. A create returns PENDING: only a readback or a signature-verified event may record a ledger effect. A provider fee applies and is recorded as its own ledger entry. Success never implies a venue reservation.",
+        "description": "Deterministic code only, from a non-stale approval. Sends a Payouts batch from the collector balance to the venue account; Orders/Checkout cannot spend collected funds (ADR 0005). Returns payment_gate_blocked while the gate is closed. A create returns PENDING: only a readback or a signature-verified event may record a ledger effect. A provider fee applies and is recorded as its own ledger entry. Success never implies a venue reservation. Refused with circle_not_ready, carrying constraint.minMembers, if the circle has fewer than three accepted members or no agreed contribution for the current membership version (XR-18). The gate opens only when ALL of these hold: YT-006 sandbox evidence, the YT-025 legal assessment, a Q-006 decision on pause and cancellation effects, and explicit human money-flow approval. A pause that failed to stop a charge would be coercive, so Q-006 is a precondition, not a follow-up (XR-06).",
         "requestBody": {
           "required": true,
           "content": {
@@ -952,7 +1352,7 @@
             "$ref": "#/components/responses/PaymentGateBlocked"
           },
           "422": {
-            "description": "Approval is stale, or the amount exceeds the derived budget.",
+            "description": "Approval is stale, the amount exceeds the verified budget (potCentsVerified), or the circle is not ready. Staleness triggers: plan version, venue or amount changed; the host left or paused; the turn is no longer current or is suspended; membership_version changed; the agreed contribution changed; or the verified budget fell below the approved total. Staleness is always 422 (never 409) so one code means one thing (XR-10). Re-approval is required.",
             "content": {
               "application/json": {
                 "schema": {
@@ -960,6 +1360,26 @@
                 }
               }
             }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       },
@@ -984,6 +1404,26 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -1035,6 +1475,26 @@
                 }
               }
             }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -1074,6 +1534,129 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthenticated"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
+          }
+        }
+      }
+    },
+    "/circles/{circleId}/turns/{turnId}/plans": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CircleId"
+        },
+        {
+          "$ref": "#/components/parameters/TurnId"
+        },
+        {
+          "$ref": "#/components/parameters/CsrfToken"
+        },
+        {
+          "$ref": "#/components/parameters/IdempotencyKey"
+        }
+      ],
+      "post": {
+        "tags": ["turn"],
+        "operationId": "createManualPlan",
+        "summary": "Create a plan from the fixed venue list without using the copilot.",
+        "description": "The non-AI path from US-009, so a host who declines suggestions can still reach approval (XR-11). Same host, readiness and budget checks as a copilot plan; totalCents is derived from the fixed venue, never supplied by the client.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateManualPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Plan created with source manual_fixed_list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Caller is not the host of this turn, or CSRF validation failed."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Circle is not ready: fewer than three accepted members, or no agreed contribution version."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Venue is not on the fixed list, or its cost exceeds the verified budget."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Rate limited. No state changed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Unexpected server error. No partial money or consent effect persists."
           }
         }
       }
@@ -1202,6 +1785,16 @@
             }
           }
         }
+      },
+      "GraphGateBlocked": {
+        "description": "Real-member graph inference is gated closed until Q-002 is decided by Privacy, Behavioral and the human. No tie- or drift-derived input may reach any suggestion while this gate is closed.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/GraphGateError"
+            }
+          }
+        }
       }
     },
     "schemas": {
@@ -1261,7 +1854,10 @@
               "rate_limited",
               "internal_error",
               "insufficient_sender_balance",
-              "payout_denied"
+              "payout_denied",
+              "graph_gate_blocked",
+              "circle_not_ready_for_payment",
+              "idempotency_key_conflict"
             ]
           },
           "message": {
@@ -1288,6 +1884,28 @@
             "type": "string",
             "description": "Open question that blocks this operation, for example Q-001 or Q-006.",
             "enum": ["Q-001", "Q-002", "Q-004", "Q-005", "Q-006"]
+          },
+          "constraint": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Structured bound for a refusal, so a client need not parse prose (XR-18).",
+            "properties": {
+              "minMembers": {
+                "type": "integer"
+              },
+              "maxMembers": {
+                "type": "integer"
+              },
+              "minAmountCents": {
+                "type": "integer"
+              },
+              "maxAmountCents": {
+                "type": "integer"
+              },
+              "requiredAgreements": {
+                "type": "integer"
+              }
+            }
           }
         }
       },
@@ -1301,26 +1919,7 @@
             "required": ["gate"],
             "properties": {
               "gate": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["open", "blockingTasks", "humanApprovalRecorded"],
-                "properties": {
-                  "open": {
-                    "type": "boolean",
-                    "const": false
-                  },
-                  "blockingTasks": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "minItems": 1
-                  },
-                  "humanApprovalRecorded": {
-                    "type": "boolean",
-                    "const": false
-                  }
-                }
+                "$ref": "#/components/schemas/GateState"
               }
             }
           }
@@ -1419,8 +2018,12 @@
           "membershipVersion",
           "readyForPlanning",
           "agreedContribution",
+          "currency",
           "potCentsDerived",
-          "currency"
+          "potCentsVerified",
+          "potLabel",
+          "pendingInvitationCount",
+          "participationStateVisibility"
         ],
         "properties": {
           "circleId": {
@@ -1435,11 +2038,11 @@
             "type": "array",
             "minItems": 1,
             "maxItems": 6,
+            "description": "Accepted members only. Invited and departed people are NOT named here: that disclosure is undecided (Privacy, XR-22). Pause is not exposed, because peer-visible pause detail is gated on Q-006 (XR-08).",
             "items": {
               "type": "object",
               "additionalProperties": false,
               "required": ["memberId", "firstName", "state"],
-              "description": "Peer view. Contains no consent state, no pause reason, no contact details and no tie value.",
               "properties": {
                 "memberId": {
                   "$ref": "#/components/schemas/Ulid"
@@ -1449,7 +2052,7 @@
                 },
                 "state": {
                   "type": "string",
-                  "enum": ["invited", "accepted", "paused", "left"]
+                  "const": "accepted"
                 }
               }
             }
@@ -1473,14 +2076,28 @@
             ]
           },
           "potCentsDerived": {
-            "$ref": "#/components/schemas/AmountCents"
+            "$ref": "#/components/schemas/SignedAmountCents"
           },
           "currency": {
             "$ref": "#/components/schemas/Currency"
           },
           "potLabel": {
             "type": "string",
-            "description": "Human-facing label stating that the pot is a conceptual budget with no verified provider funding."
+            "description": "Required human-facing label: conceptual budget, no verified provider funding (US-004)."
+          },
+          "potCentsVerified": {
+            "$ref": "#/components/schemas/SignedAmountCents",
+            "description": "Verified-only sum; the budget any payment path must use."
+          },
+          "pendingInvitationCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Count only; invitees are not named pending a Privacy decision."
+          },
+          "participationStateVisibility": {
+            "type": "string",
+            "enum": ["policy_pending"],
+            "description": "Whether peers see any pause state at all is undecided (Q-006)."
           }
         }
       },
@@ -1771,7 +2388,8 @@
           },
           "state": {
             "type": "string",
-            "enum": ["upcoming", "current", "completed", "skipped", "suspended"]
+            "enum": ["upcoming", "current", "completed", "suspended"],
+            "description": "No skipped value: a host-decline rule is undecided (PRD D-P02) and a skip marker next to a named host risks reading as shame (rule 3)."
           },
           "approval": {
             "anyOf": [
@@ -1842,23 +2460,34 @@
       "CreatePlanSuggestionsRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["budgetCents"],
+        "required": [],
+        "description": "Prompt inputs are closed vocabularies. No free text reaches the model, which removes both the unverifiable \"no personal data\" promise and a prompt-injection route (XR-13).",
         "properties": {
-          "budgetCents": {
-            "$ref": "#/components/schemas/AmountCents"
+          "maxBudgetCents": {
+            "$ref": "#/components/schemas/AmountCents",
+            "description": "Optional cap the host may set BELOW the server-derived budget. It can never raise it (XR-12)."
           },
-          "availabilityNote": {
-            "type": "string",
-            "maxLength": 200
+          "availability": {
+            "type": "array",
+            "maxItems": 7,
+            "items": {
+              "type": "string",
+              "enum": ["weekday_evening", "weekend_day", "weekend_evening"]
+            }
           },
           "preferences": {
             "type": "array",
-            "maxItems": 10,
-            "description": "Plan-relevant preferences only. Emails, payment data, hardship information and tie scores are never accepted here.",
+            "maxItems": 5,
             "items": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 40
+              "enum": [
+                "quiet",
+                "outdoors",
+                "food",
+                "activity",
+                "cheap",
+                "accessible_venue"
+              ]
             }
           }
         }
@@ -1873,12 +2502,22 @@
             "required": ["plans"],
             "not": {
               "required": ["unavailableReason"]
+            },
+            "properties": {
+              "outcome": {
+                "const": "three_plans"
+              }
             }
           },
           {
             "required": ["unavailableReason"],
             "not": {
               "required": ["plans"]
+            },
+            "properties": {
+              "outcome": {
+                "const": "unavailable"
+              }
             }
           }
         ],
@@ -1902,7 +2541,9 @@
             "maxItems": 3,
             "items": {
               "$ref": "#/components/schemas/Plan"
-            }
+            },
+            "uniqueItems": true,
+            "description": "Exactly three plans, each with a distinct venueId; the server rejects duplicate venues (US-009 \"distinct\")."
           },
           "unavailableReason": {
             "type": "string",
@@ -1945,20 +2586,17 @@
             "minimum": 1
           },
           "venueId": {
-            "$ref": "#/components/schemas/Ulid"
+            "$ref": "#/components/schemas/Ulid",
+            "description": "Must be a venue from the fixed list; the server rejects any other value."
           },
           "title": {
             "type": "string",
             "minLength": 1,
             "maxLength": 80
           },
-          "rationale": {
-            "type": "string",
-            "maxLength": 240,
-            "description": "Positive framing about a shared plan. Never a warning, score or diagnosis about named people."
-          },
           "totalCents": {
-            "$ref": "#/components/schemas/AmountCents"
+            "$ref": "#/components/schemas/AmountCents",
+            "description": "Derived server-side from the fixed venue cost; model-supplied totals are rejected (XR-12)."
           },
           "currency": {
             "$ref": "#/components/schemas/Currency"
@@ -1966,6 +2604,17 @@
           "source": {
             "type": "string",
             "enum": ["copilot", "manual_fixed_list"]
+          },
+          "rationaleKey": {
+            "type": "string",
+            "description": "Server-selected copy key from a closed vocabulary; the model never writes host-facing prose. No key names a person or implies a score, warning or diagnosis.",
+            "enum": [
+              "fits_everyones_budget",
+              "easy_to_get_to",
+              "quiet_enough_to_talk",
+              "something_new_for_the_group",
+              "works_for_a_weeknight"
+            ]
           }
         }
       },
@@ -2099,6 +2748,9 @@
           "circleId",
           "currency",
           "potCentsDerived",
+          "potCentsVerified",
+          "potCentsSynthetic",
+          "potLabel",
           "derivedFromEntryCount",
           "entries"
         ],
@@ -2110,7 +2762,8 @@
             "$ref": "#/components/schemas/Currency"
           },
           "potCentsDerived": {
-            "$ref": "#/components/schemas/AmountCents"
+            "$ref": "#/components/schemas/SignedAmountCents",
+            "description": "Sum of ALL entries, for display only. Never used for a payment-path budget check."
           },
           "derivedFromEntryCount": {
             "type": "integer",
@@ -2121,6 +2774,18 @@
             "items": {
               "$ref": "#/components/schemas/LedgerEntry"
             }
+          },
+          "potCentsVerified": {
+            "$ref": "#/components/schemas/SignedAmountCents",
+            "description": "Sum of entries with synthetic=false AND a provider_event_id. This is the ONLY figure any payment-path budget check may use."
+          },
+          "potCentsSynthetic": {
+            "$ref": "#/components/schemas/SignedAmountCents",
+            "description": "Sum of synthetic fixture entries. Never payment evidence."
+          },
+          "potLabel": {
+            "type": "string",
+            "description": "Human-facing label stating the pot is a conceptual budget with no verified provider funding."
           }
         }
       },
@@ -2204,6 +2869,7 @@
               "approved",
               "active",
               "payment_received",
+              "unverified",
               "failed"
             ]
           },
@@ -2261,11 +2927,12 @@
             "enum": [
               "blocked",
               "payout_pending",
+              "unverified",
               "payout_success",
               "payout_denied",
               "failed"
             ],
-            "description": "Payouts batch lifecycle. A create yields payout_pending; only a terminal readback or verified event may advance it."
+            "description": "Payouts lifecycle. A create yields payout_pending; a timeout or unreconciled attempt is unverified, never success or failure. Only a terminal readback or a signature-verified event may advance it."
           },
           "amountCents": {
             "$ref": "#/components/schemas/AmountCents"
@@ -2441,6 +3108,69 @@
                 }
               }
             }
+          }
+        }
+      },
+      "SignedAmountCents": {
+        "type": "integer",
+        "description": "Signed whole USD cents. A derived pot can be negative when an outflow event is recorded before its matching contribution, or after a correction; it is displayed as a deficit, never clamped to zero."
+      },
+      "GateState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["open", "blockingTasks", "humanApprovalRecorded"],
+        "properties": {
+          "open": {
+            "type": "boolean",
+            "const": false
+          },
+          "blockingTasks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "humanApprovalRecorded": {
+            "type": "boolean",
+            "const": false
+          },
+          "blockingQuestions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "GraphGateError": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Error"
+          },
+          {
+            "type": "object",
+            "required": ["gate"],
+            "properties": {
+              "gate": {
+                "$ref": "#/components/schemas/GateState"
+              }
+            }
+          }
+        ]
+      },
+      "CreateManualPlanRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["venueId"],
+        "properties": {
+          "venueId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
           }
         }
       }

@@ -32,10 +32,18 @@ While the status is `draft`, no role may treat these routes as settled: Backend 
 | `createContributionProposal`, `agreeContributionProposal`                           | Accepted member; agreement records only the caller's own              | `404` / `403`                                          |
 | `setOwnTrackingConsent`, `pauseOwnParticipation`, `leaveCircle`, `setOwnAttendance` | The member themselves (`/members/me`) only — no admin override exists | `404`                                                  |
 | `createPlanSuggestions`, `approvePlan`, `createVenuePayment`                        | Host of that specific turn                                            | `403 not_host`, with no host-only guidance in the body |
+| `createManualPlan`                                                                  | Host of that turn                                                     | `403 not_host`                                         |
 | `getSyntheticDemoGraph`                                                             | Any authenticated session                                             | `401`                                                  |
+| `createSession`, `endSession`, `getCurrentMember`, `listVenues`                     | Any caller / own session                                              | `401` where a session is required                      |
+| `getOwnSubscriptionState`, `startContributionSubscription`                          | The member themselves                                                 | `404`                                                  |
+| `getVenuePaymentState`                                                              | Any accepted or paused member of that circle                          | `404`                                                  |
 | `receiveProviderWebhook`                                                            | Unauthenticated by provider design; gated by signature verification   | `401 webhook_signature_invalid`, no side effects       |
 
-**Host-only data.** Reconnection guidance is returned only to the current host, only as positive plan framing, and never as a numeric value, ranking or warning about named people. No endpoint exposes another member's consent state, pause state, contact details or tie value — including through error messages and validation details.
+**Post-exit access is undecided (XR-15).** A departed member currently receives `404` on circle-scoped routes, which also hides their own pending subscription or payment state. Whether a former member may read their own money state — scoped so no other member's data is exposed — is a Q-006 question; no route is added until it is decided.
+
+**Two closed gates.** _Payments_ are gated on YT-006 evidence, the YT-025 legal assessment, a Q-006 decision and human money-flow approval (XR-06). _Real-member graph inference_ is gated on Q-002 (XR-01): while closed, no tie- or drift-derived value is computed, stored, returned **or used as prompt input**, and no guidance names a pair. Non-persistence was never the safeguard — not inferring is. Both gates are server-side configuration that only a human can open; neither has a simulated-success path.
+
+**Host-only data.** Host-facing copy comes from a closed `rationaleKey` vocabulary chosen by the server, never from model prose (XR-02), so "positive framing" is a checkable constraint rather than a hope. No numeric value, ranking or warning about named people is ever returned. No endpoint exposes another member's consent state, pause state, contact details or tie value — including through error messages and validation details.
 
 ## Routes and schemas
 
@@ -60,6 +68,7 @@ Full schemas are in `openapi.json`. Summary, grouped by tag:
 | `PUT …/turns/{turnId}/attendance`                                | `setOwnAttendance`          | `penaltyApplied: false` always                          |
 | `GET /circles/{circleId}/ledger`                                 | `getLedger`                 | Derived pot + append-only entries                       |
 | `GET`/`POST /circles/{circleId}/subscriptions`                   | subscription state/start    | Start is gate-blocked                                   |
+| `POST …/turns/{turnId}/plans`                                    | `createManualPlan`          | Non-AI fixed-venue path (XR-11)                         |
 | `GET`/`POST …/turns/{turnId}/venue-payments`                     | payment state/create        | Payouts from the pot (ADR 0005); create is gate-blocked |
 | `POST /webhooks/paypal`                                          | `receiveProviderWebhook`    | Verify signature before any effect                      |
 | `GET /demo/graph`                                                | `getSyntheticDemoGraph`     | Only numeric-edge endpoint; synthetic fixture           |
@@ -67,8 +76,8 @@ Full schemas are in `openapi.json`. Summary, grouped by tag:
 ### Invariants the schema enforces
 
 1. **Money.** Every monetary field is `integer` and named `*Cents`; `currency` is `const: "USD"`. Contribution amounts are bounded 100–1500 inclusive (floor is draft proposal D-P01, ceiling is from the brief). No float, decimal string or formatted amount appears anywhere.
-2. **Derived pot.** Responses expose `potCentsDerived` with `derivedFromEntryCount`. No schema has a writable or stored balance field.
-3. **Exactly three.** `SuggestionSet.plans` is `minItems: 3, maxItems: 3`, and `oneOf` forbids carrying `plans` and `unavailableReason` together, so a degraded result cannot look like success.
+2. **Derived pot, split by provenance.** `potCentsDerived` (all entries, display only) and `potCentsVerified` (synthetic-free, provider-verified) are separate signed sums; **only `potCentsVerified` may gate a payment**, so fixture money cannot authorize a real one (XR-03). Both are signed because an out-of-order outflow or a correction can make the pot negative, which is shown as a deficit rather than clamped (XR-05). `potLabel` is required wherever a pot appears. No schema has a writable or stored balance field.
+3. **Exactly three, distinct.** `SuggestionSet.plans` is `minItems: 3, maxItems: 3, uniqueItems: true` with a distinct venue per plan, and each `oneOf` branch pins `outcome` to a `const`, so `outcome: "three_plans"` cannot accompany an unavailable result (XR-26). A degraded result cannot look like success.
 4. **Approval is not payment.** `PlanApproval` carries `isPayment: false` and `isReservation: false` as constants; `PaymentState` carries `reservationConfirmed: false` and `attendanceConfirmed: false`.
 5. **Synthetic graph only.** `SyntheticGraph.synthetic` is `const: true`, node ids must match `^synthetic-`, and every edge carries a `textEquivalent` alongside `stateLabel`. No other response schema contains a numeric tie value. The data source is the route, not a request flag.
 6. **No hardship reasons.** `PauseRequest` has `additionalProperties: false` and no reason field, so there is no wire format in which a reason could arrive.
@@ -88,12 +97,13 @@ Full schemas are in `openapi.json`. Summary, grouped by tag:
 | 404    | `not_found`                                                                                       | Missing **or** not a member — deliberately indistinguishable        |
 | 409    | `circle_full`, `circle_not_ready`, `version_stale`, `invitation_resolved`, `payment_gate_blocked` | Conflict with current state or a closed gate                        |
 | 422    | `approval_stale`, `budget_exceeded`                                                               | Request understood but refused on money-safety grounds              |
-| 429    | `rate_limited`                                                                                    | Abuse protection                                                    |
-| 500    | `internal_error`                                                                                  | No partial money effect may persist                                 |
+| 429    | `rate_limited`                                                                                    | Abuse protection; now declared on every operation (XR-27)           |
+| 500    | `internal_error`                                                                                  | No partial money effect may persist; declared on every operation    |
+| 503    | `graph_gate_blocked`                                                                              | Real-member graph inference is gated closed (Q-002)                 |
 
 **Payment gate.** `payment_gate_blocked` returns a `gate` object with `open: false`, `humanApprovalRecorded: false` and the blocking task ids. The gate is server-side configuration; no request field, header, query parameter or client state can open it, and the contract defines **no** simulated-success response.
 
-**Idempotency (internal).** Mutating requests accept `Idempotency-Key`. The server persists `(actor, operation, key) → first response` and replays the stored response on retry, so a retried accept, agreement, approval or payment attempt cannot double-apply. Keys are per logical operation: a different operation with a reused key is rejected rather than replayed.
+**Idempotency (internal).** Mutating requests accept `Idempotency-Key`. The server persists `(actor, operation, key) → first response` **plus the path parameters and a request-body fingerprint**, and replays the stored response only when all three match (XR-21). A reused key with a different target or body returns `409 idempotency_key_conflict` rather than replaying the wrong result — otherwise the same key on circle B would return circle A's success and silently fail to act.
 
 **Idempotency (provider).** RULES rule 8 requires an idempotency key on every PayPal call; endpoint-specific provider support and retention are **unverified (Q-005)**. The contract therefore relies on internal keys plus provider-event deduplication by `providerEventId`, and does not assume that sending a header guarantees provider-side deduplication.
 
@@ -106,6 +116,8 @@ Full schemas are in `openapi.json`. Summary, grouped by tag:
 Generation plan: `openapi.json` → generator → `packages/shared/src/contract.d.ts` (types only, no runtime logic), verified by regenerating in CI and failing on any diff, so drift between the contract and the code cannot pass review.
 
 ## Contract tests
+
+**Known verification gaps, stated plainly (XR-27):** the spec has **24 operations** — earlier handoffs said 21, which was wrong. Validation against the full OpenAPI 3.1 **metaschema has not been run**, so ADR 0004's verification step is unmet rather than satisfied. The contribution floor of 100 cents is a **draft proposal (D-P01)**, so tests assert that a floor exists and is documented as draft, not that it is 100.
 
 Implemented now (`tests/contract.test.mjs`, run by `npm test`) against the committed spec, with no network access:
 

@@ -43,6 +43,8 @@
 ## Auth and tenant isolation
 
 - **Identity.** Demo sessions select a seeded synthetic member. No password, email, OAuth or real identity is handled, so there is no credential store to protect in the demo.
+- **Impersonation is acceptable only on loopback (XR-20).** Any caller can start a session as any seeded member, including the current host. On a reachable host that means anyone could approve a plan and, once the payment gate opened, create a venue payment. A real identity model is therefore a **precondition for YT-032 (hosted demo) and for opening the payment gate**, not a later improvement, and Security must map it in YT-023.
+- **Operator actions are out of band (XR-19).** Advancing a turn and resetting fixtures are seed/script actions run by the operator against the local database; they are deliberately **not** HTTP operations, because an HTTP route would need an operator authorization model the demo does not have. Declining an invitation has no route yet and is filed for the next contract revision.
 - **Session.** `HttpOnly`, `SameSite=Strict` cookie, `Secure` when served over TLS, with a server-side session record and expiry. Mutating requests require a matching `X-CSRF-Token`.
 - **Per-request authorization.** Every circle-scoped request re-derives the caller's membership from the database. Client-supplied member or circle claims are ignored. Non-members get `404`, identical to a missing circle, so membership is not disclosed by status code.
 - **Host-scoped actions.** Suggestions, approval and payment creation re-check "is the caller the host of _this_ turn" inside the same transaction that performs the action, so a turn change between read and write cannot be exploited.
@@ -59,25 +61,27 @@
 
 **D. Money (gated).** Contribution subscription and venue payment both route through `services/api/src/payments`, both currently return `payment_gate_blocked`, and neither has a simulated-success path. When the gate is opened by a human, a verified provider webhook — signature checked **before** any effect, deduplicated by provider event id — is the only thing that may append a ledger entry. The pot is always re-derived by summing entries.
 
-**E. Graph.** Real-member tie values are computed transiently for host-only positive guidance, filtered to pairs where both members have tracking on, and never persisted, returned numerically or exported. The demo visualization reads the synthetic fixture and is labelled as fictional, with a text equivalent and a non-color cue.
+**E. Graph — gated closed (XR-01).** Real-member tie values are **not computed at all** while Q-002 is open. The earlier draft relied on non-persistence, but inference about real people is itself the thing Behavioral says it cannot approve; a graph gate now mirrors the payment gate, and while it is closed no tie- or drift-derived value is computed, stored, returned or used as prompt input, and no guidance names a pair. If a deployment requires graph input for suggestions it returns `503 graph_gate_blocked` rather than degrading silently.
+
+**Limit of the contract, stated plainly (OSS-02).** A contract test can prove that no graph-derived field crosses the API boundary — `CreatePlanSuggestionsRequest` is `additionalProperties: false` over closed enums, and no response carries a tie value. It **cannot** prove what the server puts in a prompt internally, because prompt construction is in-process and invisible to the spec. So the strongest claim in XR-01 — "no tie- or drift-derived input reaches the prompt" — is currently enforced by a gate flag and a promise, not by a check. YT-019 and YT-020 must therefore ship a **service-level test that asserts the exact assembled prompt** against a fixture and fails if any field outside the closed input vocabulary appears in it. Until that test exists, treat the claim as unverified rather than satisfied. When the gate is eventually opened, values would be transient, filtered to pairs where both members have tracking on, and never persisted, returned numerically or exported. The demo visualization reads the synthetic fixture and is labelled as fictional, with a text equivalent and a non-color cue.
 
 ## Failure modes and reconciliation
 
-| Failure                                       | Required behavior                                                                                   |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Model returns invalid JSON                    | One bounded regeneration, then explicit `unavailable`; never a partial list presented as success    |
-| Model returns four plans or an off-list venue | Rejected by schema/venue validation before the host sees it                                         |
-| Webhook signature invalid or missing          | `401`, no ledger entry, no status change, no notification                                           |
-| Duplicate verified webhook                    | Unique `provider_event_id` constraint ⇒ at most one entry; `duplicate: true, effectsApplied: false` |
-| Out-of-order provider events                  | Reconcile by reading provider state; arrival order is never authoritative                           |
-| Provider timeout after a possible capture     | Attempt stays non-final; reconcile by provider readback before claiming success or retrying         |
-| Two concurrent host approvals                 | Serialized transaction with in-transaction budget re-derivation; the loser gets `409`/`422`         |
-| Retried mutating request                      | `Idempotency-Key` replay of the stored first response                                               |
-| Plan or amount changed after approval         | `approval_stale`; re-approval required                                                              |
-| Member leaves mid-cycle                       | Exit always succeeds; affected turns suspend and report `suspended_pending_rule`                    |
-| Consent withdrawn mid-cycle                   | Edges incident to that member excluded on the next computation; cached artifacts invalidated first  |
-| Database write fails mid-operation            | Whole transaction rolls back; no partial money or consent effect persists                           |
-| Payment gate closed                           | Honest `payment_gate_blocked` with blocking task ids; never a fake success screen                   |
+| Failure                                       | Required behavior                                                                                                                                                      |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Model returns invalid JSON                    | One bounded regeneration, then explicit `unavailable`; never a partial list presented as success                                                                       |
+| Model returns four plans or an off-list venue | Rejected by schema/venue validation before the host sees it                                                                                                            |
+| Webhook signature invalid or missing          | `401`, no ledger entry, no status change. (No valid event causes a notification either: **no notification is emitted by any path**, because none is approved — XR-28.) |
+| Duplicate verified webhook                    | Unique `provider_event_id` constraint ⇒ at most one entry; `duplicate: true, effectsApplied: false`                                                                    |
+| Out-of-order provider events                  | Reconcile by reading provider state; arrival order is never authoritative                                                                                              |
+| Provider timeout after a possible capture     | Attempt stays non-final; reconcile by provider readback before claiming success or retrying                                                                            |
+| Two concurrent host approvals                 | Serialized transaction with in-transaction budget re-derivation; the loser gets `409`/`422`                                                                            |
+| Retried mutating request                      | `Idempotency-Key` replay of the stored first response                                                                                                                  |
+| Plan or amount changed after approval         | `approval_stale`; re-approval required                                                                                                                                 |
+| Member leaves mid-cycle                       | Exit always succeeds; affected turns suspend and report `suspended_pending_rule`                                                                                       |
+| Consent withdrawn mid-cycle                   | Edges incident to that member excluded on the next computation; cached artifacts invalidated first                                                                     |
+| Database write fails mid-operation            | Whole transaction rolls back; no partial money or consent effect persists                                                                                              |
+| Payment gate closed                           | Honest `payment_gate_blocked` with blocking task ids; never a fake success screen                                                                                      |
 
 **Reconciliation stance.** Provider state is authoritative over local state for anything money-related, and local state is never upgraded to "succeeded" without a verified event or an explicit readback. Any unreconciled attempt is displayed as unverified rather than resolved optimistically.
 
