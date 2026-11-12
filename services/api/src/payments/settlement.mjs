@@ -43,7 +43,9 @@ const SETTLEMENT_TRANSITIONS = {
  * @returns {string}
  */
 function transition(state, event) {
-  const allowed = SETTLEMENT_TRANSITIONS[state];
+  const allowed = /** @type {Record<string, Record<string, string>>} */ (
+    SETTLEMENT_TRANSITIONS
+  )[state];
   if (!allowed) throw new RangeError(`${state} is not a settlement state`);
   const next = allowed[event];
   if (!next) {

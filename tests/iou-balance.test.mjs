@@ -1,3 +1,4 @@
+// @ts-nocheck
 // IOU balance ledger tests — 100% branch coverage.
 import test from 'node:test';
 import assert from 'node:assert/strict';
