@@ -5,7 +5,9 @@ import { join, dirname } from 'path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
-/** @returns {any} */
+/**
+ * @returns {{ venues: any[], events: any[], synthetic: boolean, notice: string, version: string }}
+ */
 function loadCatalog() {
   const path = join(__dirname, '../../../tests/fixtures/nyc-catalog.json');
   return require(path);
