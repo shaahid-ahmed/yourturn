@@ -812,6 +812,23 @@ Not done: fixes. The requirements belong to Backend, LLM Engineer, Product Manag
 How to verify: `npm run check`; `node --test tests/trust-safety.test.mjs`.
 Next step: a reviewer, then the owners take TS-01, TS-12 and TS-16.
 
+### Handoff YT-027: growth-market (Vid, taken over from Alan) → reviewer, demo-pitch (Rohan), human (pricing)
+
+Done: `docs/07-gtm/MARKET.md` is rewritten for Unspoken, replacing the stub. Sources were accessed November 12, 2026. It covers:
+
+- **Problem evidence:** primary Ally Bank, June 2025, n=1,000 (44% skipped events over cost, 17% couldn't be honest about finances, $250/month). Older or weaker figures are marked as such.
+- **Competitors:** seven, each with a linked, dated source: Splitwise, Venmo (67M MAA, Q4 2025 earnings call), PayPal Pool Money (relaunched Nov 2024), Partiful, Apple Invites, Howbout, and group chats.
+- **Positioning:** four hypotheses (H1–H4), each with an untested test.
+- **Sizing:** arithmetic on assumptions, explicitly not a forecast; the conversion rate is unknown.
+- **Revenue:** four ethical hypotheses, and a "never" list.
+- **Claims:** a "may say / may not say" list for the pitch.
+
+`tests/market.test.mjs` (4) enforces sources, dates, the no-traction statement and the not-permitted list.
+Not done: no customer research was run (H1–H4 are untested), and no real market size exists.
+Risks / gotchas: **R1 records a real tension.** $15 per member per month for a product aimed at people under cost pressure is 3–5× Splitwise Pro. A human should weigh this with Q-011 #2 (trial).
+How to verify: `npm run check`; open each source link.
+Next step: a reviewer; Demo & Pitch uses the "May say" list.
+
 ## Human Phase 1 authorization and coordinated ownership
 
 The human explicitly authorized Phase 1 after approving the private push and main promotion. This authorizes drafting/reviewing contracts and designs while YT-006 and the residual YT-007 readiness conditions stay BLOCKED. It does not claim sandbox success, waive RULES, approve a money-flow change, authorize real-user research, freeze unresolved contracts or start Phase 2.
