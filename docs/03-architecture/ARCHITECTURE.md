@@ -35,6 +35,7 @@ This replaces the YourTurn circle/turn/Payouts architecture, which ADR 0006 and 
 | `services/api/src/db`                    | Schema migrations and database opening (`node:sqlite`)                                       | **US-002: migrated and tested on a scratch file**           |
 | `services/api/src/hangout-lifecycle.mjs` | The hangout transition table, matching the contract; durable apply in `db/hangout-store.mjs` | **US-002: tested for every state and event pair**           |
 | `services/api/src/pods.mjs`              | Pods, invitations, single-use invite links and contact matching over the schema              | **US-004: tested; no HTTP route yet**                       |
+| `services/api/src/chat.mjs`              | Pod chat, planner cards, the private planner chat and the pod-scoped event bus               | **US-007: tested; no HTTP/SSE route yet**                   |
 | `services/api/src/*.mjs`                 | ADR 0006 in-memory domain core (money, ledger, vault, tally, constraints)                    | Exists; retired flow; not wired to the new schema           |
 | `services/api/src/payments`              | Provider port, gate, settlement (Payments-owned)                                             | Gate closed; member-to-member settlement is US-006          |
 | `services/api` routes                    | HTTP API per the contract                                                                    | Not implemented (US-004, US-007, US-008, US-013 and others) |

@@ -102,7 +102,7 @@ function assertActiveUser(db, userId) {
  * @param {string} userId
  * @returns {{ role: string }}
  */
-function requireMember(db, podId, userId) {
+export function requireMember(db, podId, userId) {
   const row = /** @type {{ role: string } | undefined} */ (
     db
       .prepare(
