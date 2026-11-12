@@ -276,7 +276,7 @@ test('money is integer cents in USD everywhere', () => {
       );
 });
 
-test('Q-011 decisions 5, 6 and 14 are marked open with the strictest defaults', () => {
+test('Q-011 decisions 5, 6 and 14 are marked open with the approved defaults', () => {
   const spec = loadSpec();
   const open = spec.info['x-open-decisions'];
   for (const decision of [1, 2, 4, 5, 6, 14, 16])
@@ -299,17 +299,44 @@ test('Q-011 decisions 5, 6 and 14 are marked open with the strictest defaults', 
   assert.match(confirm['x-open-decision'].contractDefault, /only the payer/i);
   assert.match(confirm.responses['403'].description, /not_payer/);
 
+  // #14 middle default: the split card is shared among the hangout's
+  // yes-members (P13); running balances stay private to their parties.
   for (const id of ['getSplit', 'listOwnBalances', 'getOwnBalance']) {
     const operation = findOperation(spec, id).operation;
     assert.equal(operation['x-open-decision'].decision, 14, id);
+    assert.equal(operation['x-open-decision'].status, 'open', id);
+    assert.match(
+      operation['x-open-decision'].contractDefault,
+      /every yes-member of a hangout sees every share/i,
+    );
     assert.match(
       operation['x-open-decision'].contractDefault,
       /only balances they are a party to/i,
     );
   }
-  // Strict #14: there is no pod-wide ledger or balance route.
-  for (const route of Object.keys(spec.paths))
+  const split = spec.components.schemas.Split;
+  assert.equal(split['x-open-decision'].decision, 14);
+  assert.match(
+    split.properties.shares.description,
+    /every yes-member of this hangout/i,
+  );
+  assert.match(
+    findOperation(spec, 'getSplit').operation.description,
+    /anyone else receives 404/,
+  );
+  // The split card shows shares, never a running balance or its status.
+  const splitReach = reachableSchemas(spec, split);
+  for (const name of ['Balance', 'BalanceSummary', 'BalanceStatus'])
+    assert.ok(!splitReach.has(name), `Split must not expose ${name}`);
+  // Running balances are only under /me; there is no pod-wide ledger route.
+  for (const { route, operation } of operations(spec)) {
     assert.doesNotMatch(route, /^\/pods\/[^/]+\/(ledger|balances)/, route);
+    const reached = new Set();
+    for (const response of Object.values(operation.responses))
+      reachableSchemas(spec, response, reached);
+    if (reached.has('Balance') || reached.has('BalanceSummary'))
+      assert.match(route, /^\/me\/balances/, `${operation.operationId}`);
+  }
   // Only the payer may confirm the split or change its total.
   for (const id of ['confirmSplit', 'setActualTotal'])
     assert.match(

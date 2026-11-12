@@ -64,7 +64,7 @@
         "question": "Q-011",
         "decision": 14,
         "topic": "Who sees which balances",
-        "contractDefault": "Each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists (strictest)",
+        "contractDefault": "Middle default. Split card: every yes-member of a hangout sees every share for that hangout (matches P13). Running balances: each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists",
         "specRecommendation": "Only the people involved in each balance",
         "status": "open"
       },
@@ -2324,7 +2324,7 @@
         "tags": ["money"],
         "operationId": "getSplit",
         "summary": "Read the payer and split (P13).",
-        "description": "Yes-members and the payer only; others receive 404. The payer sees every share; any other yes-member sees the total, the payer and their own share only.",
+        "description": "The payer and the yes-members of this hangout only; anyone else receives 404. Every caller who may read the split sees every share for this hangout. This does not expose running balances, which stay on /me/balances.",
         "parameters": [
           {
             "$ref": "#/components/parameters/PodId"
@@ -2361,7 +2361,7 @@
           "question": "Q-011",
           "decision": 14,
           "topic": "Who sees which balances",
-          "contractDefault": "Each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists (strictest)",
+          "contractDefault": "Middle default. Split card: every yes-member of a hangout sees every share for that hangout (matches P13). Running balances: each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists",
           "specRecommendation": "Only the people involved in each balance",
           "status": "open"
         }
@@ -2614,7 +2614,7 @@
           "question": "Q-011",
           "decision": 14,
           "topic": "Who sees which balances",
-          "contractDefault": "Each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists (strictest)",
+          "contractDefault": "Middle default. Split card: every yes-member of a hangout sees every share for that hangout (matches P13). Running balances: each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists",
           "specRecommendation": "Only the people involved in each balance",
           "status": "open"
         }
@@ -2658,7 +2658,7 @@
           "question": "Q-011",
           "decision": 14,
           "topic": "Who sees which balances",
-          "contractDefault": "Each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists (strictest)",
+          "contractDefault": "Middle default. Split card: every yes-member of a hangout sees every share for that hangout (matches P13). Running balances: each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists",
           "specRecommendation": "Only the people involved in each balance",
           "status": "open"
         }
@@ -3779,10 +3779,6 @@
         "type": "integer",
         "minimum": 0,
         "description": "USD amount in whole cents. Never a float, never a formatted string."
-      },
-      "SignedAmountCents": {
-        "type": "integer",
-        "description": "Signed whole USD cents, used only for ledger adjustments when an actual total replaces an estimate."
       },
       "BudgetCents": {
         "type": "integer",
@@ -5642,7 +5638,7 @@
             "items": {
               "$ref": "#/components/schemas/SplitShare"
             },
-            "description": "For the payer: every yes-member's share. For any other yes-member: only their own share (Q-011.14 strict default)."
+            "description": "Every yes-member's share for this hangout, visible to the payer and to every yes-member of this hangout (Q-011.14 middle default, matches P13). Running balances stay private."
           }
         },
         "description": "Equal split across yes-members only. Shares sum exactly to the total; leftover cents go to the first shares in a random order. Nobody who said no appears.",
@@ -5650,7 +5646,7 @@
           "question": "Q-011",
           "decision": 14,
           "topic": "Who sees which balances",
-          "contractDefault": "Each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists (strictest)",
+          "contractDefault": "Middle default. Split card: every yes-member of a hangout sees every share for that hangout (matches P13). Running balances: each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists",
           "specRecommendation": "Only the people involved in each balance",
           "status": "open"
         },
@@ -5748,7 +5744,7 @@
           "question": "Q-011",
           "decision": 14,
           "topic": "Who sees which balances",
-          "contractDefault": "Each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists (strictest)",
+          "contractDefault": "Middle default. Split card: every yes-member of a hangout sees every share for that hangout (matches P13). Running balances: each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists",
           "specRecommendation": "Only the people involved in each balance",
           "status": "open"
         }
@@ -5795,7 +5791,7 @@
           "question": "Q-011",
           "decision": 14,
           "topic": "Who sees which balances",
-          "contractDefault": "Each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists (strictest)",
+          "contractDefault": "Middle default. Split card: every yes-member of a hangout sees every share for that hangout (matches P13). Running balances: each member sees only balances they are a party to; the payer sees each balance owed to them; no pod-wide ledger route exists",
           "specRecommendation": "Only the people involved in each balance",
           "status": "open"
         }
