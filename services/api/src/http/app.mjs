@@ -576,23 +576,19 @@ export function buildApp({ db, vaultKey } = {}) {
               actual.length !== expected.length ||
               !timingSafeEqual(actual, expected)
             ) {
-              return reply
-                .code(403)
-                .send({
-                  code: 'csrf_rejected',
-                  message: 'missing or wrong CSRF token',
-                });
+              return reply.code(403).send({
+                code: 'csrf_rejected',
+                message: 'missing or wrong CSRF token',
+              });
             }
           }
         },
         handler: async (req, reply) => {
           if (!handler) {
-            return reply
-              .code(500)
-              .send({
-                code: 'internal_error',
-                message: `unwired operation ${operationId}`,
-              });
+            return reply.code(500).send({
+              code: 'internal_error',
+              message: `unwired operation ${operationId}`,
+            });
           }
           const result = await handler({
             db: database,
