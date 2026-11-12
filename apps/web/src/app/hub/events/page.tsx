@@ -1,254 +1,157 @@
 'use client';
-// P16 — Events search
-// Browse synthetic NYC events and activities. Suggest-to-pod from P17.
+// P16, Events search: stacked colored cards from the expenses reference,
+// a visible search bar, and filter chips. Data is the demo events seed.
 import { useState } from 'react';
-import { ScreenHeader, BackButton, Card, Button } from '@/components/ui';
+import { useRouter } from 'next/navigation';
+import { ScreenHeader, BackButton } from '@/components/ui';
+import { HeyMenu, cardFill, cardText } from '@/components/heypal';
+import { EVENTS } from '@/lib/heypal/seed';
 
-const TAGS = [
-  'Active',
-  'Food',
-  'Outdoor',
-  'Nightlife',
-  'Comedy',
-  'Cultural',
-  'Indoor',
-];
-const BOROUGHS = ['All', 'Manhattan', 'Brooklyn', 'Queens'];
+const CHIPS = ['Tonight', 'This weekend', 'Free', 'Food', 'Music', 'Active'];
 
-interface EventItem {
-  eventId: string;
-  title: string;
-  venue: string;
-  neighborhood: string;
-  borough: string;
-  date: string;
-  estCostPerPerson: number;
-  tags: string[];
-  synthetic: true;
-}
-
-const DEMO_EVENTS: EventItem[] = [
-  {
-    eventId: 'evt-001',
-    title: 'Open Bowl Night',
-    venue: 'Brooklyn Bowl',
-    neighborhood: 'Williamsburg',
-    borough: 'Brooklyn',
-    date: 'Fri Nov 20, 7–10 PM',
-    estCostPerPerson: 35,
-    tags: ['Active', 'Food'],
-    synthetic: true,
-  },
-  {
-    eventId: 'evt-002',
-    title: 'Late Night Thursday',
-    venue: 'MoMA PS1',
-    neighborhood: 'Long Island City',
-    borough: 'Queens',
-    date: 'Thu Nov 19, 5–8 PM',
-    estCostPerPerson: 18,
-    tags: ['Cultural'],
-    synthetic: true,
-  },
-  {
-    eventId: 'evt-003',
-    title: 'Weekend Food Market',
-    venue: 'Smorgasburg',
-    neighborhood: 'Prospect Park',
-    borough: 'Brooklyn',
-    date: 'Sat Nov 21, 11 AM–6 PM',
-    estCostPerPerson: 25,
-    tags: ['Food', 'Outdoor'],
-    synthetic: true,
-  },
-  {
-    eventId: 'evt-004',
-    title: 'Friday Evening Swing Suite',
-    venue: 'Topgolf Swing Suite',
-    neighborhood: 'Chelsea',
-    borough: 'Manhattan',
-    date: 'Fri Nov 20, 6–9 PM',
-    estCostPerPerson: 45,
-    tags: ['Active', 'Food'],
-    synthetic: true,
-  },
-  {
-    eventId: 'evt-005',
-    title: 'Evening Walk',
-    venue: 'The High Line',
-    neighborhood: 'Chelsea',
-    borough: 'Manhattan',
-    date: 'Thu Nov 19, 5:30–7:30 PM',
-    estCostPerPerson: 0,
-    tags: ['Outdoor', 'Active'],
-    synthetic: true,
-  },
-  {
-    eventId: 'evt-007',
-    title: 'Friday Escape Challenge',
-    venue: 'Clue Chase Escape Rooms',
-    neighborhood: 'Midtown',
-    borough: 'Manhattan',
-    date: 'Fri Nov 20, 8–9:30 PM',
-    estCostPerPerson: 30,
-    tags: ['Active', 'Indoor'],
-    synthetic: true,
-  },
-  {
-    eventId: 'evt-008',
-    title: 'Thursday Late Show',
-    venue: 'Comedy Cellar',
-    neighborhood: 'Greenwich Village',
-    borough: 'Manhattan',
-    date: 'Thu Nov 19, 10 PM–midnight',
-    estCostPerPerson: 32,
-    tags: ['Nightlife', 'Comedy'],
-    synthetic: true,
-  },
+const MENU_ITEMS = [
+  { href: '/home', label: 'home', note: 'Your pods' },
+  { href: '/hub/profile', label: 'profile', note: 'Interests and limits' },
+  { href: '/hub/calendar', label: 'calendar', note: 'Your week' },
+  { href: '/money', label: 'money', note: 'What you owe and are owed' },
+  { href: '/hub/settings', label: 'settings', note: 'Notifications, plan' },
 ];
 
 export default function EventsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
-  const [activeTags, setActiveTags] = useState<string[]>([]);
-  const [borough, setBorough] = useState('All');
+  const [active, setActive] = useState<string[]>([]);
 
-  function toggleTag(t: string) {
-    setActiveTags((prev) =>
-      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t],
+  function toggleChip(c: string) {
+    setActive((prev) =>
+      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c],
     );
   }
 
-  const filtered = DEMO_EVENTS.filter((e) => {
+  const filtered = EVENTS.filter((e) => {
     if (
       search &&
       !e.title.toLowerCase().includes(search.toLowerCase()) &&
-      !e.venue.toLowerCase().includes(search.toLowerCase())
+      !e.neighborhood.toLowerCase().includes(search.toLowerCase())
     )
       return false;
-    if (activeTags.length && !activeTags.some((t) => e.tags.includes(t)))
+    if (active.includes('Free') && e.priceCents !== null) return false;
+    if (active.includes('Food') && e.category !== 'Food and drink')
       return false;
-    if (borough !== 'All' && e.borough !== borough) return false;
+    if (active.includes('Music') && e.category !== 'Music') return false;
+    if (active.includes('Active') && e.category !== 'Sports to play')
+      return false;
     return true;
   });
 
   return (
-    <main className="flex flex-col min-h-dvh">
-      <ScreenHeader title="Events" back={<BackButton href="/home" />} />
+    <main data-surface="white" className="flex flex-col min-h-dvh">
+      <ScreenHeader
+        title="Events"
+        back={<BackButton href="/home" />}
+        right={
+          <HeyMenu surface="white" items={MENU_ITEMS} current="/hub/events" />
+        }
+      />
 
-      <div className="px-4 py-3 border-b border-[var(--color-border)] flex flex-col gap-3">
+      <div className="px-4 pt-4">
+        <h1 className="text-[32px] font-bold text-[var(--ink)]">
+          Happening in NYC
+        </h1>
+        <label htmlFor="events-search" className="sr-only">
+          Search events
+        </label>
         <input
+          id="events-search"
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search events and venues…"
-          className="w-full min-h-[44px] rounded-xl border border-[var(--color-border)] px-4 text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]"
-          aria-label="Search events"
+          placeholder="Search events"
+          className="mt-3 w-full rounded-full bg-[var(--pale)] px-4 min-h-[44px] text-base text-[var(--ink)] border-none"
         />
         <div
-          className="flex gap-2 overflow-x-auto pb-1"
+          className="flex gap-2 overflow-x-auto pb-1 mt-3"
           role="group"
-          aria-label="Filter by tag"
+          aria-label="Filter events"
         >
-          {TAGS.map((t) => (
-            <button
-              key={t}
-              onClick={() => toggleTag(t)}
-              aria-pressed={activeTags.includes(t)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs border min-h-[36px] transition-colors ${
-                activeTags.includes(t)
-                  ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]'
-                  : 'bg-transparent text-[var(--color-ink-muted)] border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]'
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-        <div
-          className="flex gap-2 overflow-x-auto pb-1"
-          role="group"
-          aria-label="Filter by borough"
-        >
-          {BOROUGHS.map((b) => (
-            <button
-              key={b}
-              onClick={() => setBorough(b)}
-              aria-pressed={borough === b}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs border min-h-[36px] transition-colors ${
-                borough === b
-                  ? 'bg-[var(--color-ink)] text-white border-[var(--color-ink)]'
-                  : 'bg-transparent text-[var(--color-ink-muted)] border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]'
-              }`}
-            >
-              {b}
-            </button>
-          ))}
+          {CHIPS.map((c) => {
+            const on = active.includes(c);
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => toggleChip(c)}
+                aria-pressed={on}
+                className={`shrink-0 rounded-full px-4 min-h-[44px] text-base font-semibold border-none cursor-pointer ${
+                  on
+                    ? 'bg-[var(--deep)] text-[var(--white)]'
+                    : 'bg-transparent text-[var(--ink)] border-2 border-[var(--blue-mid)]'
+                }`}
+              >
+                {c}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <p className="px-4 py-2 text-xs text-[var(--color-ink-muted)] bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
-        Synthetic NYC events — fictional venues and prices. No real bookings.
+      <p className="px-4 py-2 text-[13px] text-[var(--ink-muted)]">
+        Demo data. Fictional venues and prices.
       </p>
 
-      <div className="flex flex-col gap-3 px-4 py-4">
+      <div className="px-4 pb-8">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <p className="text-lg font-semibold text-[var(--color-ink)]">
+            <p className="text-lg font-bold text-[var(--ink)]">
               No events match
             </p>
-            <p className="text-sm text-[var(--color-ink-muted)]">
-              Try different filters or clear them.
+            <p className="text-sm text-[var(--ink-muted)]">
+              Try a different search or clear the chips.
             </p>
-            <Button
-              variant="ghost"
+            <button
+              type="button"
               onClick={() => {
                 setSearch('');
-                setActiveTags([]);
-                setBorough('All');
+                setActive([]);
               }}
+              className="text-base font-semibold text-[var(--ink)] underline underline-offset-4"
             >
               Clear filters
-            </Button>
+            </button>
           </div>
         ) : (
-          filtered.map((e) => (
-            <a
-              key={e.eventId}
-              href={`/hub/events/${e.eventId}`}
-              className="block"
-            >
-              <Card className="hover:border-[var(--color-accent)] transition-colors">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--color-ink)]">
-                      {e.title}
-                    </p>
-                    <p className="text-xs text-[var(--color-ink-muted)]">
-                      {e.venue} · {e.neighborhood}
-                    </p>
-                    <p className="text-xs text-[var(--color-ink-muted)]">
-                      {e.date}
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold text-[var(--color-ink)] shrink-0">
-                    {e.estCostPerPerson === 0
-                      ? 'Free'
-                      : `~$${e.estCostPerPerson}/pp`}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {e.tags.map((t) => (
-                    <span
-                      key={t}
-                      className="px-2 py-0.5 bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-full text-xs text-[var(--color-ink-muted)]"
-                    >
-                      {t}
+          <ul className="hey-stack">
+            {filtered.map((e, i) => (
+              <li key={e.id}>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/hub/events/${e.id}`)}
+                  className="hey-stack-card"
+                  style={{ background: cardFill(i), color: cardText(i) }}
+                  aria-label={`${e.title}, ${e.priceCents === null ? 'Free' : `$${(e.priceCents / 100).toFixed(0)}`}, ${e.date} ${e.time}, ${e.neighborhood}`}
+                >
+                  <span className="block text-[13px] font-semibold">
+                    {e.category}
+                  </span>
+                  <span className="flex items-end justify-between gap-2">
+                    <span>
+                      <span className="block text-[22px] font-bold leading-tight">
+                        {e.title}
+                      </span>
+                      <span className="block text-sm font-medium">
+                        {e.date} · {e.time} · {e.neighborhood}
+                      </span>
                     </span>
-                  ))}
-                </div>
-              </Card>
-            </a>
-          ))
+                    <span className="text-[22px] font-bold tabular shrink-0">
+                      {e.priceCents === null
+                        ? 'Free'
+                        : `$${(e.priceCents / 100).toFixed(0)}`}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </main>

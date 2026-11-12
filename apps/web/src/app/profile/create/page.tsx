@@ -1,8 +1,9 @@
 'use client';
-// P4 — Profile creation
-// Six-step stepper: basics, interests, private limits, calendar, PayPal, permissions.
-// Every answer editable later from P19 (Profile hub screen).
-import { useState } from 'react';
+// P4, Profile creation: six calm steps with a DotProgress on top.
+// The interests step is a Spotify style curation screen: search, category
+// chips, a tangle of overlapping palette pills, and a pinned tray.
+import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Button,
   Input,
@@ -10,19 +11,135 @@ import {
   LockBadge,
   useDocumentTitle,
 } from '@/components/ui';
+import { cardFill, cardText } from '@/components/heypal';
 
-const INTEREST_OPTIONS = [
-  'Bowling',
-  'Comedy',
-  'Escape rooms',
-  'Food markets',
-  'Museums',
-  'Outdoor walks',
-  'Live music',
-  'Restaurants',
-  'Sports',
-  'Theatre',
+interface Interest {
+  id: string;
+  label: string;
+  category: string;
+}
+
+const CATEGORIES = [
+  'Food and drink',
+  'Music',
+  'Movies and shows',
+  'Nightlife',
+  'Outdoors',
+  'Sports to play',
+  'Sports to watch',
+  'Arts and museums',
+  'Games and puzzles',
+  'Wellness',
+  'Comedy and talks',
+  'Cozy at home',
 ];
+
+const LABELS: Record<string, string[]> = {
+  'Food and drink': [
+    'ramen crawls',
+    'rooftop bars',
+    'dumpling crawls',
+    'food markets',
+    'taco trucks',
+    'wine bars',
+  ],
+  Music: [
+    'jazz clubs',
+    'live gigs',
+    'open mic nights',
+    'karaoke',
+    'vinyl swaps',
+    'choir singing',
+  ],
+  'Movies and shows': [
+    'cult classics',
+    'rooftop movies',
+    'documentaries',
+    'indie premieres',
+    'theatre nights',
+    'horror marathons',
+  ],
+  Nightlife: [
+    'dance floors',
+    'cocktail dens',
+    'late galleries',
+    'pub quizzes',
+    'club nights',
+    'rooftop parties',
+  ],
+  Outdoors: [
+    'sunrise runs',
+    'long hikes',
+    'picnics',
+    'bike rides',
+    'kayaking',
+    'stargazing',
+  ],
+  'Sports to play': [
+    'pickup basketball',
+    'bouldering',
+    'tennis ladders',
+    '5-a-side',
+    'swim sessions',
+    'skate parks',
+  ],
+  'Sports to watch': [
+    'match nights',
+    'fight nights',
+    'track meets',
+    'derby days',
+    'finals parties',
+    'away days',
+  ],
+  'Arts and museums': [
+    'gallery hops',
+    'thrifting',
+    'pottery',
+    'photo walks',
+    'zine fairs',
+    'life drawing',
+  ],
+  'Games and puzzles': [
+    'board game cafes',
+    'escape rooms',
+    'pub trivia',
+    'chess clubs',
+    'video game nights',
+    'jigsaw races',
+  ],
+  Wellness: [
+    'yoga flows',
+    'sauna sessions',
+    'morning swims',
+    'meditation',
+    'spa days',
+    'sound baths',
+  ],
+  'Comedy and talks': [
+    'standup nights',
+    'story slams',
+    'lectures',
+    'book clubs',
+    'poetry nights',
+    'debate clubs',
+  ],
+  'Cozy at home': [
+    'movie nights',
+    'cook together',
+    'game nights',
+    'record club',
+    'craft nights',
+    'tea tastings',
+  ],
+};
+
+const TAXONOMY: Interest[] = CATEGORIES.flatMap((category, ci) =>
+  (LABELS[category] ?? []).map((label, li) => ({
+    id: `in-${ci}-${li}`,
+    label,
+    category,
+  })),
+);
 
 const DIETARY_OPTIONS = [
   'Vegetarian',
@@ -33,14 +150,27 @@ const DIETARY_OPTIONS = [
   'None',
 ];
 
+const MIN_PICKS = 5;
+
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
+// Seeded tilt so the cloud is identical every visit. Never drifts.
+function tilt(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 97;
+  return (h % 25) - 12;
+}
+
 export default function ProfileCreatePage() {
+  const router = useRouter();
   useDocumentTitle('Create your profile');
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
+  const [customName, setCustomName] = useState('');
+  const [category, setCategory] = useState('All');
+  const [interestQuery, setInterestQuery] = useState('');
   const [budgetDollars, setBudgetDollars] = useState('');
   const [dietary, setDietary] = useState<string[]>([]);
   const [dislikes, setDislikes] = useState('');
@@ -48,9 +178,9 @@ export default function ProfileCreatePage() {
   const [nameError, setNameError] = useState('');
   const [budgetError, setBudgetError] = useState('');
 
-  function toggleInterest(i: string) {
+  function toggleInterest(id: string) {
     setInterests((prev) =>
-      prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i],
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   }
   function toggleDietary(d: string) {
@@ -93,9 +223,18 @@ export default function ProfileCreatePage() {
     next();
   }
 
+  const visibleInterests = useMemo(() => {
+    const q = interestQuery.trim().toLowerCase();
+    return TAXONOMY.filter(
+      (t) =>
+        (category === 'All' || t.category === category) &&
+        (!q || t.label.toLowerCase().includes(q)),
+    ).slice(0, 60);
+  }, [category, interestQuery]);
+
   const stepTitles: Record<Step, string> = {
     1: 'The basics',
-    2: 'Your interests',
+    2: 'What are you into?',
     3: 'Private limits',
     4: 'Calendar',
     5: 'PayPal',
@@ -103,20 +242,27 @@ export default function ProfileCreatePage() {
   };
 
   return (
-    <main className="flex flex-col min-h-dvh px-6 pt-8 pb-8">
+    <main
+      data-surface="white"
+      className="flex flex-col min-h-dvh px-5 pt-8 pb-8"
+    >
       <div className="mb-6">
         <StepIndicator current={step} total={6} />
-        <h1 className="mt-3 text-xl font-bold text-[var(--color-ink)]">
+        <h1 className="mt-3 text-[32px] font-bold text-[var(--ink)]">
           {stepTitles[step]}
         </h1>
+        {step === 2 && (
+          <p className="mt-1 text-base text-[var(--ink-muted)]">
+            Pick at least 5. The more you pick, the better your plans.
+          </p>
+        )}
         {step === 3 && (
-          <p className="mt-1 text-sm text-[var(--color-ink-muted)] flex items-center gap-2">
+          <p className="mt-1 text-sm text-[var(--ink-muted)] flex items-center gap-2">
             <LockBadge />
           </p>
         )}
       </div>
 
-      {/* Step 1 — Basics */}
       {step === 1 && (
         <form onSubmit={handleStep1} className="flex flex-col gap-5">
           <Input
@@ -125,7 +271,7 @@ export default function ProfileCreatePage() {
             onChange={(e) => setName(e.target.value)}
             error={nameError}
             autoComplete="name"
-            placeholder="Alex"
+            placeholder="Janani"
           />
           <Input
             label="Bio (optional)"
@@ -133,7 +279,7 @@ export default function ProfileCreatePage() {
             onChange={(e) => setBio(e.target.value)}
             placeholder="A few words about you"
           />
-          <p className="text-xs text-[var(--color-ink-muted)]">
+          <p className="text-[13px] text-[var(--ink-muted)]">
             Your phone number is prefilled from sign-in and not shown to pods.
           </p>
           <div className="mt-auto">
@@ -144,64 +290,152 @@ export default function ProfileCreatePage() {
         </form>
       )}
 
-      {/* Step 2 — Interests */}
       {step === 2 && (
-        <div className="flex flex-col gap-5">
-          <p className="text-sm text-[var(--color-ink-muted)]">
-            Pick everything you like. Your planner uses these to suggest plans.
-            You can change them later.
-          </p>
+        <div className="flex flex-col gap-4 flex-1">
+          <label htmlFor="interest-search" className="sr-only">
+            Search interests
+          </label>
+          <input
+            id="interest-search"
+            type="search"
+            value={interestQuery}
+            onChange={(e) => setInterestQuery(e.target.value)}
+            placeholder="Search what you love"
+            className="w-full rounded-full bg-[var(--pale)] px-4 min-h-[44px] text-base text-[var(--ink)] border-none"
+          />
           <div
-            className="flex flex-wrap gap-2"
+            className="flex gap-2 overflow-x-auto pb-1"
             role="group"
-            aria-label="Select your interests"
+            aria-label="Interest categories"
           >
-            {INTEREST_OPTIONS.map((i) => (
+            {['All', ...CATEGORIES].map((c) => (
               <button
-                key={i}
+                key={c}
                 type="button"
-                onClick={() => toggleInterest(i)}
-                aria-pressed={interests.includes(i)}
-                className={`px-4 py-2 rounded-full text-sm border transition-colors min-h-[44px] ${
-                  interests.includes(i)
-                    ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]'
-                    : 'bg-transparent text-[var(--color-ink)] border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]'
+                onClick={() => setCategory(c)}
+                aria-pressed={category === c}
+                className={`shrink-0 rounded-full px-4 min-h-[44px] text-sm font-semibold border-none cursor-pointer ${
+                  category === c
+                    ? 'bg-[var(--deep)] text-[var(--white)]'
+                    : 'bg-transparent text-[var(--ink)] border-2 border-[var(--blue-mid)]'
                 }`}
               >
-                {i}
+                {c}
               </button>
             ))}
           </div>
-          <div className="flex gap-3 mt-auto">
-            <Button variant="secondary" fullWidth onClick={back}>
-              Back
-            </Button>
-            <Button fullWidth onClick={next}>
-              Next
-            </Button>
+
+          <div
+            className="flex flex-wrap gap-2"
+            role="group"
+            aria-label="Pick your interests"
+          >
+            {visibleInterests.map((t, i) => {
+              const on = interests.includes(t.id);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="switch"
+                  aria-checked={on}
+                  onClick={() => toggleInterest(t.id)}
+                  className="rounded-full px-4 min-h-[44px] text-[18px] font-bold border-none cursor-pointer"
+                  style={{
+                    background: on ? 'var(--deep)' : cardFill(i),
+                    color: on ? 'var(--white)' : cardText(i),
+                    transform: on ? 'rotate(0deg)' : `rotate(${tilt(t.id)}deg)`,
+                  }}
+                >
+                  {on && <span aria-hidden="true">✓ </span>}
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          {visibleInterests.length === 0 && (
+            <div className="flex flex-col gap-2 items-start">
+              <p className="text-base text-[var(--ink)]">
+                No match. Add it as your own.
+              </p>
+              <div className="flex gap-2 w-full">
+                <label htmlFor="custom-interest" className="sr-only">
+                  Your own interest
+                </label>
+                <input
+                  id="custom-interest"
+                  type="text"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="Your own interest"
+                  className="flex-1 rounded-full bg-[var(--pale)] px-4 min-h-[44px] text-base text-[var(--ink)] border-none"
+                />
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={() => {
+                    if (customName.trim()) setCustomName('');
+                  }}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div
+            className="sticky bottom-0 bg-[var(--white)] pt-2 pb-1"
+            aria-live="polite"
+          >
+            <p className="text-base font-semibold text-[var(--ink)]">
+              {interests.length} picked
+              {interests.length < MIN_PICKS
+                ? `, pick ${MIN_PICKS - interests.length} more`
+                : ''}
+            </p>
+            <StepIndicator
+              current={Math.min(interests.length, MIN_PICKS)}
+              total={MIN_PICKS}
+            />
+            <div className="flex gap-3 mt-3">
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={back}
+                type="button"
+              >
+                Back
+              </Button>
+              <Button
+                fullWidth
+                onClick={next}
+                disabled={interests.length < MIN_PICKS}
+              >
+                Continue
+              </Button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Step 3 — Private limits */}
       {step === 3 && (
         <form onSubmit={handleStep3} className="flex flex-col gap-5">
-          <div className="private-surface rounded-xl border border-[var(--color-hairline)] p-3 text-xs">
+          <div className="private-surface rounded-[28px] border border-[var(--color-hairline)] p-4 text-[13px]">
             Everything on this screen is stored in your private planner vault.
-            Your pod and the group chat never see these details.
+            Your pod and the group chat never see these details. Only your
+            planner sees this.
           </div>
           <Input
             label="Budget per hangout (whole dollars)"
             type="number"
             inputMode="numeric"
-            hint="$1–$200. Only you and your planner see this."
+            hint="From $1 to $200. Only you and your planner see this."
             value={budgetDollars}
             onChange={(e) => setBudgetDollars(e.target.value)}
             error={budgetError}
-            placeholder="30"
+            placeholder="40"
           />
           <div>
-            <p className="text-sm font-medium text-[var(--color-ink)] mb-2">
+            <p className="text-sm font-medium text-[var(--ink)] mb-2">
               Dietary needs (optional)
             </p>
             <div
@@ -215,10 +449,10 @@ export default function ProfileCreatePage() {
                   type="button"
                   onClick={() => toggleDietary(d)}
                   aria-pressed={dietary.includes(d)}
-                  className={`px-3 py-1.5 rounded-full text-sm border min-h-[44px] transition-colors ${
+                  className={`px-3 py-1.5 rounded-full text-sm border min-h-[44px] cursor-pointer ${
                     dietary.includes(d)
-                      ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]'
-                      : 'bg-transparent text-[var(--color-ink)] border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]'
+                      ? 'bg-[var(--deep)] text-[var(--white)] border-[var(--deep)]'
+                      : 'bg-transparent text-[var(--ink)] border-[var(--color-border)]'
                   }`}
                 >
                   {d}
@@ -230,7 +464,7 @@ export default function ProfileCreatePage() {
             label="Things you dislike (optional)"
             value={dislikes}
             onChange={(e) => setDislikes(e.target.value)}
-            placeholder="e.g. loud bars, karaoke"
+            placeholder="loud bars, karaoke"
             hint="Only you and your planner see this."
           />
           <Input
@@ -240,7 +474,7 @@ export default function ProfileCreatePage() {
             value={maxTravel}
             onChange={(e) => setMaxTravel(e.target.value)}
             placeholder="45"
-            hint="Max commute you're comfortable with. Only you and your planner see this."
+            hint="Max commute you are comfortable with. Only you and your planner see this."
           />
           <div className="flex gap-3 mt-auto">
             <Button variant="secondary" fullWidth onClick={back} type="button">
@@ -253,23 +487,22 @@ export default function ProfileCreatePage() {
         </form>
       )}
 
-      {/* Step 4 — Calendar */}
       {step === 4 && (
         <div className="flex flex-col gap-5">
-          <p className="text-sm text-[var(--color-ink-muted)]">
+          <p className="text-base text-[var(--ink-muted)]">
             Connect Google Calendar so the planner can find times when everyone
-            is free. The planner reads only free/busy — it never shows members
-            each other's calendars.
+            is free. The planner reads only free and busy time. It never shows
+            members each other calendars.
           </p>
-          <div className="rounded-xl border border-[var(--color-border)] p-4 flex items-center justify-between gap-3">
-            <span className="text-sm font-medium text-[var(--color-ink)]">
+          <div className="hey-card bg-[var(--pale)] p-4 flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-[var(--ink)]">
               Google Calendar
             </span>
             <Button variant="secondary" onClick={next}>
               Connect
             </Button>
           </div>
-          <p className="text-xs text-[var(--color-ink-muted)]">
+          <p className="text-[13px] text-[var(--ink-muted)]">
             Apple Calendar and Outlook are coming later. You can connect or
             disconnect later from your profile.
           </p>
@@ -284,23 +517,22 @@ export default function ProfileCreatePage() {
         </div>
       )}
 
-      {/* Step 5 — PayPal */}
       {step === 5 && (
         <div className="flex flex-col gap-5">
-          <p className="text-sm text-[var(--color-ink-muted)]">
+          <p className="text-base text-[var(--ink-muted)]">
             Link your PayPal account to pay or be paid in a hangout. Required
             before you can be the payer for a hangout.
           </p>
-          <div className="rounded-xl border border-[var(--color-border)] p-4 flex items-center justify-between gap-3">
-            <span className="text-sm font-medium text-[var(--color-ink)]">
+          <div className="hey-card bg-[var(--pale)] p-4 flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-[var(--ink)]">
               PayPal
             </span>
             <Button variant="secondary" onClick={next}>
               Link PayPal
             </Button>
           </div>
-          <p className="text-xs text-[var(--color-ink-muted)]">
-            This is a demo — no PayPal account is created or charged.
+          <p className="text-[13px] text-[var(--ink-muted)]">
+            This is a demo, and no PayPal account is created or charged.
           </p>
           <div className="flex gap-3 mt-auto">
             <Button variant="secondary" fullWidth onClick={back}>
@@ -313,10 +545,9 @@ export default function ProfileCreatePage() {
         </div>
       )}
 
-      {/* Step 6 — Permissions */}
       {step === 6 && (
         <div className="flex flex-col gap-5">
-          <p className="text-sm text-[var(--color-ink-muted)]">
+          <p className="text-base text-[var(--ink-muted)]">
             Each permission has a reason. You can change these at any time from
             Settings.
           </p>
@@ -335,19 +566,17 @@ export default function ProfileCreatePage() {
               {
                 label: 'Calendar',
                 reason:
-                  'To find free/busy slots without exposing calendars to other members.',
+                  'To find free and busy slots without exposing calendars to other members.',
               },
             ].map(({ label, reason }) => (
               <li
                 key={label}
-                className="rounded-xl border border-[var(--color-border)] p-4"
+                className="hey-card bg-[var(--white)] border border-[var(--sky)] p-4"
               >
-                <p className="text-sm font-medium text-[var(--color-ink)] mb-1">
+                <p className="text-sm font-medium text-[var(--ink)] mb-1">
                   {label}
                 </p>
-                <p className="text-xs text-[var(--color-ink-muted)]">
-                  {reason}
-                </p>
+                <p className="text-[13px] text-[var(--ink-muted)]">{reason}</p>
               </li>
             ))}
           </ul>
@@ -358,7 +587,7 @@ export default function ProfileCreatePage() {
             <Button
               fullWidth
               onClick={() => {
-                window.location.href = '/home';
+                router.push('/home');
               }}
             >
               Allow and continue
@@ -368,7 +597,7 @@ export default function ProfileCreatePage() {
             variant="secondary"
             fullWidth
             onClick={() => {
-              window.location.href = '/home';
+              router.push('/home');
             }}
           >
             Decline all and continue

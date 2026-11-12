@@ -1,6 +1,8 @@
 'use client';
-// P17 — Event detail + suggest-to-pod
+// P17, Event detail. The card color and shape grow into the header, then
+// the dotted illustration, description, and pod picker.
 import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import {
   Button,
   ScreenHeader,
@@ -8,113 +10,54 @@ import {
   Card,
   SandboxBanner,
 } from '@/components/ui';
-
-const DEMO_EVENT = {
-  eventId: 'evt-001',
-  title: 'Open Bowl Night',
-  venue: 'Brooklyn Bowl',
-  neighborhood: 'Williamsburg',
-  borough: 'Brooklyn',
-  address: '61 Wythe Ave, Brooklyn, NY 11249',
-  date: 'Fri Nov 20, 7–10 PM',
-  estCostPerPerson: 35,
-  tags: ['Active', 'Nightlife', 'Food'],
-  dietaryOptions: ['Vegetarian', 'Vegan'],
-  travelMinutesFromMidtown: 25,
-  description:
-    'Bowling lanes plus a full kitchen and bar. Synthetic event for demo.',
-};
-
-const MY_PODS = ['Friday crew', 'Work pals', 'Cousins'];
+import { EVENTS, PODS } from '@/lib/heypal/seed';
 
 export default function EventDetailPage() {
+  const params = useParams<{ eventId: string }>();
+  const eventId = typeof params.eventId === 'string' ? params.eventId : '';
+  const e = EVENTS.find((ev) => ev.id === eventId) ?? EVENTS[0];
   const [suggestedTo, setSuggestedTo] = useState<string | null>(null);
-  const e = DEMO_EVENT;
+  if (!e) return null;
+  const price =
+    e.priceCents === null ? 'Free' : `$${(e.priceCents / 100).toFixed(0)}`;
 
   return (
-    <main className="flex flex-col min-h-dvh">
+    <main data-surface="white" className="flex flex-col min-h-dvh">
       <SandboxBanner />
       <ScreenHeader title={e.title} back={<BackButton href="/hub/events" />} />
 
-      <div className="flex flex-col gap-5 px-4 py-5">
-        <div>
-          <h2 className="text-xl font-bold text-[var(--color-ink)]">
-            {e.title}
-          </h2>
-          <p className="text-sm text-[var(--color-ink-muted)]">
-            {e.venue} · {e.neighborhood}, {e.borough}
-          </p>
-          <p className="text-xs text-[var(--color-ink-muted)]">{e.address}</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Card>
-            <p className="text-xs text-[var(--color-ink-muted)]">
-              Date &amp; time
-            </p>
-            <p className="text-sm font-semibold text-[var(--color-ink)] mt-1">
-              {e.date}
-            </p>
-          </Card>
-          <Card>
-            <p className="text-xs text-[var(--color-ink-muted)]">Est. cost</p>
-            <p className="text-sm font-semibold text-[var(--color-ink)] mt-1">
-              {e.estCostPerPerson === 0
-                ? 'Free'
-                : `~$${e.estCostPerPerson}/person`}
-            </p>
-          </Card>
-          <Card>
-            <p className="text-xs text-[var(--color-ink-muted)]">
-              Travel (from Midtown)
-            </p>
-            <p className="text-sm font-semibold text-[var(--color-ink)] mt-1">
-              ~{e.travelMinutesFromMidtown} min
-            </p>
-          </Card>
-          <Card>
-            <p className="text-xs text-[var(--color-ink-muted)]">
-              Dietary options
-            </p>
-            <p className="text-sm font-semibold text-[var(--color-ink)] mt-1">
-              {e.dietaryOptions.length
-                ? e.dietaryOptions.join(', ')
-                : 'None listed'}
-            </p>
-          </Card>
-        </div>
-
-        <div className="flex flex-wrap gap-1.5">
-          {e.tags.map((t) => (
-            <span
-              key={t}
-              className="px-3 py-1 bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-full text-xs text-[var(--color-ink-muted)]"
-            >
-              {t}
-            </span>
-          ))}
-        </div>
-
-        <p className="text-sm text-[var(--color-ink-muted)] italic">
-          {e.description}
+      <div className="hey-card bg-[var(--deep)] text-[var(--white)] mx-4 mt-4 p-5">
+        <p className="text-[13px] font-semibold">{e.category}</p>
+        <h2 className="text-[28px] font-bold leading-tight">{e.title}</h2>
+        <p className="mt-1 text-[22px] font-bold tabular">{price}</p>
+        <p className="mt-1 text-sm font-medium">
+          {e.date} · {e.time} · {e.neighborhood}
         </p>
+      </div>
+
+      <div className="flex flex-col gap-5 px-4 py-5">
+        <div
+          aria-hidden="true"
+          className="hey-dots hey-card h-24 text-[var(--blue-mid)]"
+        />
+        <p className="text-base text-[var(--ink-muted)]">{e.description}</p>
 
         {/* Suggest to pod */}
         <section aria-labelledby="suggest-heading">
           <h3
             id="suggest-heading"
-            className="text-sm font-semibold text-[var(--color-ink)] mb-3"
+            className="text-sm font-semibold text-[var(--ink)] mb-3"
           >
             Suggest to a pod
           </h3>
           {suggestedTo ? (
             <Card>
-              <p className="text-sm text-[var(--color-ink)]">
+              <p className="text-sm text-[var(--ink)]">
                 Suggested to <strong>{suggestedTo}</strong>
               </p>
-              <p className="text-xs text-[var(--color-ink-muted)] mt-1">
-                The planner will add it to the shortlist. The pod votes — no
-                auto-booking.
+              <p className="text-xs text-[var(--ink-muted)] mt-1">
+                The planner will add it to the shortlist. The pod votes, and
+                nothing books itself.
               </p>
               <Button
                 variant="ghost"
@@ -126,19 +69,23 @@ export default function EventDetailPage() {
             </Card>
           ) : (
             <div className="flex flex-col gap-2">
-              {MY_PODS.map((pod) => (
+              {PODS.map((pod) => (
                 <Button
-                  key={pod}
+                  key={pod.id}
                   variant="secondary"
                   fullWidth
-                  onClick={() => setSuggestedTo(pod)}
+                  onClick={() => setSuggestedTo(pod.name)}
                 >
-                  Suggest to {pod}
+                  Suggest to {pod.name}
                 </Button>
               ))}
             </div>
           )}
         </section>
+
+        <Button variant="secondary" fullWidth>
+          Add to my calendar
+        </Button>
       </div>
     </main>
   );

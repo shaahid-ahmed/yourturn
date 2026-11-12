@@ -4,11 +4,11 @@ import React, { useEffect } from 'react';
 // WCAG 2.4.2: every screen names itself in the document title.
 export function useDocumentTitle(title: string) {
   useEffect(() => {
-    document.title = `${title} · Unspoken`;
+    document.title = `${title} · HeyPal`;
   }, [title]);
 }
 
-// ── Shared primitive components ───────────────────────────────────────────────
+// ── Shared primitive components (HeyPal restyle, same props) ────────────────
 
 type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'ghost';
 
@@ -26,18 +26,16 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const base =
-    'inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] font-medium text-base min-h-[48px] px-5 transition-colors disabled:bg-[var(--color-action-disabled)] disabled:text-[var(--color-on-action-disabled)] disabled:border-transparent disabled:cursor-not-allowed';
-  // Ink actions; PayPal blue never fills a button (DESIGN_SYSTEM: Colour).
-  // Confirm and Cancel carry equal weight in money and destructive steps.
+    'inline-flex items-center justify-center gap-2 rounded-full font-bold text-base min-h-[48px] px-5 transition-all active:scale-[0.96] disabled:cursor-not-allowed';
   const variants: Record<ButtonVariant, string> = {
     primary:
-      'bg-[var(--color-action)] text-[var(--color-on-action)] active:bg-[var(--color-action-pressed)]',
+      'bg-[var(--deep)] text-[var(--mist)] uppercase text-[20px] px-[23px] disabled:bg-[var(--color-action-disabled)] disabled:text-[var(--color-on-action-disabled)]',
     secondary:
-      'border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink)] active:bg-[var(--color-surface-sunken)]',
+      'border-2 border-dotted border-[var(--blue-mid)] bg-transparent text-[var(--ink)] disabled:border-[var(--color-action-disabled)] disabled:text-[var(--color-on-action-disabled)]',
     destructive:
-      'border border-[var(--color-status-failed)] bg-[var(--color-surface)] text-[var(--color-status-failed)] active:bg-[var(--color-status-failed-surface)]',
+      'border border-[var(--color-status-failed)] bg-[var(--color-surface)] text-[var(--color-status-failed)] active:bg-[var(--color-status-failed-surface)] normal-case font-medium',
     ghost:
-      'bg-transparent text-[var(--color-ink)] underline underline-offset-4 active:bg-[var(--color-surface-sunken)]',
+      'bg-transparent underline underline-offset-4 normal-case font-medium px-4 disabled:text-[var(--color-ink-muted)]',
   };
   return (
     <button
@@ -70,15 +68,12 @@ export function Input({
     <div className="flex flex-col gap-1">
       <label
         htmlFor={inputId}
-        className="text-sm font-medium text-[var(--color-ink)]"
+        className="text-sm font-medium text-[var(--ink)]"
       >
         {label}
       </label>
       {hint && (
-        <p
-          id={`${inputId}-hint`}
-          className="text-xs text-[var(--color-ink-muted)]"
-        >
+        <p id={`${inputId}-hint`} className="text-xs text-[var(--ink-muted)]">
           {hint}
         </p>
       )}
@@ -88,10 +83,8 @@ export function Input({
           hint ? `${inputId}-hint` : error ? `${inputId}-error` : undefined
         }
         aria-invalid={!!error}
-        className={`min-h-[44px] rounded-lg border px-4 py-2 text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] focus-visible:ring-offset-2 ${
-          error
-            ? 'border-[var(--color-danger)]'
-            : 'border-[var(--color-border)]'
+        className={`min-h-[44px] rounded-2xl border-2 px-4 py-2 text-base focus:outline-none ${
+          error ? 'border-[var(--color-danger)]' : 'border-[var(--sky)]'
         } ${className}`}
         {...rest}
       />
@@ -119,11 +112,9 @@ export function ScreenHeader({
 }) {
   useDocumentTitle(title);
   return (
-    <header className="flex items-center justify-between gap-3 px-4 h-14 border-b border-[var(--color-border)] sticky top-0 bg-white z-10">
+    <header className="flex items-center justify-between gap-3 px-4 h-14 border-b border-[var(--sky)] sticky top-0 bg-[var(--white)] z-10">
       <div className="w-10">{back}</div>
-      <h1 className="text-lg font-semibold text-[var(--color-ink)] truncate">
-        {title}
-      </h1>
+      <h1 className="text-lg font-bold text-[var(--ink)] truncate">{title}</h1>
       <div className="w-10 flex justify-end">{right}</div>
     </header>
   );
@@ -170,13 +161,15 @@ export function Card({
 }) {
   return (
     <div
-      className={`rounded-[var(--radius-card)] border border-[var(--color-hairline)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] ${className}`}
+      className={`hey-card border border-[var(--sky)] bg-[var(--white)] p-4 ${className}`}
     >
       {children}
     </div>
   );
 }
 
+// DotProgress: a row of dots where finished steps fill and the current
+// one is larger. Replaces the bar StepIndicator, same props.
 export function StepIndicator({
   current,
   total,
@@ -186,7 +179,7 @@ export function StepIndicator({
 }) {
   return (
     <div
-      className="flex items-center gap-1.5"
+      className="flex items-center gap-2"
       aria-label={`Step ${current} of ${total}`}
       role="progressbar"
       aria-valuenow={current}
@@ -196,11 +189,13 @@ export function StepIndicator({
       {Array.from({ length: total }, (_, i) => (
         <div
           key={i}
-          className={`h-1.5 rounded-full transition-all ${
-            i + 1 <= current
-              ? 'bg-[var(--color-accent)] w-6'
-              : 'bg-[var(--color-border)] w-3'
-          }`}
+          aria-hidden="true"
+          className="rounded-full transition-all"
+          style={{
+            width: i + 1 === current ? 14 : 9,
+            height: i + 1 === current ? 14 : 9,
+            background: i + 1 <= current ? 'var(--blue-mid)' : 'var(--sky)',
+          }}
         />
       ))}
     </div>
@@ -211,7 +206,7 @@ export function BackButton({ href }: { href: string }) {
   return (
     <a
       href={href}
-      className="inline-flex items-center justify-center w-10 h-10 rounded-lg text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)] -ml-1"
+      className="inline-flex items-center justify-center w-10 h-10 rounded-full text-current"
       aria-label="Go back"
     >
       <svg
@@ -239,17 +234,23 @@ export function PlannerCard({
   className?: string;
 }) {
   return (
-    <div
-      className={`rounded-[var(--radius-card)] bg-[var(--color-surface)] border border-[var(--color-hairline)] shadow-[var(--shadow-card)] p-4 ${className}`}
-    >
+    <div className={`hey-card bg-[var(--pale)] p-4 ${className}`}>
       <div className="flex items-center gap-2 mb-3">
         <div
-          className="w-8 h-8 rounded-full bg-[var(--color-accent)] flex items-center justify-center text-white text-xs font-bold"
+          className="w-8 h-8 rounded-full bg-[var(--orange)] flex items-center justify-center text-[var(--ink)] text-xs font-bold"
           aria-hidden="true"
         >
-          AI
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M8 1l1.8 4.6L14 7l-4.2 1.4L8 13l-1.8-4.6L2 7l4.2-1.4L8 1z" />
+          </svg>
         </div>
-        <span className="text-sm font-medium text-[var(--color-ink-muted)]">
+        <span className="text-sm font-medium text-[var(--ink-muted)]">
           Planner
         </span>
       </div>
@@ -259,7 +260,6 @@ export function PlannerCard({
 }
 
 export function EmptyState({
-  icon,
   heading,
   body,
   action,
@@ -271,32 +271,25 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 p-8 text-center min-h-[200px]">
-      {icon ? (
-        <span className="text-4xl" aria-hidden="true">
-          {icon}
-        </span>
-      ) : (
-        <svg
-          width="96"
-          height="64"
-          viewBox="0 0 96 64"
-          aria-hidden="true"
-          fill="none"
-          stroke="var(--color-paypal-line)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        >
-          <path d="M20 44c-8-2-12-10-8-17s14-8 19-3c3-9 15-12 22-6 6-4 16-1 17 8 8 0 13 8 9 15s-12 7-15 5c-4 6-14 7-19 2-6 4-17 2-19-4" />
-          <circle cx="30" cy="56" r="3" />
-          <circle cx="66" cy="56" r="3" />
-        </svg>
-      )}
-      <h2 className="text-lg font-semibold text-[var(--color-ink)]">
-        {heading}
-      </h2>
-      <p className="text-sm text-[var(--color-ink-muted)] max-w-[280px]">
-        {body}
-      </p>
+      <svg
+        width="72"
+        height="72"
+        viewBox="0 0 72 72"
+        aria-hidden="true"
+        fill="var(--blue-mid)"
+      >
+        <circle cx="18" cy="24" r="4" />
+        <circle cx="34" cy="16" r="5" />
+        <circle cx="50" cy="22" r="3.5" />
+        <circle cx="26" cy="40" r="5" />
+        <circle cx="44" cy="38" r="4" />
+        <circle cx="58" cy="36" r="5" />
+        <circle cx="20" cy="56" r="3.5" />
+        <circle cx="38" cy="54" r="4.5" />
+        <circle cx="54" cy="54" r="3" />
+      </svg>
+      <h2 className="text-lg font-bold text-[var(--ink)]">{heading}</h2>
+      <p className="text-sm text-[var(--ink-muted)] max-w-[280px]">{body}</p>
       {action}
     </div>
   );
@@ -309,7 +302,7 @@ export function SandboxBanner() {
       role="note"
       aria-label="Demo notice"
     >
-      Sandbox — no real money. Demo people and a simulated booking.
+      Sandbox, no real money. Demo people and a simulated booking.
     </aside>
   );
 }
