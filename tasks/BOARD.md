@@ -70,9 +70,8 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 
 ## IN PROGRESS
 
-| ID     | Title                             | Role          | Depends on | Acceptance criteria                                                                                                | Claimed by                                                                                                  | Branch/PR                     |
-| ------ | --------------------------------- | ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| YT-027 | ∥ Phase 2: market and positioning | growth-market | YT-014     | Dated primary sources, sourced sizing and competitor comparisons; ethical revenue hypotheses; no invented traction | Human: Vid — IN PROGRESS (growth-market, claude-opus-5-5), taken over from Alan at Vid's request 2026-11-12 | `growth-market/yt-027-market` |
+| ID  | Title | Role | Depends on | Acceptance criteria | Claimed by | Branch/PR |
+| --- | ----- | ---- | ---------- | ------------------- | ---------- | --------- |
 
 | US-019 | Phase 2: HTTP routes for the contract | backend | US-001, US-002, US-013, YT-007 (stack ratification) | Every openapi.json operation is served under /api/v1; requests and responses are validated against the contract; errors match the contract Error / PaymentGateError shapes; createSettlementPayment stays gated closed (409 payment_gate_blocked) | Human: Shaahid — IN PROGRESS | — |
 
@@ -80,10 +79,11 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 
 Alan's Lane A tasks taken over by Vid, awaiting independent review:
 
-| ID     | Title                                           | Role         | Depends on | Acceptance criteria                                                                                                                                               | Claimed by                                                                              | Branch/PR                            |
-| ------ | ----------------------------------------------- | ------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------ |
-| UN-009 | ∥ Phase 2: tally privacy boundary and retention | privacy      | UN-001     | Per-member answers held in memory only, never persisted or logged; documented as architectural not cryptographic privacy; inference-over-rounds risk written down | Human: Vid — IN REVIEW (privacy, claude-opus-5-5), taken over from Alan 2026-11-12      | `privacy/un-009-tally-boundary`      |
-| YT-026 | ∥ Phase 2: abuse and coercion assessment        | trust-safety | YT-014     | Host misuse, exclusion, harassment, financial coercion and safe exit scenarios with mitigation/test owners                                                        | Human: Vid — IN REVIEW (trust-safety, claude-opus-5-5), taken over from Alan 2026-11-12 | `trust-safety/yt-026-abuse-coercion` |
+| ID     | Title                                           | Role          | Depends on | Acceptance criteria                                                                                                                                               | Claimed by                                                                               | Branch/PR                            |
+| ------ | ----------------------------------------------- | ------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------ |
+| UN-009 | ∥ Phase 2: tally privacy boundary and retention | privacy       | UN-001     | Per-member answers held in memory only, never persisted or logged; documented as architectural not cryptographic privacy; inference-over-rounds risk written down | Human: Vid — IN REVIEW (privacy, claude-opus-5-5), taken over from Alan 2026-11-12       | `privacy/un-009-tally-boundary`      |
+| YT-026 | ∥ Phase 2: abuse and coercion assessment        | trust-safety  | YT-014     | Host misuse, exclusion, harassment, financial coercion and safe exit scenarios with mitigation/test owners                                                        | Human: Vid — IN REVIEW (trust-safety, claude-opus-5-5), taken over from Alan 2026-11-12  | `trust-safety/yt-026-abuse-coercion` |
+| YT-027 | ∥ Phase 2: market and positioning               | growth-market | YT-014     | Dated primary sources, sourced sizing and competitor comparisons; ethical revenue hypotheses; no invented traction                                                | Human: Vid — IN REVIEW (growth-market, claude-opus-5-5), taken over from Alan 2026-11-12 | `growth-market/yt-027-market`        |
 
 Vid's reassigned backend tasks awaiting independent review (Rohan reviews, per the Lane S reassignment):
 
@@ -809,6 +809,23 @@ Open, High:
 Not done: fixes. The requirements belong to Backend, LLM Engineer, Product Manager and Behavioral. Reporting, blocking and message deletion are listed for LATER, not the demo.
 How to verify: `npm run check`; `node --test tests/trust-safety.test.mjs`.
 Next step: a reviewer, then the owners take TS-01, TS-12 and TS-16.
+
+### Handoff YT-027: growth-market (Vid, taken over from Alan) → reviewer, demo-pitch (Rohan), human (pricing)
+
+Done: `docs/07-gtm/MARKET.md` is rewritten for Unspoken, replacing the stub. Sources were accessed November 12, 2026. It covers:
+
+- **Problem evidence:** primary Ally Bank, June 2025, n=1,000 (44% skipped events over cost, 17% couldn't be honest about finances, $250/month). Older or weaker figures are marked as such.
+- **Competitors:** seven, each with a linked, dated source: Splitwise, Venmo (67M MAA, Q4 2025 earnings call), PayPal Pool Money (relaunched Nov 2024), Partiful, Apple Invites, Howbout, and group chats.
+- **Positioning:** four hypotheses (H1–H4), each with an untested test.
+- **Sizing:** arithmetic on assumptions, explicitly not a forecast; the conversion rate is unknown.
+- **Revenue:** four ethical hypotheses, and a "never" list.
+- **Claims:** a "may say / may not say" list for the pitch.
+
+`tests/market.test.mjs` (4) enforces sources, dates, the no-traction statement and the not-permitted list.
+Not done: no customer research was run (H1–H4 are untested), and no real market size exists.
+Risks / gotchas: **R1 records a real tension.** $15 per member per month for a product aimed at people under cost pressure is 3–5× Splitwise Pro. A human should weigh this with Q-011 #2 (trial).
+How to verify: `npm run check`; open each source link.
+Next step: a reviewer; Demo & Pitch uses the "May say" list.
 
 ## Human Phase 1 authorization and coordinated ownership
 

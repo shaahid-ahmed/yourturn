@@ -1,27 +1,90 @@
-# Market
+# Market and positioning
 
-Status: structured Phase 0 stub; **not an approved contract or implementation**.
+**Task:** YT-027 · **Role:** Growth & Market (Vid, taken over from Alan on November 12, 2026) · **Status:** Phase 1 research for review. **Hypotheses, not validated demand.** Unspoken has **no users, no traction and no revenue**. It is a sandbox hackathon demo, and every person in it is synthetic.
 
-Owner: Growth & Market. Task: YT-027.
+**Sources were accessed on November 12, 2026.** Where only secondary coverage of a figure was found, the row says so. Figures from different surveys use different samples and methods and are **not comparable to each other**.
 
-Read PRODUCT.md, CONSTRAINTS.md, RULES.md and the behavioral checklist before completing this document. Phase 1 requires explicit human release.
+## The problem, with evidence
+
+Unspoken's premise: friends lose touch over money nobody talks about, because the person who can't afford the plan quietly skips it.
+
+| Claim                                          | Evidence                                                                                                                                                                                        | Source (date)                                                                                                                                                                                             | Strength                                                                                     |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Cost makes young adults skip time with friends | 44% of Gen Z and millennials have skipped major social events because of cost; average spend on activities with friends is $250 a month                                                         | [Ally Bank press release](https://media.ally.com/2025-07-30-New-Ally-Bank-Survey-Reveals-the-Hidden-Financial-Cost-of-Friendships) (July 30, 2025; survey June 2025, n=1,000, 37% Gen Z / 63% millennial) | **Primary, but sponsored by a bank.** No margin of error or fielding firm stated             |
+| People hide money limits from friends          | 17% felt they couldn't be honest with friends about their finances; 22% often feel anxiety when unsure they can afford a social activity; 59% say social spending affects their financial goals | [Ally Bank press release](https://media.ally.com/2025-07-30-New-Ally-Bank-Survey-Reveals-the-Hidden-Financial-Cost-of-Friendships) (July 30, 2025)                                                        | Primary, as above                                                                            |
+| People overspend to keep up                    | 35% said they spend more than they can afford on activities with friends                                                                                                                        | Charles Schwab Modern Wealth Survey (2019), as reported by [ThinkAdvisor](https://www.thinkadvisor.com/2019/05/13/how-fomo-can-warp-your-finances-schwab/) (May 13, 2019)                                 | **Secondary and old** (pre-pandemic)                                                         |
+| Overspending to attend social events is common | 63% said they overspent to attend social gatherings; 15% report more than $2,000 of debt from keeping up                                                                                        | CouponCabin, as reported by [KSAT](https://www.ksat.com/news/local/2026/04/16/fomo-is-costing-americans-big-time-survey-shows/) (April 16, 2026)                                                          | **Weak:** no sample size, dates or method published in the coverage. Do not use in the pitch |
+| Social connection matters for health           | The US Surgeon General's May 2023 advisory reported that about half of US adults experience loneliness, and linked isolation to heart disease, stroke, dementia and premature death             | Advisory coverage: [STAT](https://www.statnews.com/2023/05/02/loneliness-surgeon-general/) (May 2, 2023)                                                                                                  | Secondary coverage of a primary government advisory                                          |
+
+**What the evidence does not show.** No source found measures whether people would **pay** for a planner that hides budgets, or whether a planner reduces skipped plans. The causal story ("money silence makes friendships fade") is **plausible and partly supported** (the 17% honesty figure, the 44% skip figure), not proven.
+
+## Competitors
+
+None of these privately checks every member's budget before the group sees options. That is the gap Unspoken targets. Several are free and already installed, which makes them the real competition.
+
+| Product                          | What it does                                                                                                                               | Price                                                                                                             | Scale (as reported)                                                                                       | Source (date)                                                                                                                                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Splitwise                        | Splits a bill **after** someone has paid; tracks who owes whom                                                                             | Free with limits; Pro in-app purchases listed at $2.99–$4.99 a month and $29.99–$39.99 a year, varying by country | Not verified                                                                                              | [App Store listing](https://apps.apple.com/pk/app/splitwise/id458023433) (accessed Nov 12, 2026)                                                                                               |
+| Venmo                            | Peer-to-peer payments between friends                                                                                                      | Free between friends                                                                                              | 67 million monthly active accounts in Q4 2025; 2025 revenue $1.7B excluding interest income               | PayPal Q4 2025 earnings call, interim CEO prepared remarks ([transcript](https://www.fool.com/earnings/call-transcripts/2026/02/03/paypal-pypl-q4-2025-earnings-call-transcript), Feb 3, 2026) |
+| PayPal Pool Money                | Collects money from a group **before** a purchase; the organizer moves it into their own account; contributors don't need a PayPal account | Described by PayPal as no-cost                                                                                    | Relaunched November 14, 2024 (US, DE, UK, IT, ES), after the original Money Pools closed in November 2021 | [TechCrunch](https://techcrunch.com/2024/11/14/paypals-new-feature-will-let-you-easily-split-expenses-with-family-and-friends/) (Nov 14, 2024)                                                 |
+| Partiful                         | Event invitations and RSVPs, popular with Gen Z                                                                                            | Core free; add-on revenue                                                                                         | Sensor Tower estimate of ~500,000 monthly active users in Q1 2025; company never disclosed MAU            | [CNBC via NBC New York](https://www.nbcnewyork.com/news/business/money-report/meet-partiful-the-gen-z-party-planning-staple-thats-taking-on-apple/6231135/)                                    |
+| Apple Invites                    | Invitations, RSVPs, shared albums                                                                                                          | Free app; **creating** an invitation needs iCloud+                                                                | Launched February 5, 2025                                                                                 | [Apple Newsroom](https://www.apple.com/newsroom/2025/02/introducing-apple-invites-a-new-app-that-brings-people-together/) (Feb 5, 2025)                                                        |
+| Howbout                          | Shared social calendar showing when friends are free; polls; per-event chat                                                                | Free, with an optional Howbout+ subscription                                                                      | Raised $8M (Goodwater), September 2024; "3 million users" is the company's own App Store claim            | [TechCrunch](https://techcrunch.com/2024/09/13/howbout-raises-8m-from-goodwater-to-build-a-calendar-that-you-can-share-with-your-friends) (Sep 13, 2024)                                       |
+| Group chats (iMessage, WhatsApp) | Where friend plans actually happen today                                                                                                   | Free                                                                                                              | Ubiquitous                                                                                                | (Not sourced; stated as the default alternative)                                                                                                                                               |
+
+**Where Unspoken differs, and where it doesn't.**
+
+- **Different:** the private budget check before the shortlist; the private stretch ask; reminders that never go to the group; and splitting only among those who said yes.
+- **Not different:** polls, invitations and chat (Partiful, Apple Invites, Howbout and group chats already do these), bill splitting (Splitwise, Venmo) and collecting money upfront (PayPal Pool Money).
+- **Vulnerability:** any of these could add a private budget filter. Unspoken's defensibility, if any, is trust and privacy design, not features.
 
 ## Audience and positioning hypotheses
 
-TODO (Growth & Market): specify requirements, evidence and review criteria in the linked task.
+| Hypothesis                                                                                                                                            | Why we think so                                                                                                          | How to test it (not run)                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| **H1 — Segment.** Friend groups of 3–8 people aged roughly 21–34, in a city with paid social options (NYC first), with mixed incomes inside the group | Ally's sample (Gen Z and millennials) reports the cost pressure; mixed-income groups are where hidden limits matter most | Recruit 5–10 real groups (with consent, per CONSTRAINTS) and interview them about the last plan someone skipped                  |
+| **H2 — Job to be done.** "Help us pick something everyone can actually do, without anyone having to say why they can't."                              | The 17% "couldn't be honest" and 44% "skipped because of cost" figures                                                   | Concierge test: a human planner privately collects budgets for 3 groups over 4 weeks; measure skipped-plan rate before and after |
+| **H3 — Positioning line.** "Plans that fit everyone's budget, without anyone saying it out loud." Not "a budgeting app" and not "a payments app"      | Competitors own payments and invitations; the private-fit promise is the unoccupied space                                | Message test against "group planner" and "split bills" framings                                                                  |
+| **H4 — Who installs.** The organiser of a group, not the member who is short of money (who may never ask for help)                                    | Hiding the limit is the point; the person under pressure will not seek out a tool for it                                 | Ask in interviews who in the group would install it                                                                              |
 
-## Verified competitor research
+## Sizing (assumptions, not a forecast)
 
-TODO (Growth & Market): specify requirements, evidence and review criteria in the linked task.
+No source sizes this exact market. Below is **arithmetic on stated assumptions**, so the team can see how sensitive the numbers are. **It is not a TAM claim and must not be presented as one.**
 
-## Sourced market sizing
+| Input                                                                   | Value                    | Source or status                                                                                               |
+| ----------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| US people who already pay friends through an app (upper bound on reach) | 67 million               | Venmo monthly active accounts, Q4 2025 (above). Accounts are not unique people, and not all are in the segment |
+| Share in the segment who report skipping events over cost               | 44%                      | Ally, Gen Z and millennials only (above). Applying it to Venmo users is an **assumption**                      |
+| Share of those who would pay $15/month for this                         | **unknown**              | No evidence. 1% is used purely for illustration                                                                |
+| Price                                                                   | $15 per member per month | Spec p.1                                                                                                       |
 
-TODO (Growth & Market): specify requirements, evidence and review criteria in the linked task.
+Illustration only: 67M × 44% × 1% ≈ 295,000 paying members ≈ **$53M a year** at $15/month. Each input is a guess or a proxy; a 0.1% conversion gives about $5M. **The conversion rate is the whole question, and nothing here estimates it.**
 
-## Revenue hypotheses
+## Revenue hypotheses (ethical constraints first)
 
-TODO (Growth & Market): specify requirements, evidence and review criteria in the linked task.
+| ID  | Hypothesis                                                                    | Constraint it respects                                                                                    | Risk                                                                                                                                                                                                                                      |
+| --- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | **$15/month per member** (spec; Q-011 #1 decided: each member pays their own) | Plan money is separate from hangout money; no fee on payments between friends                             | **Tension with the mission.** The product is for people stretched by the cost of plans, and $15 is 6% of the reported $250 average monthly social spend. That is 3–5× Splitwise Pro. The member most in need may be the least able to pay |
+| R2  | Pod-level pricing (one plan covers the pod)                                   | Nobody has to admit they can't afford the app                                                             | Pressure on the organiser to pay for everyone. Q-011 #1 rejected it for the demo; worth re-testing                                                                                                                                        |
+| R3  | Free trial before the $15 starts                                              | Lets a group experience one hangout first                                                                 | Q-011 #2 is **open for the human**                                                                                                                                                                                                        |
+| R4  | Venue partnerships (booking referral fees)                                    | Must never change ranking. Prices are never model-authored (contract), and a paid option must be labelled | Conflicts with "no card says why this one". Needs Behavioral review before any experiment                                                                                                                                                 |
+
+**Never:** selling or sharing private limits or spending data; ads targeted on budgets; fees on money between friends; referral pressure ("invite 3 friends to unlock"); shame-based upsells. These come from RULES, the ETHICS_CHECKLIST and the role file.
 
 ## Claims not permitted without evidence
 
-TODO (Growth & Market): specify requirements, evidence and review criteria in the linked task.
+Neither the pitch nor the demo may say:
+
+- that anyone uses, wants or has paid for Unspoken (no users exist);
+- a market size in dollars, or "a $X billion market" (see Sizing);
+- that Unspoken "reduces skipped plans" or "saves friendships" (untested; at most "is designed to");
+- that budgets are "cryptographically private" or "the app never sees your budget" (PRIVACY.md: the boundary is architectural);
+- that a booking is real or that money moved (simulated booking; ADR 0008: no in-app venue payment);
+- any CouponCabin figure (no methodology), or the Schwab figure without its 2019 date;
+- that competitors "can't" add private budget checks.
+
+**May say, with the source on the slide:** the Ally figures (44%, 17%, 22%, $250/month), the Surgeon General's advisory, the competitor facts above with their dates, and "a sandbox hackathon demo with synthetic people".
+
+## Handoff to Demo & Pitch
+
+Use the "May say" list. Every number on a slide carries the source and date from this file, and R1's pricing tension should be stated honestly if pricing comes up.
