@@ -418,7 +418,7 @@ Every money screen carries the notice label **"Sandbox — no real money"** whil
 
 - **Frontend (Alan, US-101–US-105):** build from this file and [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md); import `apps/web/src/styles/tokens.css`.
 - **Content Designer:** every quoted string here is intent. Notification copy (spec p.13–14) needs Content and Behavioral approval before anything is sent (US-013, US-107).
-- **Motion (US-203):** logo turn, bubble drift, bubble birth, bubble-to-chat, rhythm pulse, card arrival, vote settle, booking pop, balance thread.
+- **Motion ([MOTION.md](MOTION.md), US-203):** logo turn, bubble drift, bubble birth, bubble-to-chat, rhythm pulse, card arrival, vote settle, booking pop, balance thread.
 - **Accessibility (US-204):** audits these screens once they run.
 
 ## Sources
