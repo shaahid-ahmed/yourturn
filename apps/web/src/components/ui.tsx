@@ -26,16 +26,18 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const base =
-    'inline-flex items-center justify-center gap-2 rounded-lg font-medium text-base min-h-[44px] px-5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    'inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] font-medium text-base min-h-[48px] px-5 transition-colors disabled:bg-[var(--color-action-disabled)] disabled:text-[var(--color-on-action-disabled)] disabled:border-transparent disabled:cursor-not-allowed';
+  // Ink actions; PayPal blue never fills a button (DESIGN_SYSTEM: Colour).
+  // Confirm and Cancel carry equal weight in money and destructive steps.
   const variants: Record<ButtonVariant, string> = {
     primary:
-      'bg-[var(--color-accent)] text-white hover:bg-[#174F76] active:bg-[#0F3A5A]',
+      'bg-[var(--color-action)] text-[var(--color-on-action)] active:bg-[var(--color-action-pressed)]',
     secondary:
-      'border border-[var(--color-border)] bg-transparent text-[var(--color-ink)] hover:bg-[var(--color-surface-sunken)] active:bg-[#E0E8EE]',
+      'border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink)] active:bg-[var(--color-surface-sunken)]',
     destructive:
-      'bg-[var(--color-danger)] text-white hover:bg-[#7A1414] active:bg-[#5E0F0F]',
+      'border border-[var(--color-status-failed)] bg-[var(--color-surface)] text-[var(--color-status-failed)] active:bg-[var(--color-status-failed-surface)]',
     ghost:
-      'bg-transparent text-[var(--color-accent)] hover:bg-[var(--color-surface-sunken)] active:bg-[#D0E5F5]',
+      'bg-transparent text-[var(--color-ink)] underline underline-offset-4 active:bg-[var(--color-surface-sunken)]',
   };
   return (
     <button
@@ -129,7 +131,7 @@ export function ScreenHeader({
 
 export function LockBadge() {
   return (
-    <span className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] bg-[var(--color-surface-sunken)] px-2 py-0.5 rounded-full">
+    <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-private)] bg-[var(--color-private-surface)] px-2 py-0.5 rounded-full">
       <svg
         width="10"
         height="12"
@@ -168,7 +170,7 @@ export function Card({
 }) {
   return (
     <div
-      className={`rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm ${className}`}
+      className={`rounded-[var(--radius-card)] border border-[var(--color-hairline)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] ${className}`}
     >
       {children}
     </div>
@@ -238,7 +240,7 @@ export function PlannerCard({
 }) {
   return (
     <div
-      className={`rounded-2xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] p-4 ${className}`}
+      className={`rounded-[var(--radius-card)] bg-[var(--color-surface)] border border-[var(--color-hairline)] shadow-[var(--shadow-card)] p-4 ${className}`}
     >
       <div className="flex items-center gap-2 mb-3">
         <div
@@ -269,10 +271,25 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 p-8 text-center min-h-[200px]">
-      {icon && (
+      {icon ? (
         <span className="text-4xl" aria-hidden="true">
           {icon}
         </span>
+      ) : (
+        <svg
+          width="96"
+          height="64"
+          viewBox="0 0 96 64"
+          aria-hidden="true"
+          fill="none"
+          stroke="var(--color-paypal-line)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        >
+          <path d="M20 44c-8-2-12-10-8-17s14-8 19-3c3-9 15-12 22-6 6-4 16-1 17 8 8 0 13 8 9 15s-12 7-15 5c-4 6-14 7-19 2-6 4-17 2-19-4" />
+          <circle cx="30" cy="56" r="3" />
+          <circle cx="66" cy="56" r="3" />
+        </svg>
       )}
       <h2 className="text-lg font-semibold text-[var(--color-ink)]">
         {heading}
@@ -288,11 +305,11 @@ export function EmptyState({
 export function SandboxBanner() {
   return (
     <aside
-      className="bg-[#FFF3CD] border-b border-[#F0C040] px-4 py-2 text-xs text-[#7A5500] text-center"
+      className="notice border-b border-[var(--color-hairline)] px-4 py-2 text-sm text-center"
       role="note"
       aria-label="Demo notice"
     >
-      Demo — fictional people and synthetic data. No real payments or bookings.
+      Sandbox — no real money. Demo people and a simulated booking.
     </aside>
   );
 }

@@ -90,7 +90,7 @@ export default function PrivatePlannerPage() {
         back={<BackButton href="/home" />}
       />
 
-      <div className="px-4 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center gap-2">
+      <div className="private-surface px-4 py-2 border-b border-[var(--color-hairline)] flex items-center gap-2">
         <LockBadge />
         <span className="text-xs text-[var(--color-ink-muted)]">
           Never visible to the pod.
@@ -131,7 +131,11 @@ export default function PrivatePlannerPage() {
                   </p>
                   {stretchAnswer === null ? (
                     <div className="flex gap-2">
-                      <Button fullWidth onClick={() => answerStretch('yes')}>
+                      <Button
+                        fullWidth
+                        variant="secondary"
+                        onClick={() => answerStretch('yes')}
+                      >
                         Yes, just this once
                       </Button>
                       <Button
@@ -158,7 +162,7 @@ export default function PrivatePlannerPage() {
                 </Card>
               ) : (
                 <div
-                  className={`rounded-2xl px-4 py-2.5 text-sm ${msg.from === 'me' ? 'bg-[var(--color-accent)] text-white rounded-tr-sm' : 'bg-[var(--color-surface-sunken)] text-[var(--color-ink)] rounded-tl-sm'}`}
+                  className={`rounded-2xl px-4 py-2.5 text-sm ${msg.from === 'me' ? 'bg-[var(--color-surface-sunken)] text-[var(--color-ink)] rounded-tr-sm' : 'bg-[var(--color-surface-sunken)] text-[var(--color-ink)] rounded-tl-sm'}`}
                 >
                   {msg.text}
                 </div>
@@ -188,7 +192,7 @@ export default function PrivatePlannerPage() {
           <button
             onClick={sendMessage}
             disabled={!input.trim()}
-            className="w-11 h-11 rounded-xl bg-[var(--color-accent)] text-white flex items-center justify-center disabled:opacity-50 hover:bg-[#174F76] transition-colors"
+            className="w-11 h-11 rounded-xl bg-[var(--color-accent)] text-white flex items-center justify-center disabled:opacity-50 active:bg-[var(--color-action-pressed)] transition-colors"
             aria-label="Send"
           >
             <svg

@@ -2,7 +2,13 @@
 // P15 — Money page
 // Two totals at top (owe / owed), then list by hangout and pod.
 // Balances computed from append-only ledger, never stored as mutable sums.
-import { ScreenHeader, BackButton, Card, BalanceChip } from '@/components/ui';
+import {
+  ScreenHeader,
+  BackButton,
+  Card,
+  BalanceChip,
+  SandboxBanner,
+} from '@/components/ui';
 
 type BalanceStatus = 'owed' | 'pending' | 'paid' | 'failed';
 
@@ -56,6 +62,7 @@ export default function MoneyPage() {
 
   return (
     <main className="flex flex-col min-h-dvh">
+      <SandboxBanner />
       <ScreenHeader title="Money" back={<BackButton href="/home" />} />
 
       {/* Totals */}
@@ -75,11 +82,6 @@ export default function MoneyPage() {
           </p>
         </div>
       </div>
-
-      <p className="px-4 py-2 text-xs text-[var(--color-ink-muted)] border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-        Balances are computed from the append-only ledger. No amount is stored
-        as a mutable sum.
-      </p>
 
       {/* List */}
       <div className="flex flex-col gap-3 px-4 py-5">

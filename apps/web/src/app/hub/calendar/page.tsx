@@ -66,7 +66,7 @@ export default function CalendarPage() {
           </div>
         </div>
         <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-          Other calendar sources are open (section 12 of spec).
+          Apple Calendar and Outlook are coming later.
         </p>
       </div>
 

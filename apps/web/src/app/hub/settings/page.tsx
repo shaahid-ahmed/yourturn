@@ -1,16 +1,17 @@
 'use client';
 // P20 — Settings
-// Notifications, permissions, subscription, privacy.
+// Notifications, permissions, subscription, privacy, account (spec p.12).
 import { useState } from 'react';
 import { ScreenHeader, BackButton, Button, Card } from '@/components/ui';
 
 export default function SettingsPage() {
+  // Exactly the four switches in the contract's NotificationSettings.
   const [notifications, setNotifications] = useState({
     polls: true,
     reminders: true,
-    bookings: true,
+    privateAsks: true,
+    money: true,
   });
-  const [trackingEnabled, setTrackingEnabled] = useState(false);
 
   function Toggle({
     checked,
@@ -24,6 +25,12 @@ export default function SettingsPage() {
     return (
       <label className="flex items-center justify-between gap-3 min-h-[52px] cursor-pointer">
         <span className="text-sm text-[var(--color-ink)]">{label}</span>
+        <span
+          className="ml-auto text-xs text-[var(--color-ink-muted)]"
+          aria-hidden="true"
+        >
+          {checked ? 'On' : 'Off'}
+        </span>
         <input
           type="checkbox"
           checked={checked}
@@ -61,49 +68,31 @@ export default function SettingsPage() {
               <Toggle
                 checked={notifications.polls}
                 onChange={(v) => setNotifications((n) => ({ ...n, polls: v }))}
-                label="Polls and votes"
+                label="Polls"
               />
               <Toggle
                 checked={notifications.reminders}
                 onChange={(v) =>
                   setNotifications((n) => ({ ...n, reminders: v }))
                 }
-                label="Balance reminders"
+                label="Reminders"
               />
               <Toggle
-                checked={notifications.bookings}
+                checked={notifications.privateAsks}
                 onChange={(v) =>
-                  setNotifications((n) => ({ ...n, bookings: v }))
+                  setNotifications((n) => ({ ...n, privateAsks: v }))
                 }
-                label="Booking confirmations"
+                label="Private planner asks"
+              />
+              <Toggle
+                checked={notifications.money}
+                onChange={(v) => setNotifications((n) => ({ ...n, money: v }))}
+                label="Money"
               />
             </div>
           </Card>
           <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-            Notifications are never used for streaks or pressure.
-          </p>
-        </section>
-
-        {/* Connection tracking */}
-        <section aria-labelledby="tracking-heading">
-          <h2
-            id="tracking-heading"
-            className="text-sm font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-3"
-          >
-            Connection tracking
-          </h2>
-          <Card>
-            <Toggle
-              checked={trackingEnabled}
-              onChange={setTrackingEnabled}
-              label="Allow connection-strength tracking"
-            />
-          </Card>
-          <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-            Off by default. Tracking is your choice. If you turn it on, you can
-            see your own data and turn it off at any time. Turning it off
-            removes your edges from all computations, prompts, and cached
-            results.
+            Reminders about you go only to you, never into a pod chat.
           </p>
         </section>
 
@@ -135,6 +124,9 @@ export default function SettingsPage() {
                 </div>
               ))}
             </div>
+            <Button variant="secondary" fullWidth className="mt-3">
+              Open phone settings
+            </Button>
           </Card>
         </section>
 
@@ -168,12 +160,48 @@ export default function SettingsPage() {
             Privacy
           </h2>
           <Card>
+            <dl className="flex flex-col gap-3 text-sm">
+              <div>
+                <dt className="font-medium text-[var(--color-ink)]">
+                  Your planner sees
+                </dt>
+                <dd className="text-[var(--color-ink-muted)]">
+                  Your interests, your private limits, your private chat, and
+                  whether you are free or busy. Never what is in your calendar.
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-[var(--color-ink)]">
+                  Your pod sees
+                </dt>
+                <dd className="text-[var(--color-ink-muted)]">
+                  Your name and photo, your messages, your votes and your
+                  ready-check answers. Never your limits, your budget answers,
+                  your calendar, or balances they are not part of.
+                </dd>
+              </div>
+            </dl>
+          </Card>
+        </section>
+
+        {/* Account */}
+        <section aria-labelledby="account-heading">
+          <h2
+            id="account-heading"
+            className="text-sm font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-3"
+          >
+            Account
+          </h2>
+          <Card>
             <div className="flex flex-col gap-3">
-              <Button variant="ghost" fullWidth>
-                View my data
-              </Button>
-              <Button variant="ghost" fullWidth>
-                Pause membership
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={() => {
+                  window.location.href = '/signin';
+                }}
+              >
+                Log out
               </Button>
               <Button
                 variant="destructive"
@@ -181,7 +209,7 @@ export default function SettingsPage() {
                 onClick={() => {
                   if (
                     confirm(
-                      'Leave all pods? Rotation consequences are suspended until resolved.',
+                      'Delete your account? Your profile and private limits are removed. Any open balances stay with the people involved until they are settled.',
                     )
                   )
                     window.location.href = '/signin';
@@ -191,10 +219,6 @@ export default function SettingsPage() {
               </Button>
             </div>
           </Card>
-          <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-            Access, deletion, and retention semantics are policy-pending
-            (Q-006).
-          </p>
         </section>
       </div>
     </main>

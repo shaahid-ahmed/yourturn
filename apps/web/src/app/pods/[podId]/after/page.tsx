@@ -66,7 +66,7 @@ export default function AfterHangoutPage() {
                   onClick={() => setRating(r.value)}
                   className={`flex items-center gap-4 px-4 py-4 rounded-xl border min-h-[64px] text-left transition-colors ${
                     rating === r.value
-                      ? 'border-[var(--color-accent)] bg-[#EBF3FA]'
+                      ? 'border-[var(--color-accent)] bg-[var(--color-surface-sunken)]'
                       : 'border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]'
                   }`}
                 >
