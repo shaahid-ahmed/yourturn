@@ -10,11 +10,11 @@ Every flow below specifies the empty, loading, error and permission states, beca
 | Screen                         | Purpose                               | States                                                                               |
 | ------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------ |
 | S-01 Invitation                | Accept or decline membership          | loading, invitation valid, already resolved, circle full, declined                   |
-| S-02 Circle home               | Members, readiness, pot, current turn | loading, not-ready (<3 accepted), awaiting agreement, ready, empty plan state        |
+| S-02 Circle home               | Members, readiness, pot, current turn | loading, not-ready (<3 accepted), awaiting agreement, ready, empty plan state, `policy_pending` (peer-visible pause) |
 | S-03 Contribution agreement    | Propose and agree an amount           | loading, proposing, invalid amount, awaiting others, agreed, invalidated by change   |
-| S-04 Your turn (host)          | Request plans, review, approve        | no suggestions yet, generating, three plans, unavailable, manual list, approved      |
+| S-04 Your turn (host)          | Request plans, review, approve        | no suggestions yet, generating, three plans, unavailable, manual list, approved, host-declined |
 | S-05 Plan detail               | One plan's venue and total            | loading, within budget, over budget, stale version                                   |
-| S-06 Payment status            | Honest provider state                 | blocked, order created, payer approved, captured, failed, unverified/pending         |
+| S-06 Balance status            | Honest IOU balance state              | blocked (gate closed, Q-010), owed, pending, paid, failed                            |
 | S-07 Privacy and participation | Consent, pause, leave                 | tracking off (default), tracking on, paused, leave confirmation, left                |
 | S-08 Demo graph                | Synthetic drift illustration          | loading, before scene, after scene, reduced-motion, fixture missing                  |
 | S-09 Error / permission        | Honest refusal                        | not found (also covers non-member), not host, validation, rate limited, server error |
@@ -51,7 +51,7 @@ S-03 Propose amount (default 500 cents, max 1500)
 - Amounts are shown as `$5.00` with the integer-cents value carried in the contract; the input accepts whole cents only and states the bound inline before submission.
 - Progress is **aggregate**: "2 of 4 agreed". No screen names, counts down or highlights who has not agreed, and no reminder targets an individual.
 - **Private pause (S-07):** one control, one confirmation, **no reason field anywhere** — no free text, no reason picker, no "tell us why" follow-up, no support ticket. The confirmation states that nobody is told why and that collection consequences are still being decided (Q-006).
-- Peers see at most a neutral "paused" word on S-02. No hardship framing, no comparison, no prompt to ask the paused member about it.
+- S-02 must show a `policy_pending` state for peer-visible pause: whether peers see any pause indicator at all is an open decision (Q-006); the contract exposes `participationStateVisibility: policy_pending` and the UI must not pre-decide it. No hardship framing, no comparison, no prompt to ask the paused member about it.
 - Skipping one event is not pausing: S-04/S-02 never convert a declined RSVP into a status change, streak loss or warning.
 - **Error:** an invalid amount shows the permitted range and keeps the entered value for correction; a stale version shows "the proposal changed — review it again" with a link, never a silent overwrite.
 
@@ -62,11 +62,12 @@ S-04 Your turn
   ├─ [Suggest three plans] ─▶ generating ─┬─▶ exactly three plans ─▶ S-05 ─▶ [Approve this plan]
   │                                       └─▶ "Suggestions unavailable" ─▶ [Browse venues] / [Decide later]
   └─ [Browse venues] ─────────────────────▶ fixed list ─────────────▶ S-05 ─▶ [Approve this plan]
+  └─ [Decline suggestions] ───────────────▶ host-declined ──────────▶ [Browse venues] / [Decide later]
 ```
 
 - Exactly three plans, or an explicit unavailable state. **Two plans are never shown as a result**; the unavailable state offers the fixed venue list and "decide later", both without pressure.
 - Nothing is preselected. There is no "best" badge, no ranking of people, no countdown and no auto-advance.
-- Host-only reconnection guidance appears as a positive sentence about a shared plan ("something Sam and Priya would both enjoy"). No score, percentage, rank, warning icon, or red/amber treatment of a person is permitted anywhere.
+- Host-only reconnection guidance, **if Q-002 is resolved to permit real-member inference**, appears as a positive sentence about a shared plan ("something Sam and Priya would both enjoy"). While Q-002 is unresolved (gate closed per XR-01/XR-02), no pair-naming copy is used for real members; the synthetic demo (S-08) is the only context where pair names appear. No score, percentage, rank, warning icon, or red/amber treatment of a person is permitted anywhere.
 - **Approval (S-05)** requires an explicit confirm step showing the exact plan, venue and total, and states plainly: approving is **not** a payment and **not** a reservation.
 - **Stale:** if plan, venue or amount changed, the confirm step is replaced by "this plan changed — review and approve again".
 - **Over budget:** the approve control is disabled with the derived budget and the plan total both shown; the pot is labelled a conceptual budget.
@@ -88,7 +89,7 @@ S-02 or S-07 ──[Leave circle]──▶ confirmation ──[Confirm]──▶
 
 ## Failure and cancellation
 
-- **Payment states (S-06)** are distinct and labelled: _blocked_ ("payments are turned off in this demo" with the blocking reason), _order created_, _payer approved_, _captured_, _failed_, _unverified/pending_. No spinner resolves into an unverified success, and no screen shows a receipt or a booking confirmation from a capture.
+- **Balance states (S-06)** are distinct and labelled: _blocked_ ("payments are turned off in this demo" with the blocking reason, Q-010), _owed_, _pending_ (payment initiated, awaiting confirmation), _paid_ (webhook confirmed), _failed_ (returned to owed). No spinner resolves into an unverified success, and no screen shows a receipt or a booking confirmation.
 - A capture never renders as "booked", "reserved" or "confirmed with the venue". Reservation is a separate concept the demo does not perform.
 - Pending/timeout states say what is unknown and what the user can do (wait, re-check), without inventing a result.
 - Validation errors are inline, tied to the field, and preserve input. Server errors offer retry and state that nothing was charged or changed.
@@ -104,6 +105,24 @@ S-02 or S-07 ──[Leave circle]──▶ confirmation ──[Confirm]──▶
 - No real member's connection data is shown here, and no control on this screen (or any screen) switches the view to real data — the boundary is enforced by the server route, not by a toggle.
 - **Fixture missing:** an explicit "demo data not loaded" state; never a placeholder graph that could be mistaken for real people.
 - Nowhere in the product does a member see a numeric tie value, rank, percentile, drift warning or indirect proxy for closeness.
+
+## Screen-to-story map (LA-09)
+
+Every screen below lists the user stories it implements. A screen with no story has no authorized scope; a story with no screen has no designed path.
+
+| Screen | Stories served |
+| ------ | -------------- |
+| S-01 Invitation | US-001 (join circle) |
+| S-02 Circle home | US-001 (member list), US-002 (agreement status), US-003 (host turn display), US-004 (pot display), US-005 (pause peer-view), US-014 (pause/leave discovery) |
+| S-03 Contribution agreement | US-002 (propose and agree amount) |
+| S-04 Your turn (host) | US-009 (three plans or honest none), US-010 (approval) |
+| S-05 Plan detail | US-009 (plan details), US-010 (approval confirmation) |
+| S-06 Balance status | US-011 (payment truth) |
+| S-07 Privacy and participation | US-005 (pause), US-006 (leave), US-007 (tracking consent), US-008 (withdrawal), US-014 (exit controls) |
+| S-08 Demo graph | US-012 (synthetic graph) |
+| S-09 Error / permission | US-001, US-003, US-006, US-013 (accessibility), US-014 (refusals) |
+
+**Unmapped stories:** US-013 (accessibility) cross-cuts all screens and is not bound to a single screen.
 
 ## Unresolved, blocking design decisions
 
@@ -123,7 +142,7 @@ Requirements above (focus visibility, non-color encoding, text equivalents, redu
 
 ## Handoff to YT-013 (Content Designer)
 
-Strings needed, by screen: S-01 demo/sandbox disclosure, forfeit-proposal disclosure; S-03 amount bound error, aggregate agreement progress; S-04 three-plan heading, unavailable state, host-only positive guidance pattern, defer option; S-05 approval confirmation including "not a payment, not a reservation"; S-06 all six payment states including the blocked explanation; S-07 tracking on/off, withdrawal effect, pause (no-reason) confirmation, leave confirmation with forfeit proposal; S-08 demo label, per-state text equivalents; S-09 refusal messages that disclose nothing about non-member circles. Every string must avoid guilt, loss framing and countdown pressure, and no notification copy exists until Content Designer and Behavioral Scientist both approve it.
+Strings needed, by screen: S-01 demo/sandbox disclosure, forfeit-proposal disclosure; S-03 amount bound error, aggregate agreement progress; S-04 three-plan heading, unavailable state, host-declined state, host-only positive guidance pattern (gated on Q-002), defer option; S-05 approval confirmation including "not a payment, not a reservation"; S-06 five balance states (blocked/owed/pending/paid/failed) including the blocked explanation (Q-010); S-07 tracking on/off, withdrawal effect, pause (no-reason) confirmation, leave confirmation with forfeit proposal; S-08 demo label, per-state text equivalents; S-09 refusal messages that disclose nothing about non-member circles. Every string must avoid guilt, loss framing and countdown pressure, and no notification copy exists until Content Designer and Behavioral Scientist both approve it.
 
 ## Sources
 

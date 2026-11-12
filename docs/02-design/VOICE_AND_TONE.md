@@ -38,7 +38,7 @@ Also banned: dark-pattern microcopy (hidden cancellation wording, pre-checked co
 
 The only place reconnection guidance appears is the host's own turn, phrased as a positive suggestion about a **shared plan**:
 
-- Allowed: "Sam and Priya haven't been at the same hangout in a while — something they'd both enjoy could be nice." Allowed: "Plan something Sam and Priya would both love."
+- **Gated (Q-002 unresolved — do not ship until Q-002 is resolved):** "Sam and Priya haven't been at the same hangout in a while — something they'd both enjoy could be nice." / "Plan something Sam and Priya would both love." These are the target copy for host guidance when Q-002 opens the real-member inference gate. While Q-002 is closed, no pair-naming copy appears for real members.
 - Banned: any score, percentage, rank, "drifting", "at risk", "failing", warning icon, or instruction to repair a relationship.
 - The suggestion is never shown to the group, never shown to the named people as a notice, and never stored as a visible label on a person.
 - If the host is one of the named pair, the string must not comment on the host's own closeness; this case is unresolved (Q-002) and no copy is approved for it yet.
@@ -56,12 +56,12 @@ Required phrasings for the states in FLOWS S-06 and the gated contract responses
 
 | State                          | Required meaning the copy must carry                                                                           |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| Payment gate closed            | "Payments are turned off in this demo." Say that nothing was charged and that real payment is not enabled yet. |
-| Approval recorded              | "Approved. This isn't a payment, and nothing is reserved with the venue yet."                                  |
-| Order created / payer approved | Name the step precisely; do not imply completion.                                                              |
-| Captured                       | "Payment captured in the sandbox." Never "booked", "reserved" or "confirmed with the venue".                   |
-| Failed                         | "The payment didn't go through. Nothing is reserved." Offer a retry where one exists.                          |
-| Unverified / pending           | "We don't have confirmation yet." State what is unknown; never resolve it optimistically.                      |
+| Payment gate closed            | "Payments are turned off in this demo." Say that nothing was charged and that real payment is not enabled yet (Q-010). |
+| Approval recorded              | "Approved. This isn't a payment, and nothing is reserved with the venue yet."                                          |
+| Owed                           | "You owe [payer name] $X.XX." State the amount and who the payer is; do not imply it has been paid.                   |
+| Pending                        | "Your payment is on its way." Name the step precisely; do not imply completion or that anything is reserved.           |
+| Paid                           | "Payment received." Never "booked", "reserved" or "confirmed with the venue".                                          |
+| Failed                         | "The payment didn't go through. You still owe this amount." Offer a retry where one exists.                            |
 | Validation error               | Name the field and the limit: "Enter an amount between $1.00 and $15.00." Keep what was typed.                 |
 | Non-member / not found         | Reveal nothing: "We couldn't find that." No circle name, size or member names.                                 |
 | Not the host                   | "Only this month's host can do this." No host-only guidance in the message.                                    |

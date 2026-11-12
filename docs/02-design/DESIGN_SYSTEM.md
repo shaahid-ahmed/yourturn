@@ -68,7 +68,7 @@ Every component must define all of: default, hover, focus-visible, active, disab
 | Plan card                                  | Venue, title, total; no "recommended" badge, no preselection, no ordering claim                                                         |
 | Suggestion set                             | Exactly three cards, or the unavailable panel with the fixed-list and defer actions                                                     |
 | Approval confirmation                      | Restates plan, venue, total; states "not a payment, not a reservation"; requires explicit activation                                    |
-| Payment status chip                        | Six distinct labelled states (blocked, order created, payer approved, captured, failed, unverified); never collapses to a tick          |
+| Balance status chip                        | Five distinct labelled states (blocked, owed, pending, paid, failed); never collapses to a tick or an unverified success                |
 | Pause control                              | One action, one confirmation, **no reason field**; neutral confirmation copy                                                            |
 | Leave control                              | Two activations maximum; forfeit shown as a pending proposal; Cancel equally prominent                                                  |
 | Consent toggle                             | Off by default; on and off presented with equal weight; state announced on change                                                       |
