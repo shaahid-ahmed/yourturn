@@ -180,12 +180,12 @@ P5 Home ─┬─ tap bubble ─▶ P7 Pod chat ─┬─ header ─▶ P8 Pod s
 - You can change your vote before the close. The vote toggle says "Vote" or "Voted ✓" in words.
 - Votes are shown with names, as the spec requires (Q-013 records it as a deliberate choice).
 
-| State   | What the member sees                                                                                                                                                                                                                              |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Loading | Planner typing indicator: "Planner is finding ideas…". On a vote tap, the button shows the pressed state until the server confirms.                                                                                                               |
-| Empty   | No option fits everyone: the planner says "Nothing fit this time. Want me to look further out or in a wider area?" with two buttons. **Never says whose limit.** No votes yet: "No votes yet".                                                    |
-| Error   | A vote that fails to save: the toggle reverts and "Your vote didn't save. Try again." shows next to it.                                                                                                                                           |
-| Refused | Poll closed: the card is read-only, showing "Closed · Picked: Ramen at Ivan" plus the final names. Plan lapsed: "Planner paused". A member still waiting on a private stretch ask sees the same card as everyone else; the ask lives only in P22. |
+| State   | What the member sees                                                                                                                                                                                                                                                                                                                                     |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Loading | Planner typing indicator: "Planner is finding ideas…". On a vote tap, the button shows the pressed state until the server confirms.                                                                                                                                                                                                                      |
+| Empty   | No option fits everyone: the planner says "Nothing fit this time. Want me to look further out or in a wider area?" with two buttons. **Never says whose limit.** No votes yet: "No votes yet". Host chose not to use the planner: a "Browse the event catalog" button links to P16; the same budget and payment gates apply (D-P03, `createManualPlan`). |
+| Error   | A vote that fails to save: the toggle reverts and "Your vote didn't save. Try again." shows next to it.                                                                                                                                                                                                                                                  |
+| Refused | Poll closed: the card is read-only, showing "Closed · Picked: Ramen at Ivan" plus the final names. Plan lapsed: "Planner paused". A member still waiting on a private stretch ask sees the same card as everyone else; the ask lives only in P22.                                                                                                        |
 
 ### P10 Time poll · Pod · spec p.8–9
 
@@ -413,6 +413,18 @@ Every money screen carries the notice label **"Sandbox — no real money"** whil
 | PayPal payment fails          | P14     | Back to Owed; the member is told privately                                              |
 | Subscription ends             | All     | Pods and history readable; planner paused; money still settles                          |
 | No connection                 | All     | Offline banner; cached content; money actions disabled with the reason                  |
+
+## Screen-to-story map (LA-09)
+
+Every screen has at least one story behind it. This table is the traceability check: a screen without a story is out of scope; a story without a screen is unbuilt.
+
+| Screens     | Story IDs | What the story covers                                                                         |
+| ----------- | --------- | --------------------------------------------------------------------------------------------- |
+| P1–P4       | US-101    | Entry and onboarding: splash, sign-in, subscription, six-step profile                         |
+| P5–P6       | US-102    | Home and pods: pod bubbles, create a pod, invite links                                        |
+| P7–P12, P23 | US-103    | Pod chat and planning: chat, shortlist, time poll, ready check, booking, after-the-hangout    |
+| P13–P15     | US-104    | Money screens: payer and split, settle up, money page                                         |
+| P16–P22     | US-105    | Hub: events, event detail, calendar, profile, settings, payment methods, private planner chat |
 
 ## Handoff
 

@@ -278,16 +278,30 @@ test('board has six state tables, 42 unique legacy tasks, valid dependencies and
     if (!cells[0].startsWith('US-') || state === 'DONE') continue;
     if (named.length === 1) perHuman[named[0]] += 1;
   }
-  const counts = Object.values(perHuman);
-  // Endgame (Nov 12): Alan holds one task blocked on Q-010, Rohan holds one
-  // blocked on US-006, Vid holds the device-pass remainder of US-204, and
-  // Shaahid holds the remaining unblocked work by human decision. Fairness is
-  // verified by ownership, not by a planning-spread number: every live task
-  // names exactly one human owner, and every collaborator owns live work.
-  assert.ok(
-    counts.every((count) => count > 0),
-    `every collaborator must own work: ${JSON.stringify(perHuman)}`,
-  );
+  // Endgame (Nov 12 + ADR 0008): Alan holds one task blocked on Q-010, Vid holds
+  // the device-pass remainder of US-204, Shaahid holds the remaining unblocked
+  // work by human decision, and Rohan's lane is complete (US-001/002/004/007/008/013
+  // DONE, US-015 DONE as moot). Fairness is verified by ownership: every live
+  // task names exactly one human owner, and every collaborator either owns live
+  // work or has their whole lane DONE.
+  const doneClaimed = /** @type {Record<string, number>} */ ({
+    Shaahid: 0,
+    Alan: 0,
+    Vid: 0,
+    Rohan: 0,
+  });
+  for (const { state, cells } of parsed) {
+    if (state !== 'DONE') continue;
+    for (const human of humans) {
+      if (cells[5].includes(`Human: ${human}`)) doneClaimed[human] += 1;
+    }
+  }
+  for (const human of humans) {
+    assert.ok(
+      perHuman[human] > 0 || doneClaimed[human] > 0,
+      `${human} owns no live work and has nothing DONE`,
+    );
+  }
   assert.match(board, /## CURRENT PLAN: four collaborators/);
   assert.match(board, /Lane S — reassigned/);
   assert.match(board, /Lane A — Alan/);
