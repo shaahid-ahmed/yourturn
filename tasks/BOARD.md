@@ -71,8 +71,9 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 
 ## IN PROGRESS
 
-| ID  | Title | Role | Depends on | Acceptance criteria | Claimed by | Branch/PR |
-| --- | ----- | ---- | ---------- | ------------------- | ---------- | --------- |
+| ID     | Title                             | Role          | Depends on | Acceptance criteria                                                                                                | Claimed by                                                                                                  | Branch/PR                     |
+| ------ | --------------------------------- | ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| YT-027 | ∥ Phase 2: market and positioning | growth-market | YT-014     | Dated primary sources, sourced sizing and competitor comparisons; ethical revenue hypotheses; no invented traction | Human: Vid — IN PROGRESS (growth-market, claude-opus-5-5), taken over from Alan at Vid's request 2026-11-12 | `growth-market/yt-027-market` |
 
 | US-019 | Phase 2: HTTP routes for the contract | backend | US-001, US-002, US-013, YT-007 (stack ratification) | Every openapi.json operation is served under /api/v1; requests and responses are validated against the contract; errors match the contract Error / PaymentGateError shapes; createSettlementPayment stays gated closed (409 payment_gate_blocked) | Human: Shaahid — IN PROGRESS | — |
 
@@ -80,11 +81,10 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 
 Alan's Lane A tasks taken over by Vid, awaiting independent review:
 
-| ID     | Title                                           | Role          | Depends on | Acceptance criteria                                                                                                                                               | Claimed by                                                                               | Branch/PR                            |
-| ------ | ----------------------------------------------- | ------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------ |
-| UN-009 | ∥ Phase 2: tally privacy boundary and retention | privacy       | UN-001     | Per-member answers held in memory only, never persisted or logged; documented as architectural not cryptographic privacy; inference-over-rounds risk written down | Human: Vid — IN REVIEW (privacy, claude-opus-5-5), taken over from Alan 2026-11-12       | `privacy/un-009-tally-boundary`      |
-| YT-026 | ∥ Phase 2: abuse and coercion assessment        | trust-safety  | YT-014     | Host misuse, exclusion, harassment, financial coercion and safe exit scenarios with mitigation/test owners                                                        | Human: Vid — IN REVIEW (trust-safety, claude-opus-5-5), taken over from Alan 2026-11-12  | `trust-safety/yt-026-abuse-coercion` |
-| YT-027 | ∥ Phase 2: market and positioning               | growth-market | YT-014     | Dated primary sources, sourced sizing and competitor comparisons; ethical revenue hypotheses; no invented traction                                                | Human: Vid — IN REVIEW (growth-market, claude-opus-5-5), taken over from Alan 2026-11-12 | `growth-market/yt-027-market`        |
+| ID     | Title                                           | Role         | Depends on | Acceptance criteria                                                                                                                                               | Claimed by                                                                              | Branch/PR                            |
+| ------ | ----------------------------------------------- | ------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------ |
+| UN-009 | ∥ Phase 2: tally privacy boundary and retention | privacy      | UN-001     | Per-member answers held in memory only, never persisted or logged; documented as architectural not cryptographic privacy; inference-over-rounds risk written down | Human: Vid — IN REVIEW (privacy, claude-opus-5-5), taken over from Alan 2026-11-12      | `privacy/un-009-tally-boundary`      |
+| YT-026 | ∥ Phase 2: abuse and coercion assessment        | trust-safety | YT-014     | Host misuse, exclusion, harassment, financial coercion and safe exit scenarios with mitigation/test owners                                                        | Human: Vid — IN REVIEW (trust-safety, claude-opus-5-5), taken over from Alan 2026-11-12 | `trust-safety/yt-026-abuse-coercion` |
 
 Vid's reassigned backend tasks awaiting independent review (Rohan reviews, per the Lane S reassignment):
 
