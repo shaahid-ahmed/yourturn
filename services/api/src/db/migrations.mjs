@@ -532,4 +532,25 @@ CREATE TABLE reminder_sent (
 ${appendOnly('reminder_sent')}
 `,
   },
+  {
+    version: 3,
+    name: 'booking confirmation reminders (US-012)',
+    sql: `
+-- SQLite cannot change a CHECK in place, so the reminder log is rebuilt with
+-- the booking reminder kind added. Rows are copied unchanged; the
+-- append-only triggers are recreated on the new table.
+CREATE TABLE reminder_sent_v3 (
+  kind     TEXT NOT NULL CHECK (kind IN ('poll_closing', 'ready_check_open', 'booking_confirmation_needed')),
+  ref_id   TEXT NOT NULL,
+  user_id  TEXT NOT NULL REFERENCES app_user(user_id),
+  sent_at  TEXT NOT NULL,
+  PRIMARY KEY (kind, ref_id, user_id)
+) STRICT;
+INSERT INTO reminder_sent_v3 (kind, ref_id, user_id, sent_at)
+  SELECT kind, ref_id, user_id, sent_at FROM reminder_sent;
+DROP TABLE reminder_sent;
+ALTER TABLE reminder_sent_v3 RENAME TO reminder_sent;
+${appendOnly('reminder_sent')}
+`,
+  },
 ]);
