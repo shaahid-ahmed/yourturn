@@ -59,21 +59,23 @@ export async function completeText({
       }),
     });
     if (!res.ok) {
-      const err = new Error(`claude request failed: ${res.status}`);
+      const err = /** @type {any} */ (
+        new Error(`claude request failed: ${res.status}`)
+      );
       err.code = 'claude_http_error';
       throw err;
     }
-    const data = await res.json();
+    const data = /** @type {any} */ (await res.json());
     return (data.content ?? [])
-      .filter((b) => b.type === 'text')
-      .map((b) => b.text)
+      .filter((/** @type {any} */ b) => b.type === 'text')
+      .map((/** @type {any} */ b) => b.text)
       .join('');
   } finally {
     clearTimeout(timer);
   }
 }
 
-/** Parse the first JSON array in model text. */
+/** Parse the first JSON array in model text. @param {string} text */
 function parseJsonArray(text) {
   const start = text.indexOf('[');
   const end = text.lastIndexOf(']');
@@ -105,7 +107,10 @@ export async function suggestPlans({
   timeoutMs,
   fetchFn,
 }) {
-  const context = buildPromptContext(firstName, constraints);
+  const context = buildPromptContext(
+    firstName,
+    /** @type {any} */ (constraints),
+  );
   const leaked = findForbiddenFields(context);
   if (leaked.length > 0)
     throw new TypeError(`prompt context leaked: ${leaked.join(',')}`);

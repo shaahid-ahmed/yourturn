@@ -8,6 +8,7 @@ import {
   DEFAULT_MODEL,
 } from '../services/ai/copilot/claude.mjs';
 
+/** @param {number} n */
 const plan = (n) => ({
   candidateId: `c-${n}`,
   eventId: `evt-00${n}`,
@@ -21,6 +22,7 @@ const plan = (n) => ({
   dietaryOptions: [],
 });
 
+/** @param {string} text */
 const textBlock = (text) => ({ type: 'text', text });
 /** @param {any[]} bodies */
 const okFetch = (bodies) => async () => ({
