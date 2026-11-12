@@ -53,18 +53,18 @@ Fixture rules, all checked by `tests/fixtures-unspoken.test.mjs`:
 
 Onboarding to a confirmed split with visible IOU balances. Per ADR 0008, settling up happens outside the app. File: `tests/e2e-happy-path.test.mjs`.
 
-| ID    | Step                                                                   | Status                                                                                                                                      |
-| ----- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| HP-1  | Sign in by phone code; session cookie and CSRF token                   | pending (US-302)                                                                                                                            |
-| HP-2  | Set own private limits; never visible to anyone else                   | pending (US-302)                                                                                                                            |
-| HP-3  | Create a pod, invite, accept; pod reaches 3 joined                     | pending (US-302)                                                                                                                            |
-| HP-4  | Start a hangout (needs an active sandbox subscription)                 | pending (US-302)                                                                                                                            |
-| HP-5  | Activity shortlist posted as a poll; vote with names visible           | pending (US-302)                                                                                                                            |
-| HP-6  | Time poll; vote; winner chosen                                         | pending (US-302)                                                                                                                            |
-| HP-7  | Ready check; yes needs PayPal linked; any number of yeses is enough    | pending (US-302)                                                                                                                            |
-| HP-8  | A yes-member volunteers as payer; payer confirms; booking is simulated | pending (US-302)                                                                                                                            |
-| HP-9  | Payer confirms the split; shares sum exactly to the total              | pending (US-302)                                                                                                                            |
-| HP-10 | Each member sees their IOU balance                                     | **blocked over HTTP:** `/me/balances` is not served yet (Alan, #83). Until then it is asserted from the ledger and marked pending over HTTP |
+| ID    | Step                                                                   | Status                                                                                             |
+| ----- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| HP-1  | Sign in by phone code; session cookie and CSRF token                   | **pass** (`tests/e2e-happy-path.test.mjs`, Nov 12)                                                 |
+| HP-2  | Set own private limits; never visible to anyone else                   | **pass** (`tests/e2e-happy-path.test.mjs`, Nov 12)                                                 |
+| HP-3  | Create a pod, invite, accept; pod reaches 3 joined                     | **pass** (`tests/e2e-happy-path.test.mjs`, Nov 12)                                                 |
+| HP-4  | Start a hangout (needs an active sandbox subscription)                 | **pass** (`tests/e2e-happy-path.test.mjs`, Nov 12)                                                 |
+| HP-5  | Activity shortlist posted as a poll; vote with names visible           | **known failure**, blocked by #99 (catalog event ids break poll and hangout reads); runs as `todo` |
+| HP-6  | Time poll; vote; winner chosen                                         | **known failure**, blocked by #99 (catalog event ids break poll and hangout reads); runs as `todo` |
+| HP-7  | Ready check; yes needs PayPal linked; any number of yeses is enough    | **known failure**, blocked by #99 (catalog event ids break poll and hangout reads); runs as `todo` |
+| HP-8  | A yes-member volunteers as payer; payer confirms; booking is simulated | **known failure**, blocked by #99 (catalog event ids break poll and hangout reads); runs as `todo` |
+| HP-9  | Payer confirms the split; shares sum exactly to the total              | **known failure**, blocked by #99 (catalog event ids break poll and hangout reads); runs as `todo` |
+| HP-10 | Each member sees their IOU balance                                     | **known failure**, blocked by #99; the HTTP read is also pending #83 (`/me/balances` not served)   |
 
 ### Failure and negative paths (US-303, #79)
 
@@ -105,12 +105,14 @@ File: `tests/e2e-negative-paths.test.mjs`.
 
 These are filed as board rows for their owners, not fixed by QA.
 
-| ID  | Finding                                                                                                                                                                                                                                                                               | Owner                                  |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| F-1 | `tests/fixtures/nyc-catalog.json` says it is synthetic, but uses real NYC venue names and street addresses (for example "Brooklyn Bowl, 61 Wythe Ave"). The names are not personal data, but the venues are not visibly synthetic, and a demo could imply a real business is involved | Alan (US-010), with Rohan for fixtures |
-| F-2 | Private limits live only in the app's in-memory vault (`ConstraintVault` in `http/app.mjs`), so every member's limits are lost when the API restarts                                                                                                                                  | Shaahid (US-019)                       |
-| F-3 | The balances and PayPal-link routes are not served yet. Over HTTP, the happy path cannot show IOU balances, and a member cannot link PayPal to say yes                                                                                                                                | Alan (#83)                             |
-| F-4 | There is no seed for the Unspoken schema. `npm run dev:api` starts empty, and only seeded synthetic numbers can sign in, so the demo cannot run by hand                                                                                                                               | Alan (`infra/seed/`), pending          |
+| ID  | Finding                                                                                                                                                                                                                                                                                           | Owner                                      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| F-1 | `tests/fixtures/nyc-catalog.json` says it is synthetic, but uses real NYC venue names and street addresses (for example "Brooklyn Bowl, 61 Wythe Ave"). The names are not personal data, but the venues are not visibly synthetic, and a demo could imply a real business is involved             | Alan (US-010), with Rohan for fixtures     |
+| F-2 | Private limits live only in the app's in-memory vault (`ConstraintVault` in `http/app.mjs`), so every member's limits are lost when the API restarts                                                                                                                                              | Shaahid (Backend role, US-019), issue #101 |
+| F-3 | The balances and PayPal-link routes are not served yet. Over HTTP, the happy path cannot show IOU balances, and a member cannot link PayPal to say yes                                                                                                                                            | Alan, issue #83                            |
+| F-4 | There is no seed for the Unspoken schema. `npm run dev:api` starts empty, and only seeded synthetic numbers can sign in, so the demo cannot run by hand                                                                                                                                           | Alan (`infra/seed/`), pending              |
+| F-5 | No planner hook or scheduler in the running server: nothing posts the shortlist or time poll, or runs `runPollJobs` / `runBookingJobs`, so a hangout stays in PLANNING over HTTP alone. This blocks an unattended demo (#44). The E2E test calls these steps directly, labelled PLANNER and CLOCK | Shaahid (US-019), issue #100               |
+| F-6 | A shortlist option pointing at a seeded catalog event breaks the API. Storing the catalog id makes GET poll and vote answer 500; storing the contract id makes GET hangout answer 500; the catalog id also yields a silent `null` event link. No catalog-backed plan can be booked over HTTP      | Shaahid (US-019), issue #99                |
 
 ## How a failure is reported
 
