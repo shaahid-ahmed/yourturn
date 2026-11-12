@@ -74,11 +74,10 @@ const REMINDER_KEYS = Object.freeze([
 const ULID = /^[0-9A-HJKMNP-TV-Z]{26}$/;
 
 /**
- * @typedef {object} PushIntent
- * @property {'pod_message'} kind
- * @property {string} podId
- * @property {string} messageId
- * @property {string[]} recipientUserIds
+ * A pod message for its members, or a private reminder for one member.
+ * Both are pointers: neither carries message text or another member's data.
+ * @typedef {{ kind: 'pod_message', podId: string, messageId: string, recipientUserIds: string[] }
+ *   | { kind: 'private_reminder', userId: string, reminderKey: string, refId: string }} PushIntent
  */
 
 /**
@@ -265,14 +264,30 @@ export function sendPodMessage(db, input) {
  *           at: string, bus?: PodEventBus, push?: PushPort, newId?: () => string }} input
  */
 export function postPlannerCard(db, input) {
-  const {
+  const { podId, at, bus, push = NO_PUSH } = input;
+  const messageId = inTransaction(db, () => insertPlannerCard(db, input));
+  deliverPodMessage(db, {
     podId,
-    card,
+    messageId,
+    authorUserId: null,
     at,
     bus,
-    push = NO_PUSH,
-    newId = () => newUlid(),
-  } = input;
+    push,
+  });
+  return readPodMessage(db, messageId);
+}
+
+/**
+ * Validate and store a planner card inside the caller's transaction. The
+ * caller delivers it with deliverPodMessage after committing.
+ *
+ * @param {DatabaseSync} db
+ * @param {{ podId: string, card: { cardType: string, hangoutId?: string, pollId?: string, eventId?: string, offer?: string },
+ *           at: string, newId?: () => string }} input
+ * @returns {string} the message id
+ */
+export function insertPlannerCard(db, input) {
+  const { podId, card, at, newId = () => newUlid() } = input;
   if (!CARD_TYPES.includes(card.cardType))
     throw new PodError('validation_failed', 'unknown card type', [
       { field: 'cardType', problem: 'enum' },
@@ -287,7 +302,7 @@ export function postPlannerCard(db, input) {
       'an offer goes only on a planner_offer card',
       [{ field: 'offer', problem: 'enum' }],
     );
-  const messageId = inTransaction(db, () => {
+  {
     if (!db.prepare('SELECT 1 AS ok FROM pod WHERE pod_id = ?').get(podId))
       throw new PodError('not_found', 'no such pod');
     // A card may only point at this pod's own hangout and poll.
@@ -320,9 +335,20 @@ export function postPlannerCard(db, input) {
       at,
     );
     return id;
-  });
-  deliver(db, podId, messageId, null, at, bus, push);
-  return readPodMessage(db, messageId);
+  }
+}
+
+/**
+ * Publish a stored pod message to the event bus and the push port.
+ *
+ * @param {DatabaseSync} db
+ * @param {{ podId: string, messageId: string, authorUserId: string | null, at: string, bus?: PodEventBus, push?: PushPort }} input
+ */
+export function deliverPodMessage(
+  db,
+  { podId, messageId, authorUserId, at, bus, push = NO_PUSH },
+) {
+  deliver(db, podId, messageId, authorUserId, at, bus, push);
 }
 
 /**

@@ -508,4 +508,28 @@ CREATE TABLE push_token (
 ) STRICT;
 `,
   },
+  {
+    version: 2,
+    name: 'ready check window and reminder log (US-008)',
+    sql: `
+-- One ready check per hangout, with its closing time.
+CREATE TABLE ready_check (
+  hangout_id  TEXT PRIMARY KEY REFERENCES hangout(hangout_id),
+  status      TEXT NOT NULL CHECK (status IN ('open', 'closed')),
+  opened_at   TEXT NOT NULL,
+  closes_at   TEXT NOT NULL,
+  CHECK (closes_at > opened_at)
+) STRICT;
+
+-- Each private reminder sent, so a reminder job never sends one twice.
+CREATE TABLE reminder_sent (
+  kind     TEXT NOT NULL CHECK (kind IN ('poll_closing', 'ready_check_open')),
+  ref_id   TEXT NOT NULL,
+  user_id  TEXT NOT NULL REFERENCES app_user(user_id),
+  sent_at  TEXT NOT NULL,
+  PRIMARY KEY (kind, ref_id, user_id)
+) STRICT;
+${appendOnly('reminder_sent')}
+`,
+  },
 ]);
