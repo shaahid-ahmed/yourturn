@@ -43,6 +43,12 @@ import {
   getReadyCheck,
   setOwnReadyAnswer,
 } from '../polls.mjs';
+import {
+  listPodMessages,
+  sendPodMessage,
+  listOwnPlannerChat,
+  sendOwnPlannerChatMessage,
+} from '../chat.mjs';
 import { getBooking } from '../booking.mjs';
 import {
   listOwnPods,
@@ -1004,6 +1010,36 @@ export function buildApp({ db, vaultKey, publicOrigin, receiptVerifier } = {}) {
         hangoutId: params.hangoutId,
         userId,
         answer: req.body.answer,
+        at: now,
+      });
+    },
+    listPodMessages: async ({ req, params, userId }) =>
+      listPodMessages(database, {
+        podId: params.podId,
+        userId,
+        cursor: req.query?.cursor ?? null,
+      }),
+    sendPodMessage: async ({ req, params, userId }) => {
+      const now = new Date().toISOString();
+      return sendPodMessage(database, {
+        podId: params.podId,
+        userId,
+        clientMessageId: req.body.clientMessageId,
+        text: req.body.text,
+        at: now,
+      });
+    },
+    listOwnPlannerChat: async ({ req, userId }) =>
+      listOwnPlannerChat(database, {
+        userId,
+        cursor: req.query?.cursor ?? null,
+      }),
+    sendOwnPlannerChatMessage: async ({ req, userId }) => {
+      const now = new Date().toISOString();
+      return sendOwnPlannerChatMessage(database, {
+        userId,
+        clientMessageId: req.body.clientMessageId,
+        text: req.body.text,
         at: now,
       });
     },
