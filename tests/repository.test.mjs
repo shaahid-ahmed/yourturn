@@ -185,8 +185,10 @@ test('agent pointers are exact and all 24 rules are retained', () => {
   assert.match(rules, /Human approval gates/);
 });
 
-test('board has six state tables, 42 unique tasks, valid dependencies and no dependency cycles', () => {
+test('board has six state tables, 42 unique legacy tasks, valid dependencies and no dependency cycles', () => {
   const board = readFileSync('tasks/BOARD.md', 'utf8');
+  /** @type {Array<[string, string]>} */
+  const rows = [];
   for (const state of [
     'TODO',
     'IN PROGRESS',
@@ -201,38 +203,43 @@ test('board has six state tables, 42 unique tasks, valid dependencies and no dep
       section,
       /\| ID +\| Title +\| Role +\| Depends on +\| Acceptance criteria +\| Claimed by +\| Branch\/PR +\|/,
     );
+    // Only the six state tables are the task ledger. The plan tables further down
+    // repeat US ids with fewer columns and are descriptive, not task rows.
+    for (const line of section.split('\n'))
+      if (/^\| (?:YT|UN|US)-\d{3}\s*\|/.test(line)) rows.push([state, line]);
   }
-  // YourTurn rows are history (ADR 0006 pivoted the product); Unspoken rows are live.
-  // Both must satisfy the same structural rules, so a pivot cannot smuggle in a malformed row.
-  const rows = board
-    .split('\n')
-    .filter((line) => /^\| (?:YT|UN)-\d{3}\s*\|/.test(line));
-  const legacy = rows.filter((line) => line.startsWith('| YT-'));
-  const current = rows.filter((line) => line.startsWith('| UN-'));
-  assert.equal(
-    legacy.length,
-    42,
-    'the 42 YourTurn rows are history and must not be deleted',
-  );
-  assert.ok(current.length > 0, 'Unspoken tasks must exist after ADR 0006');
-  const parsed = rows.map((line) =>
-    line
+  const parsed = rows.map(([state, line]) => ({
+    state,
+    cells: line
       .split('|')
       .slice(1, -1)
       .map((cell) => cell.trim()),
+  }));
+  const ids = parsed.map(({ cells }) => cells[0]);
+  assert.equal(
+    ids.filter((id) => id.startsWith('YT-')).length,
+    42,
+    'the 42 YourTurn rows are history and must not be deleted',
   );
-  const ids = parsed.map((cells) => cells[0]);
+  assert.ok(
+    ids.some((id) => id.startsWith('UN-')),
+    'Unspoken tasks must exist after ADR 0006',
+  );
+  assert.ok(
+    ids.filter((id) => id.startsWith('US-')).length >= 30,
+    'the four-person plan must have real tasks',
+  );
   assert.equal(
     new Set(ids).size,
     ids.length,
-    'task ids must be unique across both series',
+    'task ids must be unique across all series',
   );
   /** @type {Map<string, string[]>} */
   const deps = new Map();
-  for (const cells of parsed) {
+  for (const { cells } of parsed) {
     assert.equal(cells.length, 7);
     for (const cell of cells) assert.ok(cell);
-    const needed = cells[3].match(/(?:YT|UN)-\d{3}/g) ?? [];
+    const needed = cells[3].match(/(?:YT|UN|US)-\d{3}/g) ?? [];
     for (const dependency of needed)
       assert.ok(ids.includes(dependency), `${cells[0]}: missing ${dependency}`);
     deps.set(cells[0], needed);
@@ -245,32 +252,48 @@ test('board has six state tables, 42 unique tasks, valid dependencies and no dep
   }
   for (const id of ids) visit(id, new Set());
 
-  // Every task names exactly one human owner, or both for a declared touchpoint.
-  const humans = ['Shaahid', 'Alan'];
+  // Every live task names a human owner. Superseded YT/UN rows may be archived instead.
+  // Shaahid holds no live US task: his lane was reassigned to Alan, Rohan and Vid.
+  const humans = ['Shaahid', 'Alan', 'Vid', 'Rohan'];
   /** @type {Record<string, number>} */
-  const perHuman = { Shaahid: 0, Alan: 0, joint: 0 };
-  for (const cells of parsed) {
+  const perHuman = { Alan: 0, Vid: 0, Rohan: 0 };
+  for (const { state, cells } of parsed) {
     const claimed = cells[5];
+    if (claimed.startsWith('ARCHIVED')) {
+      assert.match(
+        cells[0],
+        /^(?:YT|UN)-/,
+        `${cells[0]}: only superseded rows may be archived`,
+      );
+      continue;
+    }
     assert.match(claimed, /^Human: /, `${cells[0]}: no human owner recorded`);
     const named = humans.filter((human) => claimed.includes(human));
     assert.ok(
       named.length >= 1,
       `${cells[0]}: unknown human owner "${claimed}"`,
     );
-    if (named.length === 2) perHuman.joint += 1;
-    else perHuman[named[0]] += 1;
+    if (!cells[0].startsWith('US-') || state === 'DONE') continue;
+    assert.ok(
+      !named.includes('Shaahid'),
+      `${cells[0]}: Shaahid holds no live tasks`,
+    );
+    if (named.length === 1) perHuman[named[0]] += 1;
   }
+  const counts = Object.values(perHuman);
   assert.ok(
-    perHuman.Shaahid > 0 && perHuman.Alan > 0,
-    'both humans must own work',
+    counts.every((count) => count > 0),
+    `every collaborator must own work: ${JSON.stringify(perHuman)}`,
   );
   assert.ok(
-    Math.abs(perHuman.Shaahid - perHuman.Alan) <= 4,
+    Math.max(...counts) - Math.min(...counts) <= 4,
     `lanes are unbalanced: ${JSON.stringify(perHuman)}`,
   );
-  assert.match(board, /## Two-person split: Shaahid and Alan/);
-  assert.match(board, /Lane S — Shaahid/);
+  assert.match(board, /## CURRENT PLAN: four collaborators/);
+  assert.match(board, /Lane S — reassigned/);
   assert.match(board, /Lane A — Alan/);
+  assert.match(board, /Lane V — Vid/);
+  assert.match(board, /Lane R — Rohan/);
   assert.match(board, /## Open questions/);
   assert.match(board, /Phase 1 documentation authorized/);
   assert.match(board, /final contract freeze are NOT authorized/);
@@ -297,7 +320,7 @@ test('local markdown links in requested documents resolve', () => {
   for (const path of requiredPaths.filter((path) => path.endsWith('.md'))) {
     const text = readFileSync(path, 'utf8');
     for (const match of text.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
-      const target = match[1].split('#')[0];
+      const target = decodeURIComponent(match[1].split('#')[0]);
       if (!target || /^(https?:|mailto:)/.test(target)) continue;
       assert.ok(
         existsSync(resolve(dirname(path), target)),
