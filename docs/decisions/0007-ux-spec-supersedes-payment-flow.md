@@ -43,3 +43,20 @@ Integer cents, idempotent calls, verified webhooks, an append-only ledger, deriv
 ## Consequence for the code already written
 
 The per-member authorize/capture/void work (PR #7 and the WIP backend) is **retired**, not deleted: it is retained on its branch as a labelled experiment. It must not be merged into the demo path, because it implements a flow the product no longer has.
+
+## Update, November 12, 2026: the contract is written (US-001)
+
+Approved by Rohan as Architect: US-001 is written under this ADR, with no ADR 0008. The draft contract is [`openapi.json`](../03-architecture/openapi.json) `0.2.0-draft`, summarised in [API.md](../03-architecture/API.md). Each open decision below is marked `x-open-decision` in the contract, together with the default the draft assumes.
+
+The decisions are still the human's to make. The difference is that design, contract and backend work can now proceed against a stated default instead of waiting.
+
+| #    | Decision                 | Status                          | Contract default until decided                                                                              |
+| ---- | ------------------------ | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 5    | How the payer is chosen  | **Open; default set**           | A yes-member with a linked PayPal account volunteers; the first volunteer is the payer; no rotation         |
+| 6    | Who confirms a booking   | **Open; strict default set**    | Only the payer may confirm                                                                                  |
+| 14   | Who sees which balances  | **Open; strict default set**    | Each member sees only balances they are a party to; the payer sees each balance owed to them; no pod ledger |
+| 4    | How the payer pays venue | Open; blocks venue payment only | The app tracks IOUs only; no venue payment route exists                                                     |
+| 1, 2 | Who pays the $15; trial  | Open; blocks US-003 billing     | Each user holds their own plan; no trial state                                                              |
+| 16   | Fixed interest list      | Open; blocks profile content    | The list is server-supplied and versioned                                                                   |
+
+Changing any default above is a contract change. It needs Architect approval and, once a decision lands, an ADR that records it. Settlement between members remains gated on Q-010 (US-006).
