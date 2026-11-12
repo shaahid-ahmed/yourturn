@@ -28,7 +28,17 @@ import {
   removeMember,
   getPod,
   matchContacts,
+  requireMember,
 } from '../pods.mjs';
+import {
+  getOwnSubscription,
+  submitSubscriptionReceipt,
+  restoreSubscription,
+  startHangout,
+  sandboxReceiptVerifier,
+} from '../subscription.mjs';
+import { getReadyCheck } from '../polls.mjs';
+import { getBooking } from '../booking.mjs';
 import {
   listOwnPods,
   listOwnInvitations,
@@ -236,6 +246,105 @@ function toContractEvent(evt) {
 }
 
 /**
+ * Assemble the contract Hangout for a joined member. Polls, choice, readiness,
+ * payer and booking are each null until that stage exists; nothing here names
+ * a member's limits, and share amounts never appear.
+ * @param {any} database
+ * @param {string} hangoutId
+ * @param {string} podId
+ * @param {string} userId
+ */
+function toContractHangout(database, hangoutId, podId, userId) {
+  requireMember(database, podId, userId);
+  const h =
+    /** @type {{ hangout_id: string, pod_id: string, state: string, created_at: string, chosen_option_id: string | null, chosen_slot_id: string | null, payer_user_id: string | null } | undefined} */ (
+      database
+        .prepare('SELECT * FROM hangout WHERE hangout_id = ? AND pod_id = ?')
+        .get(hangoutId, podId)
+    );
+  if (!h) {
+    const err = /** @type {any} */ (new Error('no such hangout in this pod'));
+    err.code = 'not_found';
+    throw err;
+  }
+  const pollId = (/** @type {string} */ kind) =>
+    /** @type {{ poll_id: string } | undefined} */ (
+      database
+        .prepare('SELECT poll_id FROM poll WHERE hangout_id = ? AND kind = ?')
+        .get(hangoutId, kind)
+    )?.poll_id ?? null;
+  let chosenActivity = null;
+  if (h.chosen_option_id) {
+    const o =
+      /** @type {{ option_id: string, title: string, venue_or_organizer: string, starts_at: string | null, per_person_estimate_cents: number, event_id: string | null } | undefined} */ (
+        database
+          .prepare('SELECT * FROM shortlist_option WHERE option_id = ?')
+          .get(h.chosen_option_id)
+      );
+    if (o) {
+      const fixture = o.event_id ? getEventDetail(o.event_id) : null;
+      const eventId = o.event_id
+        ? (fixtureEventId(o.event_id) ??
+          (/^[0-9A-HJKMNP-TV-Z]{26}$/.test(o.event_id) ? o.event_id : null))
+        : null;
+      chosenActivity = {
+        optionId: o.option_id,
+        title: o.title,
+        venueOrOrganizer: o.venue_or_organizer,
+        startsAt: o.starts_at,
+        perPersonEstimateCents: o.per_person_estimate_cents,
+        tags: fixture ? fixture.tags : [],
+        eventId,
+        synthetic: true,
+      };
+    }
+  }
+  let chosenSlot = null;
+  if (h.chosen_slot_id) {
+    const s =
+      /** @type {{ slot_id: string, starts_at: string, ends_at: string } | undefined} */ (
+        database
+          .prepare('SELECT * FROM time_slot WHERE slot_id = ?')
+          .get(h.chosen_slot_id)
+      );
+    if (s)
+      chosenSlot = {
+        slotId: s.slot_id,
+        startsAt: s.starts_at,
+        endsAt: s.ends_at,
+      };
+  }
+  const readyOpen = database
+    .prepare('SELECT 1 AS one FROM ready_check WHERE hangout_id = ?')
+    .get(hangoutId);
+  const readyCheck = readyOpen
+    ? getReadyCheck(database, { podId, hangoutId, userId })
+    : null;
+  let payer = null;
+  if (h.payer_user_id) {
+    const p = /** @type {{ first_name: string } | undefined} */ (
+      database
+        .prepare('SELECT first_name FROM app_user WHERE user_id = ?')
+        .get(h.payer_user_id)
+    );
+    payer = { userId: h.payer_user_id, firstName: p ? p.first_name : '?' };
+  }
+  return {
+    hangoutId: h.hangout_id,
+    podId: h.pod_id,
+    state: h.state,
+    createdAt: h.created_at,
+    activityPollId: pollId('activity'),
+    timePollId: pollId('time'),
+    chosenActivity,
+    chosenSlot,
+    readyCheck,
+    payer,
+    booking: getBooking(database, { podId, hangoutId, userId }),
+  };
+}
+
+/**
  * Assemble the contract Pod for a joined member.
  * @param {any} database
  * @param {string} podId
@@ -389,13 +498,15 @@ function currentUser(database, vault, userId) {
 }
 
 /**
- * @param {{ db?: any, vaultKey?: string, publicOrigin?: string }} [options] vaultKey is 64 hex chars;
+ * @param {{ db?: any, vaultKey?: string, publicOrigin?: string, receiptVerifier?: any }} [options] vaultKey is 64 hex chars;
  * a random key is generated when omitted, so private limits do not survive
  * a restart. Production must load a persistent key. publicOrigin is the
  * public HTTPS origin (US-014, e.g. a tunnel URL) used for invite links and
  * documented return/cancel URLs; when omitted the request host is used.
+ * receiptVerifier checks sandbox receipts (US-003); it defaults to the local
+ * HMAC verifier keyed by UNSPOKEN_SANDBOX_RECEIPT_KEY or a random key.
  */
-export function buildApp({ db, vaultKey, publicOrigin } = {}) {
+export function buildApp({ db, vaultKey, publicOrigin, receiptVerifier } = {}) {
   const database =
     db ??
     (() => {
@@ -408,6 +519,13 @@ export function buildApp({ db, vaultKey, publicOrigin } = {}) {
   const vault = new ConstraintVault({
     masterKey: vaultKey ?? randomBytes(32).toString('hex'),
   });
+  const verifier =
+    receiptVerifier ??
+    sandboxReceiptVerifier({
+      key:
+        process.env.UNSPOKEN_SANDBOX_RECEIPT_KEY ||
+        randomBytes(32).toString('hex'),
+    });
   errorHandler(app, database);
 
   const spec = loadSpec();
@@ -785,6 +903,72 @@ export function buildApp({ db, vaultKey, publicOrigin } = {}) {
         createdAt: created.createdAt,
       };
     },
+    getOwnSubscription: async ({ userId }) => {
+      const now = new Date().toISOString();
+      const state = getOwnSubscription(database, { userId, at: now });
+      return {
+        status: state.status,
+        priceCents: state.priceCents,
+        currency: state.currency,
+        period: state.period,
+        store: state.store,
+        environment: state.environment,
+        expiresAt: state.expiresAt,
+        plannerEnabled: state.plannerEnabled,
+      };
+    },
+    submitSubscriptionReceipt: async ({ req, userId }) => {
+      const now = new Date().toISOString();
+      return submitSubscriptionReceipt(database, {
+        userId,
+        store: req.body.store,
+        receipt: req.body.receipt,
+        at: now,
+        verifier,
+      });
+    },
+    restoreSubscription: async ({ req, userId }) => {
+      const now = new Date().toISOString();
+      return restoreSubscription(database, {
+        userId,
+        store: req.body.store,
+        receipt: req.body.receipt,
+        at: now,
+        verifier,
+      });
+    },
+    listHangouts: async ({ params, userId }) => {
+      requireMember(database, params.podId, userId);
+      const rows = /** @type {Array<{ hangout_id: string }>} */ (
+        database
+          .prepare(
+            'SELECT hangout_id FROM hangout WHERE pod_id = ? ORDER BY created_at, hangout_id',
+          )
+          .all(params.podId)
+      );
+      return {
+        hangouts: rows.map((r) =>
+          toContractHangout(database, r.hangout_id, params.podId, userId),
+        ),
+      };
+    },
+    startHangout: async ({ params, userId }) => {
+      const now = new Date().toISOString();
+      const created = startHangout(database, {
+        podId: params.podId,
+        userId,
+        at: now,
+      });
+      return toContractHangout(
+        database,
+        created.hangoutId,
+        params.podId,
+        userId,
+        now,
+      );
+    },
+    getHangout: async ({ params, userId }) =>
+      toContractHangout(database, params.hangoutId, params.podId, userId),
   };
 
   for (const [path, ops] of Object.entries(spec.paths)) {
