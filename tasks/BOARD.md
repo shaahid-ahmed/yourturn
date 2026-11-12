@@ -49,7 +49,6 @@ The user requested initial scaffold creation across the tree. Orchestrator coord
 | UN-012 | Phase 4: demo — four holds, one capture, and the void replay                | demo-pitch           | UN-010                                                         | Under three minutes; the void replay shows no names; a recorded backup exists; every privacy claim in the pitch is the architectural one, not a cryptographic one                                                                                                                                                                                                                      | Human: Alan — Unclaimed           | —                                                                                             |
 | UN-013 | ∥ Phase 1: phone-first design system and flows                              | product-designer     | UN-001                                                         | Mobile-first tokens, type scale and spacing; flows drawn at a phone width for onboarding, group view, the approve-your-share step and the void/"didn't come together" state; every screen specifies loading, empty, error and refused; WCAG 2.2 AA touch-target and contrast rules stated                                                                                              | Human: Alan — Unclaimed           | —                                                                                             |
 | UN-014 | Phase 2: public HTTPS tunnel and return/cancel URLs for device testing      | sre-devops           | UN-004                                                         | A phone cannot reach 127.0.0.1: PayPal approval leaves the browser and returns via return_url, so a public HTTPS return/cancel pair is required to approve a share on a handset. Tunnel or hosted origin documented, URLs configurable per environment, and the same origin reused for the webhook listener (which also needs public HTTPS). A return-URL hit remains proof of nothing | ARCHIVED (ADR 0007) — was Shaahid | —                                                                                             |
-| US-003 | ∥ Phase 1: subscription receipt verification                                | backend              | US-001                                                         | $15/month plan, sandbox receipt validation, plan status, restore purchase; plan check gates the planner                                                                                                                                                                                                                                                                                | Human: Vid — Unclaimed            | —                                                                                             |
 | US-005 | ∥ Phase 2: IOU ledger and balances                                          | payments             | US-001, US-002                                                 | Balances derived only; split sums exactly with rotating remainder; owed/pending/paid/failed; 100% branch coverage                                                                                                                                                                                                                                                                      | Human: Alan — DONE, merged #51    | [#51](https://github.com/shaahid-ahmed/yourturn/pull/51) `payments/iou-ledger`                |
 | US-006 | ∥ Phase 2: member-to-member PayPal settlement                               | payments             | US-005, Q-010                                                  | Sandbox payment between two personal accounts; verified webhook before any effect; idempotency bound to target and body; failure returns to owed; gate closed                                                                                                                                                                                                                          | Human: Alan — Unclaimed           | —                                                                                             |
 | US-009 | ∥ Phase 2: private budget checks and stretch asks                           | llm-engineer         | US-001, US-002                                                 | Feasible/not-feasible only; stretch ask to that member only; group never sees the ask                                                                                                                                                                                                                                                                                                  | Human: Alan — DONE, merged #52    | [#52](https://github.com/shaahid-ahmed/yourturn/pull/52) `llm-engineer/budget-checks`         |
@@ -99,6 +98,12 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 | --- | ----- | ---- | ---------- | ------------------- | ---------- | --------- |
 
 ## IN REVIEW
+
+Vid's reassigned backend tasks awaiting independent review (Rohan reviews, per the Lane S reassignment):
+
+| ID     | Title                                        | Role    | Depends on | Acceptance criteria                                                                                     | Claimed by                                                   | Branch/PR                     |
+| ------ | -------------------------------------------- | ------- | ---------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------- |
+| US-003 | ∥ Phase 1: subscription receipt verification | backend | US-001     | $15/month plan, sandbox receipt validation, plan status, restore purchase; plan check gates the planner | Human: Vid — IN REVIEW (backend, claude-opus-5-5) 2026-11-12 | `backend/us-003-subscription` |
 
 Lane V design work awaiting independent review:
 
@@ -621,6 +626,20 @@ Not done: the **app-stage audit** (VoiceOver, TalkBack, keyboard, 320px/200% zoo
 How to verify: `npm run check` (77 tests pass locally).
 Risks / gotchas: designer and auditor are the same person at this stage. The app-stage audit should be run or re-checked by someone else.
 Next step: unblocks when Alan's screens run. Then follow the "App-stage audit plan" in ACCESSIBILITY.md and record the results there.
+
+### Handoff US-003: backend (Vid) → reviewer (Rohan), backend routes (US-019)
+
+Done: `services/api/src/subscription.mjs` implements the contract's subscription operations as domain functions:
+
+- **Submit and restore:** sandbox receipt verification through a `ReceiptVerifier` port. Anything that is not a sandbox receipt for the $15 monthly product is `422 receipt_invalid` and writes nothing. A retry with the same receipt is idempotent, and a purchase held by another account is refused.
+- **Plan status:** `none/active/in_grace/expired`, derived at read time from append-only receipts.
+- **`startHangout`:** where the plan check gates the planner (`404` for non-members, then `409 subscription_required`, then `409 pod_too_small`).
+- **Tests:** `tests/subscription.test.mjs` (10). Also `docs/03-architecture/SUBSCRIPTION.md`, and the variable name `UNSPOKEN_SANDBOX_RECEIPT_KEY` in `.env.example`.
+
+Not done: a real App Store or Play sandbox verifier. The default is an HMAC-signed local stand-in, and the doc says so. No HTTP routes (US-019). `revoked` is never produced (it needs store server notifications). The grace period (3 days) is a proposal. Q-011.1 and Q-011.2 stay open; the contract defaults are used.
+How to verify: `npm run check`; `node --test tests/subscription.test.mjs`.
+Risks / gotchas: the plan check uses the **caller's** plan, per the Q-011.1 default. If one member covers the pod, `requirePlannerEnabled` changes to a pod-level check.
+Next step: Rohan reviews (the reassignment note names him as reviewer for US-003, US-011 and US-012); US-019 exposes the routes.
 
 ## Human Phase 1 authorization and coordinated ownership
 
