@@ -6,7 +6,12 @@
  * contract. Errors use the contract `Error` / `PaymentGateError` shapes.
  * The payment gate stays closed: settlement payments answer 409.
  */
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -50,6 +55,7 @@ import {
   sendOwnPlannerChatMessage,
 } from '../chat.mjs';
 import { getBooking } from '../booking.mjs';
+import { volunteerAsPayer, confirmBooking } from '../booking.mjs';
 import {
   listOwnPods,
   listOwnInvitations,
@@ -102,6 +108,10 @@ const STATUS_BY_CODE = {
   subscription_required: 409,
   poll_closed: 409,
   wrong_hangout_state: 409,
+  payer_already_chosen: 409,
+  paypal_link_required: 409,
+  not_yes_member: 403,
+  not_payer: 403,
   option_unknown: 404,
   rate_limited: 429,
 };
@@ -514,15 +524,26 @@ function currentUser(database, vault, userId) {
 }
 
 /**
- * @param {{ db?: any, vaultKey?: string, publicOrigin?: string, receiptVerifier?: any }} [options] vaultKey is 64 hex chars;
+ * @param {{ db?: any, vaultKey?: string, publicOrigin?: string, receiptVerifier?: any, webhookKey?: string }} [options] vaultKey is 64 hex chars;
  * a random key is generated when omitted, so private limits do not survive
  * a restart. Production must load a persistent key. publicOrigin is the
  * public HTTPS origin (US-014, e.g. a tunnel URL) used for invite links and
  * documented return/cancel URLs; when omitted the request host is used.
  * receiptVerifier checks sandbox receipts (US-003); it defaults to the local
  * HMAC verifier keyed by UNSPOKEN_SANDBOX_RECEIPT_KEY or a random key.
+ * webhookKey verifies provider webhook signatures (HMAC-SHA256 hex over the
+ * canonical JSON body, presented in the x-signature header); it defaults to
+ * UNSPOKEN_SANDBOX_WEBHOOK_KEY or a random key. Verified events are recorded
+ * in provider_event and deduplicated by id; per ADR 0008 no event applies
+ * money effects, so effectsApplied is always false.
  */
-export function buildApp({ db, vaultKey, publicOrigin, receiptVerifier } = {}) {
+export function buildApp({
+  db,
+  vaultKey,
+  publicOrigin,
+  receiptVerifier,
+  webhookKey,
+} = {}) {
   const database =
     db ??
     (() => {
@@ -542,6 +563,10 @@ export function buildApp({ db, vaultKey, publicOrigin, receiptVerifier } = {}) {
         process.env.UNSPOKEN_SANDBOX_RECEIPT_KEY ||
         randomBytes(32).toString('hex'),
     });
+  const hookKey =
+    webhookKey ??
+    (process.env.UNSPOKEN_SANDBOX_WEBHOOK_KEY ||
+      randomBytes(32).toString('hex'));
   errorHandler(app, database);
 
   const spec = loadSpec();
@@ -1042,6 +1067,71 @@ export function buildApp({ db, vaultKey, publicOrigin, receiptVerifier } = {}) {
         text: req.body.text,
         at: now,
       });
+    },
+    volunteerAsPayer: async ({ params, userId }) => {
+      const now = new Date().toISOString();
+      volunteerAsPayer(database, {
+        podId: params.podId,
+        hangoutId: params.hangoutId,
+        userId,
+        at: now,
+      });
+      return toContractHangout(
+        database,
+        params.hangoutId,
+        params.podId,
+        userId,
+        now,
+      );
+    },
+    confirmBooking: async ({ req, params, userId }) => {
+      const now = new Date().toISOString();
+      confirmBooking(database, {
+        podId: params.podId,
+        hangoutId: params.hangoutId,
+        userId,
+        estimatedTotalCents: req.body.estimatedTotalCents,
+        at: now,
+      });
+      return toContractHangout(
+        database,
+        params.hangoutId,
+        params.podId,
+        userId,
+        now,
+      );
+    },
+    receiveProviderWebhook: async ({ req }) => {
+      const presented =
+        typeof req.headers['x-signature'] === 'string'
+          ? Buffer.from(req.headers['x-signature'], 'hex')
+          : null;
+      const expected = createHmac('sha256', hookKey)
+        .update(JSON.stringify(req.body ?? {}), 'utf8')
+        .digest();
+      if (
+        !presented ||
+        presented.length !== expected.length ||
+        !timingSafeEqual(presented, expected)
+      ) {
+        const err = /** @type {any} */ (new Error('bad webhook signature'));
+        err.code = 'unauthenticated';
+        throw err;
+      }
+      const event = /** @type {{ id: string, event_type: string }} */ (
+        req.body
+      );
+      const row = database
+        .prepare(
+          `INSERT INTO provider_event (provider_event_id, event_type, signature_verified, received_at)
+           VALUES (?, ?, 1, ?) ON CONFLICT (provider_event_id) DO NOTHING RETURNING provider_event_id`,
+        )
+        .get(event.id, event.event_type, new Date().toISOString());
+      return {
+        signatureVerified: true,
+        duplicate: !row,
+        effectsApplied: false,
+      };
     },
   };
 
