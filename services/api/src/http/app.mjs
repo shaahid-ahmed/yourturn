@@ -79,6 +79,11 @@ import {
   resolveSession,
   SessionError,
 } from './sessions.mjs';
+import {
+  getOwnNotificationSettings as notifGetSettings,
+  setOwnNotificationSettings as notifSetSettings,
+  registerPushToken as notifRegisterToken,
+} from '../notifications.mjs';
 
 const SPEC_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -1462,6 +1467,30 @@ export function buildApp({
         status: bal.status,
         updatedAt: bal.updatedAt,
       };
+    },
+
+    // ---- wave: notifications (US-019) ------------------------------------
+
+    getOwnNotificationSettings: async ({ userId }) =>
+      notifGetSettings(database, userId),
+
+    setOwnNotificationSettings: async ({ req, userId }) => {
+      const now = new Date().toISOString();
+      return notifSetSettings(database, {
+        userId,
+        settings: req.body,
+        at: now,
+      });
+    },
+
+    registerPushToken: async ({ req, userId }) => {
+      const now = new Date().toISOString();
+      return notifRegisterToken(database, {
+        userId,
+        platform: req.body.platform,
+        token: req.body.token,
+        at: now,
+      });
     },
   };
 
