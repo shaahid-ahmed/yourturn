@@ -58,6 +58,7 @@ As a member in hardship, I want to pause without explaining myself to anyone.
 - **Given** a pause exists, **then** no reason is stored, because none is collected; and no peer, host, notification, prompt, analytics event or model input receives a reason.
 - **Given** a pause exists, **when** other members view the circle, **then** they see at most a neutral participation state with no hardship framing, no comparison and no prompt to ask me why.
 - **Given** a pause request, **then** collection effects, peer-visible status details and rotation consequences are shown as policy-pending (Q-006) and are not executed or implied as settled.
+- **Given** any demo illustration of a paused member, **then** it shows participation-state only, labelled "demo only; payment effects not executed" (D-P04), with no implication that collection stopped or that any provider action occurred.
 - **Given** I skip one event, **then** no pause or exit is created, and no penalty, streak loss or shame message follows.
 
 ### US-006 — Leave in two taps, with consequences disclosed up front
@@ -67,7 +68,7 @@ As a member, I want leaving to be easy and honest.
 - **Given** an ordinary circle or settings surface, **when** I use the leave control, **then** reaching completion takes at most two activations — Leave, then Confirm — with keyboard and screen-reader equivalents counting as activations.
 - **Given** the confirmation step, **then** it states the disclosed forfeit proposal and labels it as a proposal pending review (Q-006), never as an enforced legal outcome.
 - **Given** the confirmation step, **when** I cancel, **then** nothing changes and no retention offer, discount, guilt message, delay or required reason is presented.
-- **Given** I complete leaving, **then** my participation ends in the demo, no provider cancellation or refund result is claimed, and any pending provider state is shown as unverified.
+- **Given** I complete leaving, **then** my participation ends in the demo, no provider cancellation or refund result is claimed, and any pending provider state is shown as unverified. In demo illustrations no synthetic forfeiture, refund, subscription cancellation or successful pause-of-collection is presented as provider evidence (D-P04).
 - **Given** I am the current host or a cycle is mid-flight, **then** leaving still succeeds; rotation consequences are suspended and surfaced rather than used to block my exit.
 
 ### US-007 — Opt in to connection tracking, or not
