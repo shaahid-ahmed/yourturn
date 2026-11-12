@@ -39,7 +39,7 @@ const STRETCH_RATIO = 1.2;
  * success path. Only throws for bad inputs that would produce garbage output.
  *
  * @param {BudgetCheckInput} input
- * @param {StretchSession}   session  in-memory session for stretch approvals
+ * @param {StretchSession|null} session  in-memory session for stretch approvals
  * @returns {BudgetCheckResult}
  */
 export function checkBudget(input, session) {
@@ -69,7 +69,7 @@ export function checkBudget(input, session) {
  * Caller must NOT expose per-member attribution to the group.
  *
  * @param {BudgetCheckInput[]} inputs
- * @param {StretchSession}     session
+ * @param {StretchSession|null} session
  * @returns {{ feasibleCount: number, totalCount: number, allFeasible: boolean }}
  */
 export function checkBudgetGroup(inputs, session) {
@@ -174,7 +174,7 @@ export class StretchSession {
   }
 }
 
-/** @param {unknown} v @param {string} name */
+/** @param {number} v @param {string} name */
 function assertCents(v, name) {
   if (!Number.isInteger(v) || v < 0) {
     throw new TypeError(
