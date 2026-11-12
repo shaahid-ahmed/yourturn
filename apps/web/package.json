@@ -7,7 +7,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check:copy": "node scripts/check-copy.mjs",
+    "check:seed": "node scripts/consistency.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "next": "15.5.29",
