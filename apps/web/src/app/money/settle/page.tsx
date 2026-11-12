@@ -52,6 +52,8 @@ const PAYER_BALANCES: Balance[] = [
   },
 ];
 
+const PAYMENT_GATE_OPEN = false;
+
 function formatDollars(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
@@ -60,7 +62,11 @@ export default function SettleUpPage() {
   const [myBalances, setMyBalances] = useState(MY_BALANCES);
   const [view, setView] = useState<'owe' | 'owed'>('owe');
 
+  // The payment gate is closed until US-006 (Q-010, Q-012). When it opens,
+  // a tap moves the balance to pending, and only PayPal's verified webhook
+  // may move it to paid. Nothing here ever marks a balance paid by itself.
   function initiatePayment(memberId: string) {
+    if (!PAYMENT_GATE_OPEN) return;
     setMyBalances((prev) =>
       prev.map((b) =>
         b.memberId === memberId
@@ -68,16 +74,6 @@ export default function SettleUpPage() {
           : b,
       ),
     );
-    // Demo: simulate success after 1.5s
-    setTimeout(() => {
-      setMyBalances((prev) =>
-        prev.map((b) =>
-          b.memberId === memberId
-            ? { ...b, status: 'paid' as BalanceStatus }
-            : b,
-        ),
-      );
-    }, 1500);
   }
 
   return (
@@ -132,9 +128,25 @@ export default function SettleUpPage() {
                   {formatDollars(b.amountCents)}
                 </p>
                 {b.status === 'owed' && (
-                  <Button fullWidth onClick={() => initiatePayment(b.memberId)}>
-                    Pay with PayPal
-                  </Button>
+                  <>
+                    <Button
+                      fullWidth
+                      disabled={!PAYMENT_GATE_OPEN}
+                      aria-describedby={`gate-${b.memberId}`}
+                      onClick={() => initiatePayment(b.memberId)}
+                    >
+                      Pay with PayPal
+                    </Button>
+                    {!PAYMENT_GATE_OPEN && (
+                      <p
+                        id={`gate-${b.memberId}`}
+                        className="mt-2 text-sm text-[var(--color-ink-muted)]"
+                      >
+                        Payments are off in this sandbox demo. Nothing is
+                        charged, and your balance stays owed.
+                      </p>
+                    )}
+                  </>
                 )}
                 {b.status === 'pending' && (
                   <p className="text-sm text-[var(--color-ink-muted)]">
@@ -142,7 +154,9 @@ export default function SettleUpPage() {
                   </p>
                 )}
                 {b.status === 'paid' && (
-                  <p className="text-sm text-green-700 font-medium">Paid ✓</p>
+                  <p className="text-sm text-[var(--color-status-paid)] font-medium">
+                    Paid ✓
+                  </p>
                 )}
                 {b.status === 'failed' && (
                   <>
@@ -151,15 +165,13 @@ export default function SettleUpPage() {
                     </p>
                     <Button
                       fullWidth
+                      disabled={!PAYMENT_GATE_OPEN}
                       onClick={() => initiatePayment(b.memberId)}
                     >
-                      Retry payment
+                      Try again
                     </Button>
                   </>
                 )}
-                <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-                  This is a demo — no real PayPal charge is made.
-                </p>
               </Card>
             ))
           )

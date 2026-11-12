@@ -186,7 +186,7 @@ export default function ProfileCreatePage() {
       {/* Step 3 — Private limits */}
       {step === 3 && (
         <form onSubmit={handleStep3} className="flex flex-col gap-5">
-          <div className="rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] p-3 text-xs text-[var(--color-ink-muted)]">
+          <div className="private-surface rounded-xl border border-[var(--color-hairline)] p-3 text-xs">
             Everything on this screen is stored in your private planner vault.
             Your pod and the group chat never see these details.
           </div>
@@ -270,8 +270,8 @@ export default function ProfileCreatePage() {
             </Button>
           </div>
           <p className="text-xs text-[var(--color-ink-muted)]">
-            Other calendar sources are open. You can connect or disconnect later
-            from your profile.
+            Apple Calendar and Outlook are coming later. You can connect or
+            disconnect later from your profile.
           </p>
           <div className="flex gap-3 mt-auto">
             <Button variant="secondary" fullWidth onClick={back}>
@@ -365,7 +365,7 @@ export default function ProfileCreatePage() {
             </Button>
           </div>
           <Button
-            variant="ghost"
+            variant="secondary"
             fullWidth
             onClick={() => {
               window.location.href = '/home';

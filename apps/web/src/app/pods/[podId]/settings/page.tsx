@@ -114,7 +114,7 @@ export default function PodSettingsPage() {
                 key={r}
                 className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer min-h-[52px] transition-colors ${
                   rhythm === r
-                    ? 'border-[var(--color-accent)] bg-[#EBF3FA]'
+                    ? 'border-[var(--color-accent)] bg-[var(--color-surface-sunken)]'
                     : 'border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]'
                 }`}
               >
@@ -141,7 +141,8 @@ export default function PodSettingsPage() {
             ))}
           </div>
           <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-            How agreement is reached is open (section 12 of the spec).
+            Propose a change in the chat. It becomes the default when everyone
+            agrees.
           </p>
         </section>
 

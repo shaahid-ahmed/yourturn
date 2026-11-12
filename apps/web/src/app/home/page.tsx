@@ -1,7 +1,7 @@
 'use client';
 // P5 — Home
 // Floating pod bubbles. No cue ever names a single member's status.
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { EmptyState, Button, useDocumentTitle } from '@/components/ui';
 
 type PodStage =
@@ -48,25 +48,31 @@ const DEMO_PODS: DemoPod[] = [
   },
 ];
 
-// Approximate positions on a 390-wide canvas
+// Approximate positions on a 360–430-wide canvas
 const BUBBLE_POSITIONS = [
-  { top: '18%', left: '12%' },
-  { top: '42%', left: '58%' },
-  { top: '64%', left: '22%' },
+  { top: '8%', left: '10%' },
+  { top: '34%', left: '52%' },
+  { top: '60%', left: '16%' },
 ];
+
+// The private-ask dot belongs to the member, not to a pod: it lives on the
+// hub entry (spec P5 "private chat badge"), with a text label in the sheet.
+const PRIVATE_ASKS = DEMO_PODS.filter((p) => p.hasPrivateDot).length;
 
 export default function HomePage() {
   useDocumentTitle('Your pods');
   const [pods] = useState<DemoPod[]>(DEMO_PODS);
 
-  if (pods.length === 0) {
-    return (
-      <main className="flex flex-col min-h-dvh">
-        <HubBar />
+  return (
+    <main className="relative flex flex-col min-h-dvh bg-[var(--color-paper)]">
+      <header className="px-[var(--gutter)] pt-6 pb-2">
+        <h1 className="text-2xl text-[var(--color-ink)]">Your pods</h1>
+      </header>
+
+      {pods.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
           <EmptyState
-            icon="✦"
-            heading="Your first pod is waiting"
+            heading="Start your first pod"
             body="A pod is a friend group of 3–8 people. Create one to start planning together."
             action={
               <Button
@@ -79,137 +85,204 @@ export default function HomePage() {
             }
           />
         </div>
-        <PlusButton />
-      </main>
-    );
-  }
-
-  return (
-    <main className="relative min-h-dvh overflow-hidden bg-[var(--color-surface)]">
-      <HubBar />
-
-      {/* Bubble field */}
-      <section
-        className="relative"
-        style={{ height: 'calc(100dvh - 112px)' }}
-        aria-label="Your pods"
-      >
-        {pods.map((pod, i) => (
-          <PodBubble
-            key={pod.id}
-            pod={pod}
-            position={
-              BUBBLE_POSITIONS[i] ?? {
-                top: `${20 + i * 25}%`,
-                left: `${10 + i * 20}%`,
+      ) : (
+        <section
+          className="relative flex-1"
+          style={{ minHeight: 'calc(100dvh - 72px - 72px)' }}
+          aria-label="Pods"
+        >
+          {pods.map((pod, i) => (
+            <PodBubble
+              key={pod.id}
+              pod={pod}
+              tone={(i % 6) + 1}
+              position={
+                BUBBLE_POSITIONS[i] ?? {
+                  top: `${10 + i * 22}%`,
+                  left: `${10 + (i % 2) * 40}%`,
+                }
               }
-            }
-          />
-        ))}
-      </section>
+            />
+          ))}
+        </section>
+      )}
 
-      <PlusButton />
+      <Dock />
     </main>
   );
 }
 
 function PodBubble({
   pod,
+  tone,
   position,
 }: {
   pod: DemoPod;
+  tone: number;
   position: { top: string; left: string };
 }) {
   const hasStage = pod.stage !== 'none';
   return (
     <a
       href={`/pods/${pod.id}`}
-      className="absolute flex flex-col items-center gap-1.5 group"
-      style={position}
+      className={`bubble bubble--${tone} absolute flex flex-col items-center justify-center text-center px-3`}
+      style={{ ...position, width: 132, height: 132 }}
       aria-label={`${pod.name}, ${pod.memberCount} members${hasStage ? `, ${STAGE_LABEL[pod.stage]}` : ''}`}
     >
-      {/* Bubble */}
-      <div
-        className="relative flex items-center justify-center rounded-full bg-[var(--color-accent)] text-white font-semibold text-sm shadow-lg transition-transform group-hover:scale-105 group-active:scale-95"
-        style={{ width: 80, height: 80 }}
-        aria-hidden="true"
-      >
-        {pod.name.slice(0, 2).toUpperCase()}
-        {pod.hasPrivateDot && (
-          <span
-            className="absolute top-1 right-1 w-3 h-3 rounded-full bg-[#F5A623] border-2 border-white"
-            aria-hidden="true"
-            title="Planner has asked you something privately"
-          />
-        )}
-      </div>
-
-      {/* Label */}
-      <div className="text-center max-w-[90px]">
-        <p className="text-xs font-medium text-[var(--color-ink)] truncate">
-          {pod.name}
-        </p>
-        <p className="text-xs text-[var(--color-ink-muted)]">
-          {pod.memberCount} members
-        </p>
-        {hasStage && (
-          <p className="text-xs text-[var(--color-accent)] font-medium">
-            {STAGE_LABEL[pod.stage]}
-          </p>
-        )}
-      </div>
+      <span className="text-base font-semibold leading-tight">{pod.name}</span>
+      <span className="text-xs text-[var(--color-ink-muted)]">
+        {pod.memberCount} people
+      </span>
+      {hasStage && (
+        <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium">
+          <span aria-hidden="true">●</span>
+          {STAGE_LABEL[pod.stage]}
+        </span>
+      )}
     </a>
   );
 }
 
-function PlusButton() {
+// Bottom dock, in thumb reach: create a pod (centre) and the hub (right).
+function Dock() {
+  const hub = useRef<HTMLDialogElement>(null);
   return (
-    <a
-      href="/pods/create"
-      className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--color-accent)] text-white flex items-center justify-center shadow-xl hover:bg-[#174F76] active:scale-95 transition-all"
-      aria-label="Create a new pod"
-    >
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
+    <>
+      <nav
+        aria-label="Home actions"
+        className="sticky bottom-0 grid grid-cols-3 items-center px-[var(--gutter)] bg-[var(--color-paper)]"
+        style={{
+          height: 'calc(var(--dock-height) + var(--safe-bottom))',
+          paddingBottom: 'var(--safe-bottom)',
+        }}
       >
-        <path d="M12 5v14M5 12h14" />
-      </svg>
-    </a>
+        <span />
+        <a
+          href="/pods/create"
+          className="justify-self-center w-14 h-14 rounded-full bg-[var(--color-action)] text-[var(--color-on-action)] flex items-center justify-center shadow-[var(--shadow-card)] active:bg-[var(--color-action-pressed)]"
+          aria-label="Create a new pod"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </a>
+        <button
+          type="button"
+          onClick={() => hub.current?.showModal()}
+          className="justify-self-end relative inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 min-h-[48px] text-sm font-medium text-[var(--color-ink)]"
+          aria-haspopup="dialog"
+          aria-label={PRIVATE_ASKS ? `Hub, ${PRIVATE_ASKS} private ask` : 'Hub'}
+        >
+          Hub
+          {PRIVATE_ASKS > 0 && (
+            <span
+              className="w-2.5 h-2.5 rounded-full bg-[var(--color-private)]"
+              aria-hidden="true"
+            />
+          )}
+        </button>
+      </nav>
+      <HubSheet dialog={hub} />
+    </>
   );
 }
 
-function HubBar() {
+// The hub (spec P5, P15–P22) as a bottom sheet. <dialog> gives focus
+// containment, Escape to close and focus return to the Hub button.
+function HubSheet({
+  dialog,
+}: {
+  dialog: React.RefObject<HTMLDialogElement | null>;
+}) {
   const items = [
-    { href: '/hub/events', label: 'Events', icon: '🗺' },
-    { href: '/hub/calendar', label: 'Calendar', icon: '📅' },
-    { href: '/money', label: 'Money', icon: '💸' },
-    { href: '/hub/profile', label: 'Profile', icon: '👤' },
+    ...(PRIVATE_ASKS
+      ? [
+          {
+            href: '/hub/planner',
+            label: 'Private planner chat',
+            note: `${PRIVATE_ASKS} private ask waiting`,
+          },
+        ]
+      : []),
+    { href: '/money', label: 'Money', note: 'What you owe and are owed' },
+    { href: '/hub/events', label: 'Events', note: 'Things to do in NYC' },
+    {
+      href: '/hub/calendar',
+      label: 'Calendar',
+      note: 'Your week and hangouts',
+    },
+    {
+      href: '/hub/profile',
+      label: 'Profile',
+      note: 'Interests and private limits',
+    },
+    ...(PRIVATE_ASKS
+      ? []
+      : [
+          {
+            href: '/hub/planner',
+            label: 'Private planner chat',
+            note: 'Just you and your planner',
+          },
+        ]),
+    {
+      href: '/hub/payment-methods',
+      label: 'Payment methods',
+      note: 'Your linked PayPal',
+    },
+    {
+      href: '/hub/settings',
+      label: 'Settings',
+      note: 'Notifications, privacy, plan',
+    },
   ];
   return (
-    <nav
-      aria-label="Hub navigation"
-      className="flex items-center justify-around px-2 h-14 border-b border-[var(--color-border)] bg-[var(--color-surface)]"
+    <dialog
+      ref={dialog}
+      aria-labelledby="hub-title"
+      className="m-0 mt-auto w-full max-w-[var(--layout-max)] mx-auto rounded-t-[var(--radius-sheet)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-sheet)] backdrop:bg-black/30"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) e.currentTarget.close();
+      }}
     >
-      {items.map((item) => (
-        <a
-          key={item.href}
-          href={item.href}
-          className="flex flex-col items-center gap-0.5 min-w-[44px] min-h-[44px] justify-center text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors"
-          aria-label={item.label}
+      <div className="flex items-center justify-between px-[var(--gutter)] pt-4 pb-2">
+        <h2 id="hub-title" className="text-xl font-semibold">
+          Hub
+        </h2>
+        <button
+          type="button"
+          onClick={() => dialog.current?.close()}
+          className="rounded-full px-4 min-h-[44px] text-sm font-medium text-[var(--color-ink)]"
         >
-          <span aria-hidden="true" className="text-lg">
-            {item.icon}
-          </span>
-          <span className="text-xs">{item.label}</span>
-        </a>
-      ))}
-    </nav>
+          Close
+        </button>
+      </div>
+      <ul className="pb-[calc(16px+var(--safe-bottom))]">
+        {items.map((item) => (
+          <li key={item.href}>
+            <a
+              href={item.href}
+              className="flex flex-col justify-center px-[var(--gutter)] min-h-[56px] border-t border-[var(--color-hairline)]"
+            >
+              <span className="text-base font-medium text-[var(--color-ink)]">
+                {item.label}
+              </span>
+              <span className="text-xs text-[var(--color-ink-muted)]">
+                {item.note}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </dialog>
   );
 }

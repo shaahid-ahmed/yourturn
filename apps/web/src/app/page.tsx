@@ -17,15 +17,12 @@ export default function SplashPage() {
 
   return (
     <main
-      className="flex flex-col items-center justify-center min-h-dvh bg-[var(--color-accent)]"
+      className="flex flex-col items-center justify-center min-h-dvh bg-[var(--color-paper)]"
       aria-label="Unspoken loading"
       aria-live="polite"
       aria-busy="true"
     >
-      <div
-        className="flex flex-col items-center gap-4 animate-[spin_1.2s_ease-in-out_1]"
-        style={{ animationFillMode: 'forwards' }}
-      >
+      <div className="flex flex-col items-center gap-4">
         <svg
           width="80"
           height="80"
@@ -33,12 +30,19 @@ export default function SplashPage() {
           aria-label="Unspoken logo"
           role="img"
           fill="none"
+          className="logo-turn"
         >
-          <circle cx="40" cy="40" r="36" stroke="white" strokeWidth="3" />
-          <circle cx="40" cy="40" r="20" fill="white" opacity="0.15" />
-          <path d="M28 40 Q40 24 52 40 Q40 56 28 40Z" fill="white" />
+          <circle
+            cx="40"
+            cy="40"
+            r="36"
+            stroke="var(--color-ink)"
+            strokeWidth="3"
+          />
+          <circle cx="40" cy="40" r="20" fill="var(--color-bubble-3)" />
+          <path d="M28 40 Q40 24 52 40 Q40 56 28 40Z" fill="var(--color-ink)" />
         </svg>
-        <span className="text-white text-2xl font-bold tracking-tight">
+        <span className="fade-in text-[var(--color-ink)] text-[length:var(--text-display)] font-semibold tracking-tight [font-family:var(--font-serif)]">
           Unspoken
         </span>
       </div>

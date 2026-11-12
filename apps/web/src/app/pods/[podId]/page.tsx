@@ -358,7 +358,7 @@ export default function PodChatPage() {
           <button
             onClick={sendMessage}
             disabled={!input.trim()}
-            className="w-11 h-11 rounded-xl bg-[var(--color-accent)] text-white flex items-center justify-center disabled:opacity-50 hover:bg-[#174F76] transition-colors"
+            className="w-11 h-11 rounded-xl bg-[var(--color-accent)] text-white flex items-center justify-center disabled:opacity-50 active:bg-[var(--color-action-pressed)] transition-colors"
             aria-label="Send message"
           >
             <svg
@@ -421,9 +421,6 @@ function ChatMessage({
             />
           ))}
         </div>
-        <p className="mt-3 text-xs text-[var(--color-ink-muted)]">
-          No option says "budget-friendly" or "why this one."
-        </p>
       </PlannerCard>
     );
   }
@@ -470,6 +467,26 @@ function ChatMessage({
         <p className="text-xs text-[var(--color-ink-muted)] mb-3">
           Anyone who says yes shares the cost. No pressure.
         </p>
+        {msg.readyMembers && (
+          <ul className="mb-3 flex flex-col divide-y divide-[var(--color-hairline)] text-sm">
+            {MEMBERS.map((m) => {
+              const answer =
+                m.id === ME.id ? myReadyState : msg.readyMembers?.[m.id];
+              return (
+                <li key={m.id} className="flex justify-between py-2">
+                  <span>{m.name}</span>
+                  <span className="font-medium">
+                    {answer === true
+                      ? 'In'
+                      : answer === false
+                        ? 'Out'
+                        : 'Not answered'}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
         {!checkedIn ? (
           <div className="flex gap-3">
             <Button fullWidth onClick={() => onReadyCheck(true)}>
@@ -522,9 +539,14 @@ function ChatMessage({
           </>
         )}
         {(bd.status === 'booked' || bookingConfirmed) && (
-          <p className="text-sm text-green-700 font-medium">
-            Booked ✓ — calendar blocked
-          </p>
+          <div className="flex flex-col items-start gap-2">
+            <p className="text-sm text-[var(--color-status-paid)] font-medium">
+              Booked ✓ — calendars of those who said yes are blocked
+            </p>
+            <span className="notice rounded-[var(--radius-chip)] px-2 py-1 text-sm font-medium">
+              Simulated booking — nothing was reserved with the venue
+            </span>
+          </div>
         )}
         {bd.status === 'could_not_book' && (
           <p className="text-sm text-[var(--color-danger)]">
@@ -557,7 +579,7 @@ function ChatMessage({
         <div
           className={`rounded-2xl px-4 py-2.5 text-sm ${
             isMe
-              ? 'bg-[var(--color-accent)] text-white rounded-tr-sm'
+              ? 'bg-[var(--color-surface-sunken)] text-[var(--color-ink)] rounded-tr-sm'
               : 'bg-[var(--color-surface-sunken)] text-[var(--color-ink)] rounded-tl-sm'
           }`}
         >

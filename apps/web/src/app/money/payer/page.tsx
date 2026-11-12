@@ -71,8 +71,7 @@ export default function PayerSplitPage() {
             </div>
           </div>
           <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-            Choosing the payer is open (section 12). Payer must have a linked
-            PayPal account.
+            The payer pays the venue and needs a linked PayPal account.
           </p>
         </Card>
 
@@ -111,8 +110,8 @@ export default function PayerSplitPage() {
             ))}
           </ul>
           <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-            Shares are rounded to whole cents and add up to the total. Odd cents
-            rotate deterministically. Custom split is open.
+            Everyone who said yes pays an equal share. Shares add up exactly to
+            the total.
           </p>
         </Card>
 

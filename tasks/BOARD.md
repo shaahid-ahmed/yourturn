@@ -59,6 +59,7 @@ The user requested initial scaffold creation across the tree. Orchestrator coord
 | US-018 | Phase 4: README and handoff                                                 | tech-writer          | US-017                                                         | Fresh-clone instructions exercised; exact limitations; no scaffold-as-product claims                                                                                                                                                                                                                                                                                                   | Human: Vid — Unclaimed            | —         |
 | US-205 | Phase 3: design QA against the PDF                                          | product-designer     | US-202, US-103, US-104                                         | Pixel comparison against the source; deviations fixed or recorded                                                                                                                                                                                                                                                                                                                      | Human: Vid — Unclaimed            | —         |
 
+
 Rows RV-002–RV-011 are review findings for the owners, not new product scope. They use the `RV-` prefix because `tests/repository.test.mjs` pins the task count at 42 YT rows. Orchestrator may renumber them as YT rows and update that test (Lane S).
 
 **Disposition update (reviewer kiro-lane-a-xr1, Nov 12):** PR #4 (`architect/xr-fixes`, RV-001 response) resolved RV-002 through RV-006 at the contract level and re-sequenced RV-007 (XR-29 deadlock). I independently reviewed PR #4 and verified each fix against the spec — see `docs/04-behavioral/PR4_REVIEW_RV001_RESPONSE.md`; verdict **approve the contract fixes, two corrections requested** (RV-010, RV-011). RV-008 and RV-009 remain open Lane A / Privacy decisions; the architect's deferrals match their owners. RV-002–RV-006 should move to DONE once PR #4 merges to `main` with green hosted CI (they are not on `main` yet).
@@ -95,6 +96,7 @@ Lane V design work awaiting independent review:
 | ID     | Title                        | Role          | Depends on | Acceptance criteria                                                | Claimed by                                                                                                                                  | Branch/PR                                            |
 | ------ | ---------------------------- | ------------- | ---------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | US-204 | Phase 3: accessibility audit | accessibility | US-202     | WCAG 2.2 AA evidence; colour never the only signal                 | Human: Vid — IN REVIEW (accessibility, claude-opus-5-5) 2026-11-12: design and app-stage audits done; device screen-reader pass outstanding | `accessibility/us-204-app-audit` (design stage: #49) |
+
 
 | ID     | Title                                              | Role                 | Depends on                                                                                                                        | Acceptance criteria                                                                                                      | Claimed by                                            | Branch/PR                      |
 | ------ | -------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- | ------------------------------ |
@@ -146,6 +148,7 @@ Bootstrap artifact tasks closed on verified review, hosted CI and human main pro
 | US-008 | ∥ Phase 2: polls and ready check | backend | US-001, US-002 | Shortlist, time poll, ready check; votes visible with names; tie on cost then start; closing and reminder jobs | Human: Rohan — DONE, merged #60 | [#60](https://github.com/shaahid-ahmed/yourturn/pull/60) |
 | US-013 | ∥ Phase 2: notifications and push | backend | US-001, US-007 | Per-type switches; private reminders never in pod chat; no send without Content + Behavioral approval | Human: Rohan — DONE, merged #61 | [#61](https://github.com/shaahid-ahmed/yourturn/pull/61) |
 
+| US-205 | Phase 3: design QA against the PDF   | product-designer | US-202, US-103, US-104 | Pixel comparison against the source; deviations fixed or recorded                                                  | Human: Vid — DONE, merged #65 | [#65](https://github.com/shaahid-ahmed/yourturn/pull/65) `product-designer/us-205-design-qa` |
 ## BLOCKED
 
 | ID     | Title                              | Role                       | Depends on                                                                | Acceptance criteria                                                                                                                                                | Claimed by                                                                              | Branch/PR                                                                                        |
@@ -644,6 +647,30 @@ Not done: a hands-on VoiceOver and TalkBack pass on real devices (15 minutes, id
 How to verify: `npm run check`; then follow `tests/a11y/app-audit.mjs` to re-run the browser audit (it exits non-zero on any problem).
 Risks / gotchas: the fixes touch Alan's `apps/web` files, so Frontend must approve before merge (ROSTER: Accessibility fixes go through a scoped PR). The designer and the auditor are the same person.
 Next step: Alan reviews and approves the `apps/web` changes; a reviewer approves; a human runs the device screen-reader pass before the demo is recorded.
+
+### Handoff US-205: product-designer (Vid) → frontend (Alan), reviewer
+
+Done: design QA of every page P1–P23 of the built app. The PDF has no mockups, so each rendered screen (390px) was compared against the spec's page content, FLOWS.md and the tokens; the record is `docs/02-design/DESIGN_QA.md`. Fixed:
+
+- **Tokens wired into the app:** `globals.css` imports `tokens.css` and aliases the old names. This ends the saturated-blue fills.
+- **16 hard-coded colours** replaced with tokens.
+- **Status chips** gain shapes; destructive buttons become outlines.
+- **Developer and spec notes** removed from screens.
+- **Sandbox and private surfaces** applied.
+- **P1:** splash on paper with the logo turn.
+- **P5:** a bottom dock and a hub sheet reaching all seven hub pages, with the private-ask dot on Hub and pastel bubbles.
+- **P11:** per-member ready-check answers.
+- **P12:** the missing "Simulated booking" label.
+- **P14:** the button had marked a balance Paid on a 1.5 s timer; it is now disabled while the gate is closed.
+- **P20:** the YourTurn "connection-strength tracking" and other controls removed; exactly the four contract notification switches; privacy explanation; Log out.
+- **P22:** equal-weight stretch answers.
+- **P4:** step 4 and 6 fixes.
+
+`tests/web-design-qa.test.mjs` (9 tests) guards these; 7 of the 8 code tests fail on the pre-fix code. The browser audit is still clean on all 19 routes.
+Not done (recorded with owners in DESIGN_QA.md): P7 demo controls behind a flag; poll closing times; P15 filter and history; P17 map, save and add-to-calendar; P18 week/month and per-calendar consent switch; P22 expiry line and limit chips; P23 one-tap rating; the unbuilt motion. All are Frontend's. Final logo art is the Designer's.
+How to verify: `npm run check`; screenshots via `tests/a11y/app-audit.mjs`.
+Risks / gotchas: this edits Alan's `apps/web` screens, so Frontend must approve. The legacy variable aliases in `globals.css` keep old class names working; new code should use the token names.
+Next step: Alan reviews and approves, then picks up the recorded deviations; a reviewer approves.
 
 ## Human Phase 1 authorization and coordinated ownership
 

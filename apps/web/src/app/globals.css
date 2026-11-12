@@ -1,45 +1,21 @@
 @import 'tailwindcss';
+/* The design system (US-201) is the single source of colour, type, space,
+   touch and motion values. See docs/02-design/DESIGN_SYSTEM.md. */
+@import '../styles/tokens.css';
 
+/* Screens were built against the older variable names. Alias them to the
+   design tokens here so every screen follows the system without each page
+   changing. New code should use the token names directly. */
 :root {
-  --color-ink: #13212b;
-  --color-ink-muted: #4a5a66;
-  --color-surface: #ffffff;
-  --color-surface-sunken: #f2f5f7;
-  --color-border: #64727c;
-  --color-accent: #1f5f8b;
-  --color-accent-contrast: #ffffff;
-  --color-danger: #9b1c1c;
-  --color-focus: #0b3c5d;
-  --font-sans:
-    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.25rem;
-  --text-xl: 1.5rem;
-  --text-2xl: 2rem;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
-  --space-8: 64px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
+  /* Actions are ink, never a brand colour. PayPal blue is line art only. */
+  --color-accent: var(--color-action);
+  --color-accent-contrast: var(--color-on-action);
+  --color-danger: var(--color-status-failed);
+  --text-xs: var(--text-caption);
+  --text-sm: var(--text-small);
+  --text-base: var(--text-body);
+  --radius-sm: var(--radius-chip);
   --radius-pill: 999px;
-  --duration-fast: 120ms;
-  --duration-base: 200ms;
-  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --duration-fast: 0ms;
-    --duration-base: 0ms;
-  }
 }
 
 *,
@@ -72,29 +48,40 @@ html {
 
 body {
   font-family: var(--font-sans);
-  font-size: var(--text-base);
-  line-height: 1.6;
+  line-height: var(--leading-body);
   color: var(--color-ink);
-  background: var(--color-surface);
+  background: var(--color-paper);
   margin: 0;
   padding: 0;
 }
 
-/* Phone shell: cap width at 430px, center on larger screens */
+/* Screen titles are serif, as in the spec (DESIGN_SYSTEM: Typography). */
+h1 {
+  font-family: var(--font-serif);
+}
+
+/* Money lines up in columns. */
+.tabular,
+.chip {
+  font-variant-numeric: var(--font-numeric-variant);
+}
+
+/* Phone shell: one column, 360–430px design range, centred on wide screens. */
 .phone-shell {
   width: 100%;
-  max-width: 430px;
+  max-width: var(--layout-max);
   min-height: 100dvh;
   margin: 0 auto;
   position: relative;
   overflow-x: hidden;
+  background: var(--color-paper);
 }
 
-/* Focus ring */
+/* Focus ring: ink ring with a paper gap, visible on every surface. */
 :focus-visible {
-  outline: 3px solid var(--color-focus);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-chip);
 }
 
 /* Minimum tap target */
@@ -104,38 +91,116 @@ button,
 a,
 input,
 select {
-  min-height: 44px;
-  min-width: 44px;
+  min-height: var(--target-min);
+  min-width: var(--target-min);
 }
 
-/* Balance status chips */
+/* Balance status chips: a word and a shape, never colour alone. */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   padding: 2px 10px;
   border-radius: var(--radius-pill);
-  font-size: var(--text-sm);
-  font-weight: 500;
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
   white-space: nowrap;
 }
-.chip--blocked {
-  background: #ebe4e2;
-  color: #5a3a30;
+.chip::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  flex: none;
+}
+.chip--blocked,
+.chip--pending {
+  background: var(--color-status-pending-surface);
+  color: var(--color-status-pending);
+}
+.chip--pending::before {
+  border-style: dashed;
 }
 .chip--owed {
-  background: #fff3cd;
-  color: #7a5500;
-}
-.chip--pending {
-  background: #d6e8f5;
-  color: #1a4a6b;
+  background: var(--color-status-owed-surface);
+  color: var(--color-status-owed);
 }
 .chip--paid {
-  background: #d4edda;
-  color: #155724;
+  background: var(--color-status-paid-surface);
+  color: var(--color-status-paid);
+}
+.chip--paid::before {
+  background: currentColor;
 }
 .chip--failed {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--color-status-failed-surface);
+  color: var(--color-status-failed);
+}
+.chip--failed::before {
+  content: '!';
+  display: grid;
+  place-items: center;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Private surfaces: only you and your planner see what sits on these. */
+.private-surface {
+  background: var(--color-private-surface);
+  color: var(--color-ink);
+}
+
+/* Honesty labels: "Simulated booking", "Sandbox — no real money". */
+.notice {
+  background: var(--color-notice-surface);
+  color: var(--color-notice);
+}
+
+/* Pod bubbles: decorative pastel fills, ink text, organic shape. */
+.bubble {
+  border-radius: var(--radius-bubble);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-bubble);
+}
+.bubble--1 {
+  background: var(--color-bubble-1);
+}
+.bubble--2 {
+  background: var(--color-bubble-2);
+}
+.bubble--3 {
+  background: var(--color-bubble-3);
+}
+.bubble--4 {
+  background: var(--color-bubble-4);
+}
+.bubble--5 {
+  background: var(--color-bubble-5);
+}
+.bubble--6 {
+  background: var(--color-bubble-6);
+}
+
+/* P1 logo turn (MOTION.md): one turn about the vertical axis; the wordmark
+   is in the DOM from the first frame and fades in. 0ms under reduced motion. */
+.logo-turn {
+  animation: logo-turn var(--duration-logo-turn) var(--easing-standard) 1;
+}
+@keyframes logo-turn {
+  from {
+    transform: perspective(400px) rotateY(0deg);
+  }
+  to {
+    transform: perspective(400px) rotateY(360deg);
+  }
+}
+.fade-in {
+  animation: fade-in var(--duration-slow) var(--easing-enter) both;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
 }

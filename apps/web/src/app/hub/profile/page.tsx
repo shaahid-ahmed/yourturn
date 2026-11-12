@@ -94,7 +94,7 @@ export default function ProfilePage() {
 
         {/* Private limits */}
         <section aria-labelledby="limits-heading">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex flex-col items-start gap-1 mb-2">
             <h2
               id="limits-heading"
               className="text-sm font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide"
@@ -103,7 +103,7 @@ export default function ProfilePage() {
             </h2>
             <LockBadge />
           </div>
-          <Card>
+          <Card className="private-surface">
             <ul className="flex flex-col divide-y divide-[var(--color-border)]">
               <li className="flex items-center justify-between py-3">
                 <span className="text-sm text-[var(--color-ink)]">

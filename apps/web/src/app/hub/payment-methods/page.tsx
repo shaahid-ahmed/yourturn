@@ -33,7 +33,7 @@ export default function PaymentMethodsPage() {
             <Card>
               <div className="flex items-center gap-3 mb-3">
                 <div
-                  className="w-10 h-10 rounded-full bg-[#003087] text-white flex items-center justify-center font-bold text-sm"
+                  className="w-10 h-10 rounded-full border-2 border-[var(--color-paypal-line)] bg-[var(--color-surface)] text-[var(--color-ink)] flex items-center justify-center font-bold text-sm"
                   aria-hidden="true"
                 >
                   PP
@@ -73,8 +73,8 @@ export default function PaymentMethodsPage() {
         </section>
 
         <div className="rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] p-3 text-xs text-[var(--color-ink-muted)]">
-          Which PayPal product moves money between friends is open (section 12
-          of spec). No funds are held or moved in this demo.
+          Paying friends through PayPal is turned off in this sandbox demo. No
+          money is held or moved.
         </div>
       </div>
     </main>
