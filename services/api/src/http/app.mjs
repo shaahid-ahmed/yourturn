@@ -16,7 +16,31 @@ import fastifyCookie from '@fastify/cookie';
 
 import { openDatabase, migrate } from '../db/database.mjs';
 import { searchEvents, getEventDetail, listTags } from '../catalog.mjs';
-import { matchContacts } from '../pods.mjs';
+import {
+  createPod,
+  inviteMembers,
+  acceptInvitation,
+  declineInvitation,
+  createInviteLink,
+  revokeInviteLink,
+  acceptInviteLink,
+  leavePod,
+  removeMember,
+  getPod,
+  matchContacts,
+} from '../pods.mjs';
+import {
+  listOwnPods,
+  listOwnInvitations,
+  setOwnPodMute,
+  proposeRhythm,
+  acceptRhythmProposal,
+  listRhythmProposals,
+  addGroupActivity,
+  listGroupActivities,
+  podStageFor,
+  agreedRhythm,
+} from '../pod-views.mjs';
 import { ConstraintVault } from '../vault.mjs';
 import {
   requestPhoneCode,
@@ -47,6 +71,14 @@ const STATUS_BY_CODE = {
   not_found: 404,
   payment_gate_blocked: 409,
   idempotency_key_conflict: 409,
+  invite_link_used: 409,
+  invite_link_expired: 409,
+  invitation_resolved: 409,
+  pod_full: 409,
+  pod_too_small: 409,
+  open_balances: 409,
+  split_already_confirmed: 409,
+  subscription_required: 409,
   rate_limited: 429,
 };
 
@@ -201,6 +233,84 @@ function toContractEvent(evt) {
     tags: evt.tags ?? [],
     synthetic: true,
   };
+}
+
+/**
+ * Assemble the contract Pod for a joined member.
+ * @param {any} database
+ * @param {string} podId
+ * @param {string} userId
+ * @param {string} [at]
+ */
+function toContractPod(database, podId, userId, at) {
+  const now = at ?? new Date().toISOString();
+  const base = getPod(database, { podId, callerUserId: userId, at: now });
+  const muteRow = /** @type {{ muted: number } | undefined} */ (
+    database
+      .prepare(
+        'SELECT muted FROM pod_membership WHERE pod_id = ? AND user_id = ? AND left_at IS NULL',
+      )
+      .get(podId, userId)
+  );
+  return {
+    podId: base.podId,
+    name: base.name,
+    createdAt: base.createdAt,
+    creatorUserId: base.creatorUserId,
+    members: base.members,
+    memberCount: base.memberCount,
+    minMembers: base.minMembers,
+    maxMembers: base.maxMembers,
+    readyForPlanning: base.readyForPlanning,
+    rhythm: agreedRhythm(database, podId),
+    stage: podStageFor(database, podId),
+    muted: Boolean(muteRow?.muted),
+  };
+}
+
+/**
+ * @param {any} database
+ * @param {string} podId
+ * @param {string} userId
+ */
+function toPodSummary(database, podId, userId) {
+  const pod = toContractPod(database, podId, userId);
+  return {
+    podId: pod.podId,
+    name: pod.name,
+    memberCount: pod.memberCount,
+    stage: pod.stage,
+    muted: pod.muted,
+  };
+}
+
+/**
+ * @param {any} database
+ * @param {string[]} invitationIds
+ */
+function invitationObjects(database, invitationIds) {
+  if (!invitationIds.length) return [];
+  const rows = /** @type {Array<any>} */ (
+    database
+      .prepare(
+        `SELECT i.invitation_id AS invitationId, i.pod_id AS podId, p.name AS podName,
+                i.invited_by AS invitedBy, u.first_name AS invitedByName,
+                i.status AS status, i.created_at AS createdAt
+           FROM pod_invitation i
+           JOIN pod p ON p.pod_id = i.pod_id
+           JOIN app_user u ON u.user_id = i.invited_by
+          WHERE i.invitation_id IN (${invitationIds.map(() => '?').join(', ')})`,
+      )
+      .all(...invitationIds)
+  );
+  return rows.map((r) => ({
+    invitationId: r.invitationId,
+    podId: r.podId,
+    podName: r.podName,
+    invitedBy: { userId: r.invitedBy, firstName: r.invitedByName },
+    status: r.status,
+    createdAt: r.createdAt,
+  }));
 }
 
 /**
@@ -506,6 +616,173 @@ export function buildApp({ db, vaultKey } = {}) {
         phones: req.body.phones,
       }),
     }),
+    listOwnPods: async ({ userId }) => ({
+      pods: listOwnPods(database, userId).map((podId) =>
+        toPodSummary(database, podId, userId),
+      ),
+    }),
+    createPod: async ({ req, userId }) => {
+      const now = new Date().toISOString();
+      const created = createPod(database, {
+        name: req.body.name,
+        creatorUserId: userId,
+        inviteUserIds: req.body.inviteUserIds,
+        at: now,
+      });
+      return toContractPod(database, created.podId, userId, now);
+    },
+    getPod: async ({ params, userId }) =>
+      toContractPod(database, params.podId, userId),
+    inviteMembers: async ({ req, params, userId }) => {
+      const now = new Date().toISOString();
+      const ids = inviteMembers(database, {
+        podId: params.podId,
+        callerUserId: userId,
+        userIds: req.body.userIds,
+        at: now,
+      });
+      return { invitations: invitationObjects(database, ids) };
+    },
+    acceptPodInvitation: async ({ params, userId }) => {
+      const now = new Date().toISOString();
+      const podId = acceptInvitation(database, {
+        invitationId: params.invitationId,
+        userId,
+        at: now,
+      });
+      return toContractPod(database, podId, userId, now);
+    },
+    declinePodInvitation: async ({ params, reply, userId }) => {
+      declineInvitation(database, {
+        invitationId: params.invitationId,
+        userId,
+        at: new Date().toISOString(),
+      });
+      reply.code(204);
+      return;
+    },
+    createInviteLink: async ({ req, params, userId }) => {
+      const now = new Date().toISOString();
+      const link = createInviteLink(database, {
+        podId: params.podId,
+        callerUserId: userId,
+        at: now,
+      });
+      const origin = `${req.protocol}://${req.host}`;
+      return {
+        inviteLinkId: link.inviteLinkId,
+        url: `${origin}/i/${link.token}`,
+        singleUse: true,
+        status: 'active',
+        expiresAt: link.expiresAt,
+      };
+    },
+    revokeInviteLink: async ({ params, reply, userId }) => {
+      revokeInviteLink(database, {
+        podId: params.podId,
+        inviteLinkId: params.inviteLinkId,
+        callerUserId: userId,
+        at: new Date().toISOString(),
+      });
+      reply.code(204);
+      return;
+    },
+    acceptInviteLink: async ({ params, userId }) => {
+      const now = new Date().toISOString();
+      const podId = acceptInviteLink(database, {
+        token: params.token,
+        userId,
+        at: now,
+      });
+      return toContractPod(database, podId, userId, now);
+    },
+    leavePod: async ({ params, reply, userId }) => {
+      leavePod(database, {
+        podId: params.podId,
+        userId,
+        at: new Date().toISOString(),
+      });
+      reply.code(204);
+      return;
+    },
+    removeMember: async ({ params, reply, userId }) => {
+      removeMember(database, {
+        podId: params.podId,
+        callerUserId: userId,
+        userId: params.userId,
+        at: new Date().toISOString(),
+      });
+      reply.code(204);
+      return;
+    },
+    setOwnPodMute: async ({ req, params, userId }) => {
+      setOwnPodMute(database, {
+        podId: params.podId,
+        userId,
+        muted: req.body.muted,
+        at: new Date().toISOString(),
+      });
+      return { muted: req.body.muted };
+    },
+    listOwnPodInvitations: async ({ userId }) => ({
+      invitations: listOwnInvitations(database, userId),
+    }),
+    listRhythmProposals: async ({ params, userId }) => ({
+      proposals: listRhythmProposals(database, { podId: params.podId, userId }),
+    }),
+    proposeRhythm: async ({ req, params, userId }) => {
+      const created = proposeRhythm(database, {
+        podId: params.podId,
+        userId,
+        cadence: req.body.cadence,
+        at: new Date().toISOString(),
+      });
+      return /** @type {any} */ (
+        listRhythmProposals(database, { podId: params.podId, userId }).find(
+          (/** @type {{ proposalId: string }} */ p) =>
+            p.proposalId === created.proposalId,
+        )
+      );
+    },
+    acceptRhythmProposal: async ({ params, userId }) => {
+      acceptRhythmProposal(database, {
+        proposalId: params.proposalId,
+        userId,
+        at: new Date().toISOString(),
+      });
+      return /** @type {any} */ (
+        listRhythmProposals(database, { podId: params.podId, userId }).find(
+          (/** @type {{ proposalId: string }} */ p) =>
+            p.proposalId === params.proposalId,
+        )
+      );
+    },
+    listGroupActivities: async ({ params, userId }) => ({
+      activities: listGroupActivities(database, {
+        podId: params.podId,
+        userId,
+      }),
+    }),
+    addGroupActivity: async ({ req, params, userId }) => {
+      const now = new Date().toISOString();
+      const created = addGroupActivity(database, {
+        podId: params.podId,
+        userId,
+        label: req.body.label,
+        at: now,
+      });
+      const me = /** @type {{ first_name: string }} */ (
+        database
+          .prepare('SELECT first_name FROM app_user WHERE user_id = ?')
+          .get(userId)
+      );
+      return {
+        activityId: created.activityId,
+        label: created.label,
+        addedBy: { userId, firstName: me.first_name },
+        createdAt: created.createdAt,
+      };
+    },
   };
 
   for (const [path, ops] of Object.entries(spec.paths)) {
