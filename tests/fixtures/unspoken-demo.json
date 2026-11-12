@@ -1,0 +1,126 @@
+{
+  "synthetic": true,
+  "version": "unspoken-demo-v1",
+  "notice": "Synthetic people and pods for Unspoken tests and the demo. Every name ends in (demo). Every phone number is in the North American 555-0100 to 555-0199 range reserved for fiction. No real person, phone number, email, card or bank detail appears here. All money is integer cents.",
+  "people": [
+    {
+      "key": "ava",
+      "userId": "01JRQA000000000000000000A1",
+      "firstName": "Ava (demo)",
+      "phone": "+12125550101",
+      "paypalLinked": true,
+      "subscribed": true,
+      "privateLimits": {
+        "budgetPerHangoutCents": 6000,
+        "dietaryNeeds": [],
+        "dislikes": [],
+        "maxTravelMinutes": 40
+      }
+    },
+    {
+      "key": "ben",
+      "userId": "01JRQA000000000000000000B2",
+      "firstName": "Ben (demo)",
+      "phone": "+12125550102",
+      "paypalLinked": true,
+      "subscribed": true,
+      "privateLimits": {
+        "budgetPerHangoutCents": 3000,
+        "dietaryNeeds": ["vegetarian"],
+        "dislikes": [],
+        "maxTravelMinutes": 30
+      }
+    },
+    {
+      "key": "cleo",
+      "userId": "01JRQA000000000000000000C3",
+      "firstName": "Cleo (demo)",
+      "phone": "+12125550103",
+      "paypalLinked": true,
+      "subscribed": false,
+      "privateLimits": {
+        "budgetPerHangoutCents": 5000,
+        "dietaryNeeds": [],
+        "dislikes": [],
+        "maxTravelMinutes": 45
+      }
+    },
+    {
+      "key": "dev",
+      "userId": "01JRQA000000000000000000D4",
+      "firstName": "Dev (demo)",
+      "phone": "+12125550104",
+      "paypalLinked": false,
+      "subscribed": false,
+      "privateLimits": null
+    },
+    {
+      "key": "eli",
+      "userId": "01JRQA000000000000000000E5",
+      "firstName": "Eli (demo)",
+      "phone": "+12125550105",
+      "paypalLinked": true,
+      "subscribed": true,
+      "privateLimits": null
+    },
+    {
+      "key": "fay",
+      "userId": "01JRQA000000000000000000F6",
+      "firstName": "Fay (demo)",
+      "phone": "+12125550106",
+      "paypalLinked": true,
+      "subscribed": false,
+      "privateLimits": null
+    },
+    {
+      "key": "gus",
+      "userId": "01JRQA000000000000000000G7",
+      "firstName": "Gus (demo)",
+      "phone": "+12125550107",
+      "paypalLinked": true,
+      "subscribed": false,
+      "privateLimits": null
+    },
+    {
+      "key": "hal",
+      "userId": "01JRQA000000000000000000H8",
+      "firstName": "Hal (demo)",
+      "phone": "+12125550108",
+      "paypalLinked": true,
+      "subscribed": false,
+      "privateLimits": null
+    },
+    {
+      "key": "ivy",
+      "userId": "01JRQA000000000000000000J9",
+      "firstName": "Ivy (demo)",
+      "phone": "+12125550109",
+      "paypalLinked": false,
+      "subscribed": false,
+      "privateLimits": null
+    }
+  ],
+  "pods": [
+    {
+      "key": "thursday",
+      "podId": "01JRQB000000000000000000A1",
+      "name": "Thursday Crew (demo)",
+      "creator": "ava",
+      "members": ["ava", "ben", "cleo", "dev"]
+    },
+    {
+      "key": "brunch",
+      "podId": "01JRQB000000000000000000B2",
+      "name": "Brunch Club (demo)",
+      "creator": "eli",
+      "members": ["eli", "fay", "gus"]
+    }
+  ],
+  "roles": {
+    "outsider": "hal",
+    "inviteTarget": "ivy",
+    "noPaypal": "dev",
+    "notes": "hal belongs to no pod (outsider checks). ivy belongs to no pod (invite links). dev has no PayPal link (yes needs PayPal). Thursday Crew is the happy-path pod; Brunch Club is the other pod for cross-pod checks."
+  },
+  "catalog": "nyc-catalog.json"
+}
