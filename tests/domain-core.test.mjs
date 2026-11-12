@@ -59,33 +59,50 @@ test('group: size is enforced at both ends', () => {
   assert.throws(() => group.remove('nobody'), /not a member/);
 });
 
-test('hangout: only declared transitions are legal', () => {
-  assert.equal(transition('DRAFT', 'startPlanning'), 'PLANNING');
-  assert.equal(transition('PLANNING', 'winnerFound'), 'PROPOSED');
+test('hangout: only declared transitions are legal (UX spec / ADR-0007)', () => {
+  // Planning phase
+  assert.equal(transition('PLANNING', 'shortlistReady'), 'ACTIVITY_VOTE');
+  assert.equal(transition('PLANNING', 'stretchAsked'), 'STRETCH_ASKS');
   assert.equal(transition('PLANNING', 'noneFeasible'), 'NO_PLAN');
-  assert.equal(transition('NO_PLAN', 'widenAndRetry'), 'PLANNING');
-  assert.equal(transition('PROPOSED', 'openCommitments'), 'COMMITTING');
-  assert.equal(transition('COMMITTING', 'allAuthorized'), 'SETTLING');
-  assert.equal(transition('COMMITTING', 'declined'), 'VOIDING');
-  assert.equal(transition('COMMITTING', 'deadlinePassed'), 'VOIDING');
-  assert.equal(transition('VOIDING', 'allVoided'), 'NOT_HAPPENING');
-  assert.equal(transition('SETTLING', 'allCaptured'), 'CONFIRMED');
-  assert.equal(transition('SETTLING', 'captureFailed'), 'SETTLEMENT_FAILED');
-  assert.equal(transition('CONFIRMED', 'eventPassed'), 'COMPLETED');
+  assert.equal(transition('STRETCH_ASKS', 'stretchAnswered'), 'PLANNING');
+  assert.equal(transition('STRETCH_ASKS', 'stretchTimedOut'), 'PLANNING');
 
-  // Skipping the hold step would mean capturing money nobody authorized.
-  assert.throws(() => transition('PROPOSED', 'allAuthorized'), /cannot/);
-  assert.throws(() => transition('COMMITTING', 'allCaptured'), /cannot/);
-  // You cannot walk back out of a terminal state.
-  assert.throws(() => transition('COMPLETED', 'startPlanning'), /cannot/);
-  assert.ok(isTerminal('COMPLETED'));
-  assert.ok(isTerminal('SETTLEMENT_FAILED'));
-  assert.ok(!isTerminal('COMMITTING'));
-  assert.ok(HANGOUT_STATES.includes('NOT_HAPPENING'));
-  assert.ok(
-    !HANGOUT_STATES.includes('PAID'),
-    'no state may imply a venue reservation',
-  );
+  // Voting phase
+  assert.equal(transition('ACTIVITY_VOTE', 'activityVoteComplete'), 'TIME_VOTE');
+  assert.equal(transition('ACTIVITY_VOTE', 'noneFeasible'), 'NO_PLAN');
+  assert.equal(transition('TIME_VOTE', 'timeVoteComplete'), 'READY_CHECK');
+  assert.equal(transition('TIME_VOTE', 'noTimeSlot'), 'NO_PLAN');
+
+  // Confirmation phase
+  assert.equal(transition('READY_CHECK', 'allReady'), 'AWAITING_CONFIRMATION');
+  assert.equal(transition('READY_CHECK', 'memberDeclined'), 'NO_PLAN');
+  assert.equal(transition('READY_CHECK', 'readyCheckTimedOut'), 'NO_PLAN');
+  assert.equal(transition('AWAITING_CONFIRMATION', 'hostConfirmed'), 'BOOKING');
+  assert.equal(transition('AWAITING_CONFIRMATION', 'hostDeclined'), 'NO_PLAN');
+
+  // Booking and balances phase
+  assert.equal(transition('BOOKING', 'bookingSucceeded'), 'BOOKED');
+  assert.equal(transition('BOOKING', 'bookingFailed'), 'BOOKING_FAILED');
+  assert.equal(transition('BOOKED', 'splitConfirmed'), 'BALANCES_OPEN');
+  assert.equal(transition('BALANCES_OPEN', 'allPaid'), 'SETTLED');
+
+  // Illegal transitions
+  assert.throws(() => transition('PLANNING', 'allPaid'), /cannot/);
+  assert.throws(() => transition('SETTLED', 'shortlistReady'), /cannot/);
+
+  // Terminal states
+  assert.ok(isTerminal('SETTLED'));
+  assert.ok(isTerminal('NO_PLAN'));
+  assert.ok(isTerminal('BOOKING_FAILED'));
+  assert.ok(!isTerminal('BALANCES_OPEN'));
+
+  // Old hold/capture/void states must not exist
+  assert.ok(!HANGOUT_STATES.includes('DRAFT'));
+  assert.ok(!HANGOUT_STATES.includes('COMMITTING'));
+  assert.ok(!HANGOUT_STATES.includes('SETTLING'));
+  assert.ok(!HANGOUT_STATES.includes('VOIDING'));
+  assert.ok(!HANGOUT_STATES.includes('CONFIRMED'));
+  assert.ok(!HANGOUT_STATES.includes('PAID'));
 });
 
 test('constraints: a hard rule failure is a reject, with no reason attached', () => {

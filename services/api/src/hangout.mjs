@@ -1,58 +1,122 @@
 /**
- * The hangout lifecycle, as a table of legal transitions.
+ * Hangout lifecycle state machine — Unspoken UX spec (ADR-0007).
  *
- * The shape matters for money. `COMMITTING -> SETTLING` is the only route to a
- * capture, and it requires every share to be held first, so there is no path on
- * which money is taken from someone who did not authorize it. There is no state
- * meaning "booked" or "reserved": this demo never reserves anything, and a state
- * name is the easiest place for that lie to creep in.
+ * States match the 23 screens in the experience spec.  The old
+ * DRAFT/COMMITTING/SETTLING/VOIDING states are retired; the new model uses
+ * IOU balances rather than hold/capture/void.
  */
+
 export const HANGOUT_STATES = Object.freeze([
-  'DRAFT',
   'PLANNING',
+  'STRETCH_ASKS',
+  'ACTIVITY_VOTE',
+  'TIME_VOTE',
+  'READY_CHECK',
+  'AWAITING_CONFIRMATION',
+  'BOOKING',
+  'BOOKED',
+  'BALANCES_OPEN',
+  'SETTLED',
   'NO_PLAN',
-  'PROPOSED',
-  'COMMITTING',
-  'SETTLING',
-  'VOIDING',
-  'CONFIRMED',
-  'NOT_HAPPENING',
-  'SETTLEMENT_FAILED',
-  'COMPLETED',
+  'BOOKING_FAILED',
 ]);
 
 /** States from which nothing further happens. */
 export const TERMINAL_STATES = Object.freeze([
-  'COMPLETED',
-  'SETTLEMENT_FAILED',
+  'SETTLED',
+  'NO_PLAN',
+  'BOOKING_FAILED',
 ]);
 
-/** @type {Readonly<Record<string, Readonly<Record<string, string>>>>} */
+/**
+ * Legal events per state.
+ *
+ * Naming convention: camelCase verb phrase matching what the system or a member
+ * did to cause the transition. The AI planner influences ranking only; the state
+ * machine itself never calls an LLM.
+ *
+ * @type {Readonly<Record<string, Readonly<Record<string, string>>>>}
+ */
 export const TRANSITIONS = Object.freeze({
-  DRAFT: Object.freeze({ startPlanning: 'PLANNING' }),
-  PLANNING: Object.freeze({ winnerFound: 'PROPOSED', noneFeasible: 'NO_PLAN' }),
-  NO_PLAN: Object.freeze({
-    widenAndRetry: 'PLANNING',
-    abandon: 'NOT_HAPPENING',
+  // Pod chat: planner shortlist posted (P7). Members review activity options.
+  PLANNING: Object.freeze({
+    // AI shortlist produced and posted; members can now vote.
+    shortlistReady: 'ACTIVITY_VOTE',
+    // Budget stretch asked privately to one member (P8); re-enters planning
+    // after the member responds. This is a re-entry, not a separate waiting state.
+    stretchAsked: 'STRETCH_ASKS',
+    // No candidate passes all hard constraints and there are no stretch options.
+    noneFeasible: 'NO_PLAN',
   }),
-  PROPOSED: Object.freeze({
-    openCommitments: 'COMMITTING',
-    abandon: 'NOT_HAPPENING',
+
+  // A private stretch ask has been sent; waiting for the member to reply.
+  STRETCH_ASKS: Object.freeze({
+    // Member replied (yes or no) — go back to planning to re-evaluate candidates.
+    stretchAnswered: 'PLANNING',
+    // Member did not reply within timeout; treat as decline and re-evaluate.
+    stretchTimedOut: 'PLANNING',
   }),
-  COMMITTING: Object.freeze({
-    allAuthorized: 'SETTLING',
-    declined: 'VOIDING',
-    deadlinePassed: 'VOIDING',
+
+  // Pod chat: activity vote card visible (P9). Votes are attributed (name + choice).
+  ACTIVITY_VOTE: Object.freeze({
+    // Every yes-member has voted on activities.
+    activityVoteComplete: 'TIME_VOTE',
+    // No candidate survives the final tally (all blocked by some member's hard limit).
+    noneFeasible: 'NO_PLAN',
   }),
-  SETTLING: Object.freeze({
-    allCaptured: 'CONFIRMED',
-    captureFailed: 'SETTLEMENT_FAILED',
+
+  // Pod chat: time poll card visible (P10). Time-slot votes are attributed.
+  TIME_VOTE: Object.freeze({
+    // Every yes-member has voted; a time slot won.
+    timeVoteComplete: 'READY_CHECK',
+    // No time slot works for everyone.
+    noTimeSlot: 'NO_PLAN',
   }),
-  VOIDING: Object.freeze({ allVoided: 'NOT_HAPPENING' }),
-  CONFIRMED: Object.freeze({ eventPassed: 'COMPLETED' }),
-  NOT_HAPPENING: Object.freeze({ tryNextBest: 'PLANNING' }),
-  SETTLEMENT_FAILED: Object.freeze({}),
-  COMPLETED: Object.freeze({}),
+
+  // Pod chat: ready-check card visible (P11). Every yes-member must confirm.
+  READY_CHECK: Object.freeze({
+    // Every yes-member tapped "I'm in".
+    allReady: 'AWAITING_CONFIRMATION',
+    // A member declined the ready-check.
+    memberDeclined: 'NO_PLAN',
+    // Ready-check timed out before all members replied.
+    readyCheckTimedOut: 'NO_PLAN',
+  }),
+
+  // Waiting for the host (organiser) to tap "Confirm & Book" (P11 → P12).
+  AWAITING_CONFIRMATION: Object.freeze({
+    // Host confirmed; system will now attempt booking.
+    hostConfirmed: 'BOOKING',
+    // Host declined the suggested booking.
+    hostDeclined: 'NO_PLAN',
+  }),
+
+  // System is calling the venue API / making the reservation.
+  BOOKING: Object.freeze({
+    bookingSucceeded: 'BOOKED',
+    bookingFailed: 'BOOKING_FAILED',
+  }),
+
+  // Booking confirmed (P12). Payer now splits the bill (P13).
+  BOOKED: Object.freeze({
+    // Payer confirmed the split and IOU balances have been created.
+    splitConfirmed: 'BALANCES_OPEN',
+  }),
+
+  // IOU balances open; members are settling via PayPal (P14 / P15).
+  BALANCES_OPEN: Object.freeze({
+    // Every debtor's balance is paid.
+    allPaid: 'SETTLED',
+  }),
+
+  // Terminal: all IOUs paid.
+  SETTLED: Object.freeze({}),
+
+  // Terminal: no candidate survived planning or members declined.
+  NO_PLAN: Object.freeze({}),
+
+  // Terminal: venue booking call failed; no money was collected.
+  BOOKING_FAILED: Object.freeze({}),
 });
 
 /**
@@ -65,8 +129,9 @@ export function transition(state, event) {
   if (!allowed) throw new RangeError(`${state} is not a hangout state`);
   const next = allowed[event];
   if (!next) {
+    const legal = Object.keys(allowed).join(', ') || 'none';
     throw new RangeError(
-      `a hangout in ${state} cannot ${event}; legal events are ${Object.keys(allowed).join(', ') || 'none'}`,
+      `a hangout in ${state} cannot ${event}; legal events are: ${legal}`,
     );
   }
   return next;

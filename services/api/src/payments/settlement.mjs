@@ -18,8 +18,36 @@
  */
 import { assertCents, assertProviderEcho, splitShares } from '../money.mjs';
 import { assertProvider } from './provider.mjs';
-import { transition } from '../hangout.mjs';
 import { IdempotencyStore } from '../idempotency.mjs';
+
+// Private state machine for the hold/capture/void lifecycle.
+// These states are internal to the Settlement module; they do not appear in the
+// shared hangout state machine, which tracks the UX-spec lifecycle (ADR-0007).
+const SETTLEMENT_TRANSITIONS = {
+  PROPOSED: { openCommitments: 'COMMITTING' },
+  COMMITTING: { allAuthorized: 'SETTLING', declined: 'VOIDING', deadlinePassed: 'VOIDING' },
+  SETTLING: { allCaptured: 'CONFIRMED', captureFailed: 'SETTLEMENT_FAILED' },
+  VOIDING: { allVoided: 'NOT_HAPPENING' },
+  CONFIRMED: {},
+  NOT_HAPPENING: {},
+  SETTLEMENT_FAILED: {},
+};
+
+/**
+ * @param {string} state
+ * @param {string} event
+ * @returns {string}
+ */
+function transition(state, event) {
+  const allowed = SETTLEMENT_TRANSITIONS[state];
+  if (!allowed) throw new RangeError(`${state} is not a settlement state`);
+  const next = allowed[event];
+  if (!next) {
+    const legal = Object.keys(allowed).join(', ') || 'none';
+    throw new RangeError(`settlement in ${state} cannot ${event}; legal: ${legal}`);
+  }
+  return next;
+}
 
 /**
  * @typedef {object} Commitment
