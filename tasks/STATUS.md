@@ -81,7 +81,11 @@ The serious ones were mine: the ledger summed fixture and unverified money into 
 
 Contract tests grew from 10 to 17; the full suite is 26. Metaschema validation is still **not** run, and is recorded as unmet rather than claimed.
 
-Owed back: my review of the Lane A drafts, the other half of T4.
+**Reverse half of T4 delivered:** `docs/03-architecture/LANE_A_REVIEW.md` (RV-002) — 12 findings, 4 blockers, verdict request changes. All four blockers are drift between the contract and the design documents, created by ADR 0005 and RV-001 rather than by Lane A: the Orders money model survives in five places, S-02 shows a peer-visible pause the contract no longer exposes, the "Sam and Priya" copy held up as the model of good framing is forbidden while the graph gate is closed, and two behavioral items rely on the removed `skipped` state. LA-03 needs a product decision, not a find-and-replace: that sentence is the demo's emotional payload and is currently unbuildable.
+
+**Stated limitation:** I authored most of the documents I just reviewed, so RV-002 is a consistency audit by the contract owner, not the independent review rule 19 requires. **Independent review of the Phase 1 drafts — both lanes — is still owed by a reviewer who authored none of them.** This is now the oldest unmet gate in the project: it was waived once by the human at the Phase 1 merge and has not been satisfied since.
+
+Closed while reviewing: D-P03 had no owner outside the PRD and is now tracked as Q-007.
 
 ## Next handoff
 

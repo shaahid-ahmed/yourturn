@@ -147,6 +147,14 @@ Alan reviewed the Lane S Phase 1 contract drafts and requested changes: 29 findi
 
 **XR-29 re-sequencing applied:** YT-024 (Privacy/Q-002) and YT-025 (Legal) no longer depend on YT-014; the freeze now depends on them. The deadlock was real — the freeze needed answers from tasks that could not start until after the freeze.
 
+## Lane S cross-review RV-002: Lane A drafts
+
+Architect reviewed the Lane A Phase 1 drafts: **12 findings, 4 blockers** (`docs/03-architecture/LANE_A_REVIEW.md`). Verdict **request changes**. All four blockers are documents that now contradict the contract: the Orders money model survives in five places after ADR 0005 (LA-01), S-02 shows a peer-visible pause the contract no longer exposes (LA-02), the "Sam and Priya" copy held up as allowed is forbidden while the graph gate is closed (LA-03), and two behavioral items rely on the removed `skipped` turn state (LA-04).
+
+**Stated limitation:** the reviewer authored most of the documents under review, so RV-002 is a consistency audit by the contract owner, **not** the independent review rule 19 requires. Independent review of the Phase 1 drafts — both lanes — is still owed.
+
+**Closed by the Architect in this change (LA-07):** D-P03 was absent from the board, so nothing would ever have forced the decision. Now tracked as Q-007.
+
 ## Open questions
 
 - **Q-001 ANSWERED @payments @legal-compliance @architect:** Orders/Checkout cannot spend collected funds. The venue is paid with **Payouts** from the collector balance — verified in sandbox on 2026-11-11 (batch `CLAPZR33X2P32`, SUCCESS, 12.00 USD, fee 0.25 USD, txn `0VL83865553929934`). See ADR 0005. The _mechanism_ is proven; the money flow is still unapproved and the gate stays closed. Legal review of pooled funds and payout reversal remains open under Q-006.
@@ -155,6 +163,7 @@ Alan reviewed the Lane S Phase 1 contract drafts and requested changes: 29 findi
 - **Q-004 MOOT @payments @architect @orchestrator:** The venue payment succeeded in sandbox, so no simulated fallback is needed and ADR 0003 stays unused. The never-cut real-payment requirement is satisfiable as designed. Reopen only if a later run fails for a real reason.
 - **Q-005 @payments @architect @security:** Rule 8 says every PayPal call carries an idempotency key. Document internal operation keys and endpoint-specific provider support/retention; do not infer that every API enforces a supplied header. Any RULES change needs human approval; current rule is unchanged.
 - **Q-006 @legal-compliance @payments @privacy @behavioral-scientist:** Define forfeit/cancellation/dispute rights, private hardship pause effects, withdrawal/deletion and own-data access without third-party leakage. Product text is a requirement, not legal approval; record explicit decisions before affected implementations.
+- **Q-007 @product-manager @llm-engineer @frontend:** **D-P03 — what happens when the copilot returns nothing usable?** The PRD proposes one bounded regeneration, then an explicit unavailable result, with browsing the fixed venue list or deferring as the non-AI path, and the same budget, host and payment gates on any manually selected plan. The contract now has `createManualPlan` (XR-11) and `S-04` needs a declined-suggestions state (LA-12), but the **product** decision was tracked nowhere outside `PRD.md`, so nothing would have forced it (LA-07). Needed before YT-014.
 
 ## Handoffs
 
