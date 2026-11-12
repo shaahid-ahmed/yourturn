@@ -10,9 +10,29 @@ import { dirname, join } from 'node:path';
 
 import { buildApp } from './app.mjs';
 import { openDatabase, migrate } from '../db/database.mjs';
+import { runPollJobs } from '../polls.mjs';
+import { runBookingJobs } from '../booking.mjs';
+
+const HOUR_MS = 3600_000;
 
 /**
- * @param {{ dbPath: string, port?: number, host?: string, reset?: boolean, backup?: boolean, backupDir?: string, publicOrigin?: string }} options
+ * Run one pass of the planner clock: close due polls and ready checks, then
+ * advance bookings. Posting the shortlist and time polls stays planner-owned
+ * (coordinator / AI lane): the jobs only move hangouts whose polls exist.
+ * @param {any} db
+ * @param {{ at?: string, pollExtendMs?: number, readyCheckWindowMs?: number }} [options]
+ */
+export function runPlannerJobs(db, options = {}) {
+  const at = options.at ?? new Date().toISOString();
+  const extendByMs = options.pollExtendMs ?? HOUR_MS;
+  const readyCheckWindowMs = options.readyCheckWindowMs ?? HOUR_MS;
+  const polls = runPollJobs(db, { at, extendByMs, readyCheckWindowMs });
+  const booking = runBookingJobs(db, { at });
+  return { at, polls, booking };
+}
+
+/**
+ * @param {{ dbPath: string, port?: number, host?: string, reset?: boolean, backup?: boolean, backupDir?: string, publicOrigin?: string, jobsIntervalMs?: number }} options
  * @returns {Promise<{ port: number, dbPath: string, stop: () => Promise<void> }>}
  */
 export async function startServer({
@@ -23,6 +43,7 @@ export async function startServer({
   backup = false,
   backupDir,
   publicOrigin,
+  jobsIntervalMs,
 }) {
   if (reset && existsSync(dbPath)) rmSync(dbPath);
   mkdirSync(dirname(dbPath), { recursive: true });
@@ -42,11 +63,30 @@ export async function startServer({
   const app = buildApp({ db, publicOrigin });
   app.get('/health', async () => ({ status: 'ok' }));
   await app.listen({ port, host });
+  // Planner clock (#100): close due polls/ready checks and advance bookings
+  // on an interval. 0 disables (tests). Unref'd so it never holds the process.
+  const intervalMs =
+    jobsIntervalMs ?? Number(process.env.UNSPOKEN_JOBS_INTERVAL_MS ?? '30000');
+  /** @type {NodeJS.Timeout | null} */
+  let timer = null;
+  if (intervalMs > 0) {
+    timer = setInterval(() => {
+      try {
+        runPlannerJobs(db);
+      } catch (error) {
+        console.error('[jobs]', error);
+      }
+    }, intervalMs);
+    timer.unref?.();
+  }
   const address = app.server.address();
   return {
     port: typeof address === 'object' && address !== null ? address.port : port,
     dbPath,
-    stop: () => app.close(),
+    stop: async () => {
+      if (timer) clearInterval(timer);
+      await app.close();
+    },
   };
 }
 

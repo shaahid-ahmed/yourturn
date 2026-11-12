@@ -260,6 +260,21 @@ function loadFixtureEvents() {
 }
 
 /**
+ * Normalize a stored event id to the contract form.
+ * The database stores fixture ids (`evt-001`, what the planner validates);
+ * the contract requires ULIDs. A stored contract id passes through, anything
+ * else is mapped forward. Never maps backwards: emitting a fixture id would
+ * fail response validation (#99).
+ * @param {string | null | undefined} stored
+ */
+export function toContractEventId(stored) {
+  if (!stored) return null;
+  if (fixtureEventId(stored)) return stored;
+  if (/^[0-9A-HJKMNP-TV-Z]{26}$/.test(stored)) return stored;
+  return contractEventId(stored);
+}
+
+/**
  * Map a domain event (with embedded venue) to the contract Event shape.
  * @param {any} evt
  */
@@ -282,6 +297,27 @@ function toContractEvent(evt) {
   };
 }
 
+/**
+ * Map stored fixture event ids to the contract form in a domain Poll view.
+ * The domain stores what the planner validates; the boundary speaks ULIDs.
+ * @param {any} poll
+ */
+function toContractPoll(poll) {
+  return {
+    ...poll,
+    options: poll.options.map((/** @type {any} */ o) =>
+      o.activity?.eventId
+        ? {
+            ...o,
+            activity: {
+              ...o.activity,
+              eventId: toContractEventId(o.activity.eventId),
+            },
+          }
+        : o,
+    ),
+  };
+}
 /**
  * Assemble the contract Hangout for a joined member. Polls, choice, readiness,
  * payer and booking are each null until that stage exists; nothing here names
@@ -321,11 +357,11 @@ function toContractHangout(database, hangoutId, podId, userId, at) {
           .get(h.chosen_option_id)
       );
     if (o) {
-      const fixture = o.event_id ? getEventDetail(o.event_id) : null;
-      const eventId = o.event_id
-        ? (fixtureEventId(o.event_id) ??
-          (/^[0-9A-HJKMNP-TV-Z]{26}$/.test(o.event_id) ? o.event_id : null))
+      const fixtureId = o.event_id
+        ? (fixtureEventId(o.event_id) ?? o.event_id)
         : null;
+      const fixture = fixtureId ? getEventDetail(fixtureId) : null;
+      const eventId = toContractEventId(o.event_id);
       chosenActivity = {
         optionId: o.option_id,
         title: o.title,
@@ -610,7 +646,10 @@ export function buildApp({
   const app = Fastify({ logger: false });
   app.register(fastifyCookie);
   const vault = new ConstraintVault({
-    masterKey: vaultKey ?? randomBytes(32).toString('hex'),
+    masterKey:
+      vaultKey ??
+      process.env.UNSPOKEN_VAULT_KEY ??
+      randomBytes(32).toString('hex'),
   });
   const verifier =
     receiptVerifier ??
@@ -771,6 +810,9 @@ export function buildApp({
         )
         .run(now, userId);
       vault.forget(userId);
+      database
+        .prepare('DELETE FROM private_limits_vault WHERE user_id = ?')
+        .run(userId);
       reply.code(204);
       return;
     },
@@ -780,6 +822,31 @@ export function buildApp({
         stored = vault.readAs(userId, userId);
       } catch {
         stored = null;
+      }
+      if (!stored) {
+        // Restart wiped this process's vault: restore the sealed record.
+        const row = /** @type {{ sealed: Uint8Array } | undefined} */ (
+          database
+            .prepare(
+              'SELECT sealed FROM private_limits_vault WHERE user_id = ?',
+            )
+            .get(userId)
+        );
+        if (row) {
+          try {
+            vault.load(
+              userId,
+              JSON.parse(Buffer.from(row.sealed).toString('utf8')),
+            );
+            stored = vault.readAs(userId, userId);
+          } catch {
+            // Wrong key (rotation) or tampering: fail closed, drop the stale row.
+            database
+              .prepare('DELETE FROM private_limits_vault WHERE user_id = ?')
+              .run(userId);
+            stored = null;
+          }
+        }
       }
       if (!stored) {
         const user = database
@@ -797,7 +864,18 @@ export function buildApp({
     },
     setOwnPrivateLimits: async ({ req, userId }) => {
       const stored = { ...req.body, updatedAt: new Date().toISOString() };
-      vault.put(userId, stored);
+      const sealed = vault.put(userId, stored);
+      database
+        .prepare(
+          `INSERT INTO private_limits_vault (user_id, sealed, key_version, updated_at)
+           VALUES (?, ?, 1, ?) ON CONFLICT(user_id) DO UPDATE SET
+           sealed = excluded.sealed, key_version = 1, updated_at = excluded.updated_at`,
+        )
+        .run(
+          userId,
+          Buffer.from(JSON.stringify(sealed), 'utf8'),
+          stored.updatedAt,
+        );
       return stored;
     },
     setOwnPermissionStatus: async ({ req, userId }) => {
@@ -1071,22 +1149,26 @@ export function buildApp({
     getHangout: async ({ params, userId }) =>
       toContractHangout(database, params.hangoutId, params.podId, userId),
     getPoll: async ({ params, userId }) =>
-      getPoll(database, {
-        podId: params.podId,
-        hangoutId: params.hangoutId,
-        pollId: params.pollId,
-        userId,
-      }),
+      toContractPoll(
+        getPoll(database, {
+          podId: params.podId,
+          hangoutId: params.hangoutId,
+          pollId: params.pollId,
+          userId,
+        }),
+      ),
     castOwnVote: async ({ req, params, userId }) => {
       const now = new Date().toISOString();
-      return castOwnVote(database, {
-        podId: params.podId,
-        hangoutId: params.hangoutId,
-        pollId: params.pollId,
-        userId,
-        optionId: req.body.optionId,
-        at: now,
-      });
+      return toContractPoll(
+        castOwnVote(database, {
+          podId: params.podId,
+          hangoutId: params.hangoutId,
+          pollId: params.pollId,
+          userId,
+          optionId: req.body.optionId,
+          at: now,
+        }),
+      );
     },
     setOwnReadyAnswer: async ({ req, params, userId }) => {
       const now = new Date().toISOString();
