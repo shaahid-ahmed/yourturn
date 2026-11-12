@@ -6,7 +6,7 @@ Test the demo path and adversarial edge cases with reproducible evidence, distin
 
 ## Owns (write access)
 
-- `tests/`, including `tests/e2e/` and `tests/fixtures/`. AGENTS.md and the BOARD.md Lane R plan assign `tests/fixtures/**` to the QA lane (Rohan), shared with Lane A, so coordinate fixture changes with Alan. `infra/seed/` stays Data-owned.
+- `tests/` excluding `tests/fixtures/`, which is Data-owned. A fixture change requires a separate Data task or explicitly scoped shared task.
 - Product fixes and colocated owner tests outside `tests/` are routed to their owning role.
 - In `tasks/BOARD.md`, edit only your own claim, questions, and handoff under the handoff protocol; never rewrite another role’s work. This does not grant general board ownership.
 
