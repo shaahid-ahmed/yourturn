@@ -34,9 +34,7 @@ import {
   getPod,
   matchContacts,
   requireMember,
-  newUlid,
 } from '../pods.mjs';
-import { splitShares } from '../money.mjs';
 import {
   getOwnSubscription,
   submitSubscriptionReceipt,
@@ -568,103 +566,6 @@ function deriveBalance(db, hangoutId, debtorUserId) {
     }
   }
   return { entryId, amountCents, status, updatedAt };
-}
-
-/**
- * Build the Split contract object for a hangout. Returns the split card as a
- * draft (before the payer confirms) or confirmed. Throws not_found when no
- * payer has been chosen yet.
- *
- * @param {any} db
- * @param {string} hangoutId
- * @param {string} podId
- */
-function splitView(db, hangoutId, podId) {
-  const h = /** @type {any} */ (
-    db
-      .prepare('SELECT * FROM hangout WHERE hangout_id = ? AND pod_id = ?')
-      .get(hangoutId, podId)
-  );
-  if (!h) {
-    const err = /** @type {any} */ (new Error('hangout not found'));
-    err.code = 'not_found';
-    throw err;
-  }
-  const payerUserId = /** @type {string | null} */ (h.payer_user_id ?? null);
-  if (!payerUserId) {
-    const err = /** @type {any} */ (new Error('no payer chosen yet'));
-    err.code = 'not_found';
-    throw err;
-  }
-  const payerUser = /** @type {any} */ (
-    db
-      .prepare('SELECT user_id, first_name FROM app_user WHERE user_id = ?')
-      .get(payerUserId)
-  );
-  const splitRow = /** @type {any} */ (
-    db.prepare('SELECT * FROM split WHERE hangout_id = ?').get(hangoutId)
-  );
-  const actualRow = /** @type {any} */ (
-    db
-      .prepare(
-        'SELECT actual_total_cents FROM split_actual_total WHERE hangout_id = ? ORDER BY seq DESC LIMIT 1',
-      )
-      .get(hangoutId)
-  );
-  const status = splitRow ? 'confirmed' : 'draft';
-  const basis = actualRow ? 'actual' : 'estimate';
-  let totalCents = 0;
-  if (actualRow) {
-    totalCents = Number(actualRow.actual_total_cents);
-  } else if (splitRow) {
-    totalCents = Number(splitRow.estimate_cents);
-  } else {
-    const booking = /** @type {any} */ (
-      db
-        .prepare(
-          'SELECT estimated_total_cents FROM booking WHERE hangout_id = ?',
-        )
-        .get(hangoutId)
-    );
-    totalCents = booking ? Number(booking.estimated_total_cents) : 0;
-  }
-  const yesRows = /** @type {any[]} */ (
-    db
-      .prepare(
-        "SELECT r.user_id, u.first_name FROM ready_answer r JOIN app_user u ON u.user_id = r.user_id WHERE r.hangout_id = ? AND r.answer = 'yes' ORDER BY r.user_id",
-      )
-      .all(hangoutId)
-  );
-  const yesMemberIds = yesRows.map((r) => String(r.user_id));
-  const nameMap = new Map(
-    yesRows.map((r) => [String(r.user_id), String(r.first_name)]),
-  );
-  let shares =
-    /** @type {{ user: { userId: string, firstName: string }, shareCents: number }[]} */ ([]);
-  if (yesMemberIds.length > 0 && totalCents >= yesMemberIds.length) {
-    const rawShares = splitShares(totalCents, yesMemberIds, hangoutId);
-    shares = rawShares.map((s) => ({
-      user: {
-        userId: s.memberId,
-        firstName: nameMap.get(s.memberId) ?? 'Member',
-      },
-      shareCents: s.shareCents,
-    }));
-  }
-  return {
-    hangoutId,
-    payer: {
-      userId: payerUserId,
-      firstName: payerUser ? String(payerUser.first_name) : 'Member',
-    },
-    status,
-    basis,
-    totalCents,
-    currency: 'USD',
-    splitType: 'equal',
-    yesMemberCount: yesMemberIds.length,
-    shares,
-  };
 }
 
 /**
@@ -1339,84 +1240,6 @@ export function buildApp({
       };
     },
 
-    // ---- wave: balances (US-019) -----------------------------------------
-
-    getSplit: async ({ params, userId }) => {
-      requireMember(database, params.podId, userId);
-      return splitView(database, params.hangoutId, params.podId);
-    },
-
-    confirmSplit: async ({ req, params, userId }) => {
-      requireMember(database, params.podId, userId);
-      const h = /** @type {any} */ (
-        database
-          .prepare(
-            'SELECT payer_user_id FROM hangout WHERE hangout_id = ? AND pod_id = ?',
-          )
-          .get(params.hangoutId, params.podId)
-      );
-      if (!h) {
-        const err = /** @type {any} */ (new Error('hangout not found'));
-        err.code = 'not_found';
-        throw err;
-      }
-      if (h.payer_user_id !== userId) {
-        const err = /** @type {any} */ (
-          new Error('only the payer can confirm the split')
-        );
-        err.code = 'not_payer';
-        throw err;
-      }
-      if (
-        database
-          .prepare('SELECT 1 AS x FROM split WHERE hangout_id = ?')
-          .get(params.hangoutId)
-      ) {
-        const err = /** @type {any} */ (new Error('split already confirmed'));
-        err.code = 'split_already_confirmed';
-        throw err;
-      }
-      const { totalCents } = req.body;
-      const yesIds = /** @type {any[]} */ (
-        database
-          .prepare(
-            "SELECT user_id FROM ready_answer WHERE hangout_id = ? AND answer = 'yes' ORDER BY user_id",
-          )
-          .all(params.hangoutId)
-      ).map((r) => String(r.user_id));
-      if (yesIds.length === 0) {
-        const err = /** @type {any} */ (new Error('no yes-members'));
-        err.code = 'wrong_hangout_state';
-        throw err;
-      }
-      const now = new Date().toISOString();
-      database
-        .prepare(
-          'INSERT INTO split (hangout_id, payer_user_id, estimate_cents, confirmed_at) VALUES (?, ?, ?, ?)',
-        )
-        .run(params.hangoutId, userId, totalCents, now);
-      if (totalCents >= yesIds.length) {
-        const rawShares = splitShares(totalCents, yesIds, params.hangoutId);
-        for (const { memberId, shareCents } of rawShares) {
-          if (memberId === userId) continue;
-          database
-            .prepare(
-              `INSERT INTO ledger_entry (entry_id, seq, hangout_id, debtor_user_id, creditor_user_id, kind, amount_cents, payment_id, provider_event_id, synthetic, created_at)
-               VALUES (?, (SELECT COALESCE(MAX(seq), 0) + 1 FROM ledger_entry), ?, ?, ?, 'balance_created', ?, NULL, NULL, 1, ?)`,
-            )
-            .run(
-              newUlid(),
-              params.hangoutId,
-              memberId,
-              userId,
-              shareCents,
-              now,
-            );
-        }
-      }
-      return splitView(database, params.hangoutId, params.podId);
-    },
-
     setActualTotal: async ({ req, params, userId }) => {
       requireMember(database, params.podId, userId);
       const splitRow = /** @type {any} */ (
@@ -1453,7 +1276,11 @@ export function buildApp({
           req.body.actualTotalCents,
           new Date().toISOString(),
         );
-      return splitView(database, params.hangoutId, params.podId);
+      return getSplit(database, {
+        podId: params.podId,
+        hangoutId: params.hangoutId,
+        userId,
+      });
     },
 
     listOwnBalances: async ({ userId }) => {
