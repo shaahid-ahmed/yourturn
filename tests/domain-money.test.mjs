@@ -285,3 +285,100 @@ test('idempotency: a retry replays, a different body or target conflicts', () =>
     'miss',
   );
 });
+
+test('US-016: the gate cannot be built open without a recorded human approval', async () => {
+  const { PaymentGate } = await import('../services/api/src/payments/gate.mjs');
+  assert.throws(
+    () => new PaymentGate({ open: true }),
+    /cannot be open without a recorded human approval/,
+  );
+  assert.throws(
+    () => new PaymentGate({ open: true, humanApprovalRecorded: true }),
+    /must cite where the human approval is recorded/,
+  );
+  const gate = new PaymentGate({
+    open: true,
+    humanApprovalRecorded: true,
+    approvalReference: 'human decision 2026-11-12',
+  });
+  assert.equal(gate.isOpen(), true);
+  assert.equal(gate.assertOpen('capture'), true);
+});
+
+test('US-016: the ledger refuses misprovenanced and miscorrected entries', () => {
+  const ledger = new Ledger();
+  assert.throws(
+    () =>
+      ledger.append({
+        hangoutId: 'h1',
+        kind: 'share_captured',
+        amountCents: 100,
+        synthetic: true,
+        providerEventId: 'evt-1',
+      }),
+    /must not claim a provider event/,
+    'synthetic money with a provider event would launder fixtures as verified',
+  );
+  const first = ledger.append({
+    hangoutId: 'h1',
+    kind: 'share_captured',
+    amountCents: 2800,
+    synthetic: true,
+  });
+  assert.throws(
+    () =>
+      ledger.append({
+        hangoutId: 'h1',
+        kind: 'share_captured',
+        amountCents: -1,
+        correctsEntryId: first.entryId,
+      }),
+    /only a correction/,
+    'a non-correction must not point at another entry',
+  );
+  assert.throws(
+    () =>
+      ledger.append({
+        hangoutId: 'h1',
+        kind: 'correction',
+        amountCents: -1,
+        correctsEntryId: 'missing-entry',
+      }),
+    /does not exist/,
+    'a correction must point at a recorded entry',
+  );
+});
+
+test('US-016: an idempotency slot always binds actor, operation and key', () => {
+  const store = new IdempotencyStore();
+  for (const request of /** @type {Array<any>} */ ([
+    { operation: 'op', key: 'k', target: {}, body: {} },
+    { actor: 'm1', key: 'k', target: {}, body: {} },
+    { actor: 'm1', operation: 'op', target: {}, body: {} },
+  ])) {
+    assert.throws(
+      () => store.remember({ ...request, response: 'x' }),
+      /actor, an operation and a key/,
+    );
+  }
+  store.remember({
+    actor: 'm1',
+    operation: 'op',
+    key: 'k',
+    target: {},
+    body: {},
+    response: 'x',
+  });
+  assert.throws(
+    () =>
+      store.remember({
+        actor: 'm1',
+        operation: 'op',
+        key: 'k',
+        target: {},
+        body: {},
+        response: 'y',
+      }),
+    /already recorded/,
+  );
+});

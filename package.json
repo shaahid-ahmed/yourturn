@@ -15,6 +15,7 @@
   ],
   "scripts": {
     "dev": "node infra/dev.mjs",
+    "dev:api": "node services/api/src/http/server.mjs",
     "seed": "node infra/seed/demo.mjs",
     "test": "node --test tests/*.test.mjs",
     "lint": "prettier --check .",

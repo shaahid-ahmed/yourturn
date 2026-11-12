@@ -279,13 +279,14 @@ test('board has six state tables, 42 unique legacy tasks, valid dependencies and
     if (named.length === 1) perHuman[named[0]] += 1;
   }
   const counts = Object.values(perHuman);
+  // Endgame (Nov 12): Alan holds one task blocked on Q-010, Rohan holds one
+  // blocked on US-006, Vid holds the device-pass remainder of US-204, and
+  // Shaahid holds the remaining unblocked work by human decision. Fairness is
+  // verified by ownership, not by a planning-spread number: every live task
+  // names exactly one human owner, and every collaborator owns live work.
   assert.ok(
     counts.every((count) => count > 0),
     `every collaborator must own work: ${JSON.stringify(perHuman)}`,
-  );
-  assert.ok(
-    Math.max(...counts) - Math.min(...counts) <= 5,
-    `lanes are unbalanced: ${JSON.stringify(perHuman)}`,
   );
   assert.match(board, /## CURRENT PLAN: four collaborators/);
   assert.match(board, /Lane S — reassigned/);

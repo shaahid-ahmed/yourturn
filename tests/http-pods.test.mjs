@@ -175,6 +175,24 @@ test('wave4: invite, accept, leave and remove', async () => {
   assert.equal(empty.statusCode, 404);
 });
 
+test('wave4: invite links use the configured public origin', async () => {
+  const db = openDatabase(':memory:');
+  migrate(db);
+  db.prepare(
+    "INSERT INTO app_user (user_id, first_name, phone, synthetic, created_at) VALUES ('01J00000000000000000000001', 'Sam', '+15550001111', 1, '2026-11-12T12:00:00.000Z')",
+  ).run();
+  const app = buildApp({ db, publicOrigin: 'https://demo.example.org' });
+  const h1 = await signIn(app);
+  const pod = await createPod(app, h1);
+  const link = await app.inject({
+    method: 'POST',
+    url: `/api/v1/pods/${pod.podId}/invite-links`,
+    headers: h1,
+  });
+  assert.equal(link.statusCode, 201);
+  assert.ok(link.json().url.startsWith('https://demo.example.org/i/'));
+});
+
 test('wave4: invite links are single use', async () => {
   const app = podsApp();
   const h1 = await signIn(app);
