@@ -253,8 +253,10 @@ function toContractEvent(evt) {
  * @param {string} hangoutId
  * @param {string} podId
  * @param {string} userId
+ * @param {string} [at]
  */
-function toContractHangout(database, hangoutId, podId, userId) {
+function toContractHangout(database, hangoutId, podId, userId, at) {
+  const now = at ?? new Date().toISOString();
   requireMember(database, podId, userId);
   const h =
     /** @type {{ hangout_id: string, pod_id: string, state: string, created_at: string, chosen_option_id: string | null, chosen_slot_id: string | null, payer_user_id: string | null } | undefined} */ (
