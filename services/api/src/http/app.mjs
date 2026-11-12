@@ -88,6 +88,7 @@ import {
   addEventToOwnCalendar as calAddEvent,
   NO_PROVIDER,
 } from '../calendar.mjs';
+import {
   getOwnNotificationSettings as notifGetSettings,
   setOwnNotificationSettings as notifSetSettings,
   registerPushToken as notifRegisterToken,
