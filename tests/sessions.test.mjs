@@ -42,9 +42,10 @@ test('the fixed demo code opens a session, a wrong code does not', () => {
   const { challengeId } = requestPhoneCode(db, { phone: PHONE });
   const s = createSession(db, { challengeId, code: '000001' });
   assert.equal(s, null);
-  const ok = /** @type {{ userId: string, isNewUser: boolean, csrfToken: string, sessionId: string, expiresAt: string }} */ (
-    createSession(db, { challengeId, code: DEMO_CODE })
-  );
+  const ok =
+    /** @type {{ userId: string, isNewUser: boolean, csrfToken: string, sessionId: string, expiresAt: string }} */ (
+      createSession(db, { challengeId, code: DEMO_CODE })
+    );
   assert.equal(ok.userId, 'u-1');
   assert.equal(ok.isNewUser, false);
   assert.ok(ok.csrfToken.length >= 20);
