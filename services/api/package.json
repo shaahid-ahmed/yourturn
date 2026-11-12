@@ -2,5 +2,9 @@
   "name": "@yourturn/api",
   "version": "0.0.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@fastify/cookie": "11.1.5",
+    "fastify": "5.12.8"
+  }
 }
