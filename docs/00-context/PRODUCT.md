@@ -13,6 +13,7 @@ Friend groups lose people over money nobody talks about. When the group picks an
 - The venue is named as the **payee on each member's order**, so money goes from each friend to the venue and the platform never holds funds.
 - Progress is shown to the group as a **count** ("3 of 4 in"), never as names. A failure is "didn't come together this time", with no names and no reasons.
 - **Demo moment:** four held badges become one capture and a paid venue; then the replay, where one friend declines and every hold is voided with no names shown.
+- **Phone-first.** This is a phone product: the private agent chat, the group view and the approve-your-share step are one-handed, single-column and thumb-reachable. Desktop is a scaled-up courtesy, not the design target.
 - **Hackathon targets:** Best Use of PayPal + AI, Agentic Commerce, Most Impactful.
 - **Timebox:** 3 days. Production-grade structure and quality, demo-sized scope.
 

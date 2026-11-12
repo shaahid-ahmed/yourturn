@@ -54,6 +54,7 @@ Authorize, capture, void and refund all require a payer approval in a browser �
 
 **New risks this pivot creates:**
 
+0. **Phone-first makes the approval problem harder, not easier (added November 12, 2026).** The product is designed for a handset, and on a real device the PayPal approval leaves the browser — often into the PayPal app — then returns via `return_url`. `http://127.0.0.1:3000/paypal/return` only resolves on the machine running the server, so **approving a share from a phone is impossible until a public HTTPS origin exists** (UN-014). The same origin is needed for the webhook listener, so the two blockers collapse into one piece of work. A return-URL hit still proves nothing on its own.
 1. **N browser approvals per demo run.** Four members means four sandbox PayPal approvals, each a manual login. This is the largest demo risk, and it is a people problem rather than a code problem. PayPal Vault would remove it and is a stretch goal, not a plan.
 2. **The authorization honor period caps the commit deadline.** The deadline must be set below PayPal's honor window, and the current limit must be read from the live documentation rather than assumed.
 3. **Partial capture failure is a distributed-transaction problem.** All-or-nothing in both directions means a failed capture triggers refunds of successful ones, and that path needs tests before the gate opens.

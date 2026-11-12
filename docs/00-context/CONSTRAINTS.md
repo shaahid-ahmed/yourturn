@@ -18,6 +18,8 @@ The human authorized Phase 1 documentation on November 11, 2026 after approving 
 - **No friendship inference of any kind** — no tie strength, no drift, no graph (ADR 0006). Each agent reasons only over constraints its own member stated about themselves.
 - Only the **winning** plan is revealed. Rejected candidates, per-member answers and reasons are never shown or stored. Group progress is a **count**, never names.
 - Hard constraints (budget, availability, dietary, travel) are **plain code**. An LLM may change ranking only and can never turn a reject into an accept.
+- **Phone-first.** Unspoken is used on a phone: the private agent chat, the group view and the approve-your-share step are all one-handed, single-column, thumb-reachable interactions. Desktop is a scaled-up courtesy, not the design target. Design system and flows are Lane A (`docs/02-design/**`, `apps/web/**`).
+- **A phone cannot return to `127.0.0.1`.** PayPal approval on a real device leaves the browser (often to the PayPal app) and returns via the `return_url`. A loopback URL only works on the machine running the server, so a phone demo needs a **public HTTPS return URL** — see UN-014. This is a prerequisite for demoing on a handset, not a polish item.
 - Privacy is **architectural and policy-based, not cryptographic**: the tally sees per-member answers in memory. Never describe it as cryptographically private, and state the inference-over-rounds limit wherever the claim appears.
 - Fixed demo venue list; no fake successful booking or successful sandbox evidence.
 - No real user research recruitment, external messages or public release without human approval.
