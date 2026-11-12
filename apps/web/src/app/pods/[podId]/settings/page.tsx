@@ -1,8 +1,10 @@
 'use client';
-// P8 — Pod settings
-// Members, meeting rhythm, group activities, mute.
+// P15, Pod details as a bottom sheet restyle: members, rhythm, group
+// activities, notifications. Member names come from the seed.
 import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { Button, ScreenHeader, BackButton } from '@/components/ui';
+import { PODS, personName } from '@/lib/heypal/seed';
 
 type Rhythm = 'weekly' | 'biweekly' | 'monthly';
 
@@ -12,14 +14,10 @@ const RHYTHM_LABELS: Record<Rhythm, string> = {
   monthly: 'Once a month',
 };
 
-const DEMO_MEMBERS = [
-  { id: 'me', name: 'You', isCreator: false },
-  { id: 'sam', name: 'Sam', isCreator: true },
-  { id: 'priya', name: 'Priya', isCreator: false },
-  { id: 'alex', name: 'Alex', isCreator: false },
-];
-
 export default function PodSettingsPage() {
+  const params = useParams<{ podId: string }>();
+  const podId = typeof params.podId === 'string' ? params.podId : 'pod-friday';
+  const pod = PODS.find((p) => p.id === podId) ?? PODS[0];
   const [rhythm, setRhythm] = useState<Rhythm>('biweekly');
   const [activities, setActivities] = useState<string[]>([
     'Escape rooms',
@@ -39,50 +37,44 @@ export default function PodSettingsPage() {
   }
 
   return (
-    <main className="flex flex-col min-h-dvh">
+    <main data-surface="white" className="flex flex-col min-h-dvh">
       <ScreenHeader
         title="Pod settings"
-        back={<BackButton href="/pods/pod-1" />}
+        back={<BackButton href={`/pods/${podId}`} />}
       />
 
       <div className="flex flex-col gap-6 px-4 py-5">
-        {/* Members */}
         <section aria-labelledby="members-heading">
           <h2
             id="members-heading"
-            className="text-sm font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-3"
+            className="text-sm font-semibold text-[var(--ink-muted)] uppercase tracking-wide mb-3"
           >
-            Members
+            Members, {pod?.memberIds.length ?? 0}
           </h2>
           <ul
-            className="flex flex-col divide-y divide-[var(--color-border)] rounded-xl border border-[var(--color-border)] overflow-hidden"
+            className="hey-card bg-[var(--white)] border border-[var(--sky)] overflow-hidden flex flex-col"
             role="list"
           >
-            {DEMO_MEMBERS.map((m) => (
-              <li key={m.id} className="flex items-center gap-3 px-4 py-3">
+            {(pod?.memberIds ?? []).map((id) => (
+              <li key={id} className="flex items-center gap-3 px-4 py-3">
                 <div
-                  className="w-9 h-9 rounded-full bg-[var(--color-accent)] text-white flex items-center justify-center text-sm font-semibold shrink-0"
+                  className="w-9 h-9 rounded-full bg-[var(--deep)] text-[var(--white)] flex items-center justify-center text-sm font-semibold shrink-0"
                   aria-hidden="true"
                 >
-                  {m.name[0]}
+                  {personName(id)[0]}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-[var(--color-ink)]">
-                    {m.name}
+                  <p className="text-sm font-medium text-[var(--ink)]">
+                    {id === 'p-me' ? 'You' : personName(id)}
                   </p>
-                  {m.isCreator && (
-                    <p className="text-xs text-[var(--color-ink-muted)]">
-                      Creator
-                    </p>
-                  )}
                 </div>
-                {m.id === 'me' ? (
+                {id === 'p-me' ? (
                   <Button
                     variant="destructive"
                     onClick={() => {
                       if (
                         confirm(
-                          'Leave Friday crew? Rotation consequences are suspended until resolved.',
+                          'Leave this pod? Any open balances stay with the people involved until they are settled.',
                         )
                       )
                         window.location.href = '/home';
@@ -96,11 +88,10 @@ export default function PodSettingsPage() {
           </ul>
         </section>
 
-        {/* Meeting rhythm */}
         <section aria-labelledby="rhythm-heading">
           <h2
             id="rhythm-heading"
-            className="text-sm font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-3"
+            className="text-sm font-semibold text-[var(--ink-muted)] uppercase tracking-wide mb-3"
           >
             Meeting rhythm
           </h2>
@@ -112,10 +103,10 @@ export default function PodSettingsPage() {
             {(['weekly', 'biweekly', 'monthly'] as Rhythm[]).map((r) => (
               <label
                 key={r}
-                className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer min-h-[52px] transition-colors ${
+                className={`flex items-center gap-3 p-4 rounded-[28px] border-2 cursor-pointer min-h-[52px] ${
                   rhythm === r
-                    ? 'border-[var(--color-accent)] bg-[var(--color-surface-sunken)]'
-                    : 'border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]'
+                    ? 'border-[var(--deep)] bg-[var(--pale)]'
+                    : 'border-[var(--sky)]'
                 }`}
               >
                 <input
@@ -127,34 +118,33 @@ export default function PodSettingsPage() {
                   className="sr-only"
                 />
                 <span
-                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${rhythm === r ? 'border-[var(--color-accent)]' : 'border-[var(--color-border)]'}`}
+                  className="w-4 h-4 rounded-full border-2 border-[var(--blue-mid)] flex items-center justify-center shrink-0"
                   aria-hidden="true"
                 >
                   {rhythm === r && (
-                    <span className="w-2 h-2 rounded-full bg-[var(--color-accent)]" />
+                    <span className="w-2 h-2 rounded-full bg-[var(--blue-mid)]" />
                   )}
                 </span>
-                <span className="text-sm text-[var(--color-ink)]">
+                <span className="text-sm text-[var(--ink)]">
                   {RHYTHM_LABELS[r]}
                 </span>
               </label>
             ))}
           </div>
-          <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
+          <p className="mt-2 text-[13px] text-[var(--ink-muted)]">
             Propose a change in the chat. It becomes the default when everyone
             agrees.
           </p>
         </section>
 
-        {/* Group activities */}
         <section aria-labelledby="activities-heading">
           <h2
             id="activities-heading"
-            className="text-sm font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-3"
+            className="text-sm font-semibold text-[var(--ink-muted)] uppercase tracking-wide mb-3"
           >
             Group activities
           </h2>
-          <p className="text-xs text-[var(--color-ink-muted)] mb-3">
+          <p className="text-[13px] text-[var(--ink-muted)] mb-3">
             Things this pod wants to do. The planner picks these over general
             interests.
           </p>
@@ -166,12 +156,12 @@ export default function PodSettingsPage() {
             {activities.map((a) => (
               <li
                 key={a}
-                className="flex items-center gap-1 bg-[var(--color-surface-sunken)] border border-[var(--color-border)] rounded-full pl-3 pr-2 py-1"
+                className="flex items-center gap-1 bg-[var(--pale)] rounded-full pl-3 pr-2 py-1"
               >
-                <span className="text-sm text-[var(--color-ink)]">{a}</span>
+                <span className="text-sm text-[var(--ink)]">{a}</span>
                 <button
                   onClick={() => removeActivity(a)}
-                  className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-[var(--color-border)] text-[var(--color-ink-muted)] ml-1"
+                  className="w-6 h-6 flex items-center justify-center rounded-full text-[var(--ink-muted)] ml-1"
                   aria-label={`Remove ${a}`}
                 >
                   ×
@@ -180,7 +170,11 @@ export default function PodSettingsPage() {
             ))}
           </ul>
           <div className="flex gap-2">
+            <label htmlFor="new-activity" className="sr-only">
+              New group activity
+            </label>
             <input
+              id="new-activity"
               type="text"
               value={newActivity}
               onChange={(e) => setNewActivity(e.target.value)}
@@ -191,8 +185,7 @@ export default function PodSettingsPage() {
                 }
               }}
               placeholder="Add an activity"
-              className="flex-1 min-h-[44px] rounded-xl border border-[var(--color-border)] px-4 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]"
-              aria-label="New group activity"
+              className="flex-1 min-h-[44px] rounded-full border-2 border-[var(--sky)] px-4 text-sm text-[var(--ink)]"
             />
             <Button variant="secondary" onClick={addActivity}>
               Add
@@ -200,18 +193,15 @@ export default function PodSettingsPage() {
           </div>
         </section>
 
-        {/* Mute */}
         <section aria-labelledby="mute-heading">
           <h2
             id="mute-heading"
-            className="text-sm font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-3"
+            className="text-sm font-semibold text-[var(--ink-muted)] uppercase tracking-wide mb-3"
           >
             Notifications
           </h2>
-          <label className="flex items-center justify-between gap-3 p-4 rounded-xl border border-[var(--color-border)] min-h-[52px] cursor-pointer">
-            <span className="text-sm text-[var(--color-ink)]">
-              Silence this pod
-            </span>
+          <label className="flex items-center justify-between gap-3 p-4 rounded-[28px] border-2 border-[var(--sky)] min-h-[52px] cursor-pointer">
+            <span className="text-sm text-[var(--ink)]">Silence this pod</span>
             <input
               type="checkbox"
               checked={muted}
@@ -220,11 +210,15 @@ export default function PodSettingsPage() {
               aria-label="Silence notifications for this pod"
             />
             <div
-              className={`w-11 h-6 rounded-full transition-colors relative ${muted ? 'bg-[var(--color-accent)]' : 'bg-[var(--color-border)]'}`}
+              className="w-11 h-6 rounded-full relative"
+              style={{ background: muted ? 'var(--deep)' : 'var(--sky)' }}
               aria-hidden="true"
             >
               <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${muted ? 'translate-x-5' : 'translate-x-0'}`}
+                className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow"
+                style={{
+                  transform: muted ? 'translateX(20px)' : 'translateX(0)',
+                }}
               />
             </div>
           </label>

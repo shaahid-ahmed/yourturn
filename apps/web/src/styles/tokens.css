@@ -1,9 +1,9 @@
 /*
- * Unspoken design tokens — US-201.
+ * Unspoken design tokens, US-201.
  * Owner: Product Designer (Vid). Spec: docs/02-design/DESIGN_SYSTEM.md.
  * Source of truth for every screen: docs/02-design/source/Unspoken Experience and Pages Spec.pdf.
  *
- * Phone-first: designed at 360–430 CSS px wide. Wider viewports centre the
+ * Phone-first: designed at 360 to 430 CSS px wide. Wider viewports centre the
  * same single column; desktop is a courtesy, not a layout.
  *
  * PayPal blue is LINE ART ONLY (spec p.15). It may be a stroke on an
@@ -39,7 +39,7 @@
   --color-ink: #1c1b19; /* primary text */
   --color-ink-muted: #5c5953; /* secondary text, timestamps, metadata */
   --color-border: #8a867d; /* input outlines and meaningful boundaries (3:1) */
-  --color-hairline: #e4e2dc; /* decorative dividers only — never the only boundary */
+  --color-hairline: #e4e2dc; /* decorative dividers only, never the only boundary */
 
   /* ---------- Colour: action ---------- */
   /* Buttons are ink, not brand colour. PayPal blue never fills a button. */
@@ -78,7 +78,7 @@
   --color-status-failed-surface: #fbe9e9;
 
   /* ---------- Colour: honesty labels ---------- */
-  /* "Simulated booking", "Sandbox — no real money". Never decorative. */
+  /* Honesty labels: "Simulated booking", "Sandbox, no real money". Never decorative. */
   --color-notice: #6b4e00;
   --color-notice-surface: #fff4d6;
 
@@ -97,12 +97,12 @@
   --font-numeric-variant: tabular-nums; /* money columns line up */
 
   /* rem-based so the phone's text-size setting scales everything */
-  --text-caption: 0.8125rem; /* 13px — timestamps, chip labels; never a disclosure */
-  --text-small: 0.9375rem; /* 15px — metadata, helper text, disclosures */
-  --text-body: 1.0625rem; /* 17px — body, chat messages, inputs */
-  --text-title: 1.25rem; /* 20px — card titles, sheet titles */
-  --text-heading: 1.5rem; /* 24px serif — screen titles */
-  --text-display: 2rem; /* 32px serif — the two money totals, splash wordmark */
+  --text-caption: 0.8125rem; /* 13px, timestamps, chip labels; never a disclosure */
+  --text-small: 0.9375rem; /* 15px, metadata, helper text, disclosures */
+  --text-body: 1.0625rem; /* 17px, body, chat messages, inputs */
+  --text-title: 1.25rem; /* 20px, card titles, sheet titles */
+  --text-heading: 1.5rem; /* 24px serif, screen titles */
+  --text-display: 2rem; /* 32px serif, the two money totals, splash wordmark */
 
   --leading-tight: 1.2;
   --leading-snug: 1.35;
@@ -149,10 +149,10 @@
   --duration-bubble-birth: 520ms; /* P6 → P5 */
   --duration-bubble-open: 360ms; /* P5 → P7 */
   --duration-rhythm-pulse: 2400ms; /* P5, P8 */
-  --duration-card-arrival: 280ms; /* P9–P13 cards */
+  --duration-card-arrival: 280ms; /* P9 to P13 cards */
   --duration-vote-settle: 320ms; /* P9, P10 */
   --duration-booking-pop: 420ms; /* P12 */
-  --duration-thread-draw: 700ms; /* P13–P15 */
+  --duration-thread-draw: 700ms; /* P13 to P15 */
   --duration-thread-fade: 900ms; /* P14, P15 */
   --easing-standard: cubic-bezier(0.2, 0, 0, 1);
   --easing-enter: cubic-bezier(0, 0, 0, 1);
@@ -163,6 +163,50 @@
     0.64,
     1
   ); /* small overshoot, booking pop */
+
+  /* ---------- HeyPal v2 palette (FRONTEND_DECISIONS.md D-05) ----------
+     Bare names so the v1 `--color-*` contract that root tests enforce
+     stays byte-identical. Saturated blues use rgb() notation. */
+  --deep: #002991; /* Home, intro, login, menu, planner overlays */
+  --royal: rgb(31 79 216); /* my chat bubbles, cards, dots on white */
+  --sky: rgb(155 187 255); /* cards, chips, chat gradient top */
+  --pale: #dce8ff; /* cards, planner bubbles, input fills */
+  --mist: #e5efff; /* text on deep blue, paper under illustrations */
+  --white: #ffffff; /* main surface of every non-deep screen */
+  --ink: #0b1736; /* text on white, pale, sky and orange */
+  --ink-muted: #4a5a80; /* secondary text on white and pale */
+  --blue-mid: rgb(47 95 208); /* dots and line art on white */
+  --orange: #ff7d3c; /* the pop of color, always means something */
+  --danger: #b3261e; /* errors on white, always with icon and words */
+
+  /* HeyPal card palette fills (part 3). Text colors pair per the table. */
+  --card-deep: var(--deep);
+  --card-royal: var(--royal);
+  --card-sky: var(--sky);
+  --card-pale: var(--pale);
+  --card-white: var(--white);
+  --card-orange: var(--orange);
+
+  /* HeyPal motion (part 12): one easing, four durations, two springs. */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --duration-120: 120ms;
+  --duration-180: 180ms;
+  --duration-260: 260ms;
+  --duration-320: 320ms;
+  --spring-soft: cubic-bezier(0.3, 0.9, 0.3, 1);
+  --spring-snappy: cubic-bezier(0.3, 1.2, 0.4, 1);
+
+  /* HeyPal layers (part 6). */
+  --layer-content: 0;
+  --layer-pods: 10;
+  --layer-tray: 30;
+  --layer-dock: 40;
+  --layer-header: 50;
+  --layer-menu-scrim: 60;
+  --layer-menu: 70;
+  --layer-search: 80;
+  --layer-burst: 90;
+  --layer-toast: 100;
 }
 
 /*
@@ -185,5 +229,9 @@
     --duration-booking-pop: 0ms;
     --duration-thread-draw: 0ms;
     --duration-thread-fade: 0ms;
+    --duration-120: 0ms;
+    --duration-180: 0ms;
+    --duration-260: 0ms;
+    --duration-320: 0ms;
   }
 }

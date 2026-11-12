@@ -1,288 +1,358 @@
 'use client';
-// P5 — Home
-// Floating pod bubbles. No cue ever names a single member's status.
+// P5, Home on deep blue. Five translucent pods in fixed slots, an orange
+// orbit only where Janani still owes an action, a New pod slot, and an
+// events tray peeking above the dock. Counts come from the seed.
 import { useRef, useState } from 'react';
-import { EmptyState, Button, useDocumentTitle } from '@/components/ui';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useDocumentTitle } from '@/components/ui';
+import { BlobLogo, HeyMenu, NewPodBlob, PodBlob } from '@/components/heypal';
+import type { HubLink } from '@/components/heypal';
+import { EVENTS, PODS, podsNeedingMe } from '@/lib/heypal/seed';
 
-type PodStage =
-  'none' | 'planning' | 'poll_open' | 'booking_pending' | 'payments_open';
+// Fixed slots in the pods area (brief part 6). Centers are measured inside
+// a 402 wide area that starts about 170 from the top.
+const SLOTS = [
+  { x: 105, y: 95 },
+  { x: 295, y: 75 },
+  { x: 120, y: 285 },
+  { x: 310, y: 270 },
+  { x: 90, y: 455 },
+  { x: 255, y: 455 },
+];
 
-interface DemoPod {
-  id: string;
-  name: string;
-  memberCount: number;
-  stage: PodStage;
-  hasPrivateDot: boolean;
+// Blob size follows the member count (brief part 6).
+function podSize(members: number): number {
+  if (members <= 3) return 124;
+  if (members === 4) return 140;
+  if (members === 5) return 156;
+  if (members <= 6) return 172;
+  return 196;
 }
 
-const STAGE_LABEL: Record<PodStage, string> = {
-  none: '',
-  planning: 'Planning',
-  poll_open: 'Poll open',
-  booking_pending: 'Booking pending',
-  payments_open: 'Payments open',
-};
-
-// Synthetic demo pods
-const DEMO_PODS: DemoPod[] = [
-  {
-    id: 'pod-1',
-    name: 'Friday crew',
-    memberCount: 4,
-    stage: 'poll_open',
-    hasPrivateDot: false,
-  },
-  {
-    id: 'pod-2',
-    name: 'Work pals',
-    memberCount: 3,
-    stage: 'planning',
-    hasPrivateDot: true,
-  },
-  {
-    id: 'pod-3',
-    name: 'Cousins',
-    memberCount: 5,
-    stage: 'none',
-    hasPrivateDot: false,
-  },
+// Every hub destination, reachable from Home. The menu shows the first
+// five; the tray and sheets link the rest.
+const HUB_LINKS: HubLink[] = [
+  { href: '/home', label: 'home', note: 'Your pods' },
+  { href: '/hub/profile', label: 'profile', note: 'Interests and limits' },
+  { href: '/hub/calendar', label: 'calendar', note: 'Your week' },
+  { href: '/money', label: 'money', note: 'What you owe and are owed' },
+  { href: '/hub/settings', label: 'settings', note: 'Notifications, plan' },
+  { href: '/hub/events', label: 'events', note: 'Things to do in NYC' },
+  { href: '/hub/planner', label: 'planner', note: 'Private planner chat' },
+  { href: '/hub/payment-methods', label: 'payments', note: 'Linked PayPal' },
 ];
-
-// Approximate positions on a 360–430-wide canvas
-const BUBBLE_POSITIONS = [
-  { top: '8%', left: '10%' },
-  { top: '34%', left: '52%' },
-  { top: '60%', left: '16%' },
-];
-
-// The private-ask dot belongs to the member, not to a pod: it lives on the
-// hub entry (spec P5 "private chat badge"), with a text label in the sheet.
-const PRIVATE_ASKS = DEMO_PODS.filter((p) => p.hasPrivateDot).length;
 
 export default function HomePage() {
   useDocumentTitle('Your pods');
-  const [pods] = useState<DemoPod[]>(DEMO_PODS);
+  const router = useRouter();
+  const searchDialog = useRef<HTMLDialogElement>(null);
+  const [trayOpen, setTrayOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const needing = podsNeedingMe();
+  const needingIds = new Set(needing.map((p) => p.id));
+
+  const results = EVENTS.filter((e) =>
+    e.title.toLowerCase().includes(query.trim().toLowerCase()),
+  );
 
   return (
-    <main className="relative flex flex-col min-h-dvh bg-[var(--color-paper)]">
-      <header className="px-[var(--gutter)] pt-6 pb-2">
-        <h1 className="text-2xl text-[var(--color-ink)]">Your pods</h1>
-      </header>
-
-      {pods.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <EmptyState
-            heading="Start your first pod"
-            body="A pod is a friend group of 3–8 people. Create one to start planning together."
-            action={
-              <Button
-                onClick={() => {
-                  window.location.href = '/pods/create';
-                }}
-              >
-                Create a pod
-              </Button>
-            }
-          />
-        </div>
-      ) : (
-        <section
-          className="relative flex-1"
-          style={{ minHeight: 'calc(100dvh - 72px - 72px)' }}
-          aria-label="Pods"
+    <main data-surface="deep" className="relative flex flex-col min-h-dvh">
+      {/* Header zone: search left, hamburger right. */}
+      <div
+        className="flex items-center justify-between px-4"
+        style={{
+          height: 'calc(56px + env(safe-area-inset-top, 0px))',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => searchDialog.current?.showModal()}
+          aria-label="Search events"
+          className="grid place-items-center w-11 h-11 rounded-full"
+          style={{ background: 'rgb(255 255 255 / 0.18)' }}
         >
-          {pods.map((pod, i) => (
-            <PodBubble
-              key={pod.id}
-              pod={pod}
-              tone={(i % 6) + 1}
-              position={
-                BUBBLE_POSITIONS[i] ?? {
-                  top: `${10 + i * 22}%`,
-                  left: `${10 + (i % 2) * 40}%`,
-                }
-              }
-            />
-          ))}
-        </section>
-      )}
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+            fill="none"
+            stroke="var(--white)"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <circle cx="9" cy="9" r="6" strokeDasharray="2.5 2.5" />
+            <path d="M13.5 13.5L17 17" />
+          </svg>
+        </button>
+        <HeyMenu surface="deep" items={HUB_LINKS} current="/home" />
+      </div>
 
-      <Dock />
+      {/* Header block. */}
+      <div className="px-6 pt-2 pb-1">
+        <h1 className="text-[32px] font-bold text-[var(--white)]">Your pods</h1>
+        <p className="flex items-center gap-2 text-sm font-semibold text-[var(--mist)]">
+          {needing.length > 0 ? (
+            <>
+              <span
+                aria-hidden="true"
+                className="inline-block w-2.5 h-2.5 rounded-full bg-[var(--orange)]"
+              />
+              {needing.length} pods need you
+            </>
+          ) : (
+            "You're all caught up"
+          )}
+        </p>
+      </div>
+
+      {/* Pods area with fixed slots. */}
+      <section
+        aria-label="Pods"
+        className="relative flex-1 mx-auto w-full max-w-[402px]"
+        style={{ minHeight: 560 }}
+      >
+        {PODS.map((pod, i) => {
+          const slot = SLOTS[i] ?? { x: 200, y: 200 };
+          const size = podSize(pod.memberIds.length);
+          const need = podNeedsReason(pod.id);
+          return (
+            <div
+              key={pod.id}
+              className="absolute"
+              style={{
+                left: slot.x,
+                top: slot.y,
+                transform: 'translate(-50%, -50%)',
+              }}
+            >
+              <PodBlob
+                name={pod.name}
+                memberCount={pod.memberIds.length}
+                stage={pod.stage}
+                needsMeReason={needingIds.has(pod.id) ? need : null}
+                size={size}
+                onOpen={() => router.push(`/pods/${pod.id}`)}
+              />
+            </div>
+          );
+        })}
+        <div
+          className="absolute"
+          style={{
+            left: (SLOTS[5] ?? { x: 255 }).x,
+            top: (SLOTS[5] ?? { y: 455 }).y,
+            transform: 'translate(-50%, -50%)',
+            width: 130,
+            height: 130,
+          }}
+        >
+          <NewPodBubble onOpen={() => router.push('/pods/create')} />
+        </div>
+      </section>
+
+      {/* Events tray peek above the dock. */}
+      <section
+        aria-label="Happening in NYC"
+        className="relative bg-[var(--white)] rounded-t-[32px] px-5 pt-3 text-left"
+        style={{ zIndex: 'var(--layer-tray)' }}
+      >
+        <button
+          type="button"
+          onClick={() => setTrayOpen((v) => !v)}
+          aria-expanded={trayOpen}
+          aria-label={trayOpen ? 'Collapse events tray' : 'Open events tray'}
+          className="mx-auto block w-16 h-8"
+        >
+          <span
+            aria-hidden="true"
+            className="hey-dots mx-auto block w-10 h-2 rounded-full text-[var(--blue-mid)]"
+          />
+        </button>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-[var(--ink)]">
+            Happening in NYC
+          </h2>
+          <Link
+            href="/hub/events"
+            className="text-sm font-semibold text-[var(--ink)] underline underline-offset-4"
+          >
+            All events
+          </Link>
+        </div>
+        <button
+          type="button"
+          onClick={() => searchDialog.current?.showModal()}
+          className="mt-2 flex items-center gap-2 w-full rounded-full bg-[var(--pale)] px-4 min-h-[44px] text-base text-[var(--ink-muted)]"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <circle cx="9" cy="9" r="6" strokeDasharray="2.5 2.5" />
+            <path d="M13.5 13.5L17 17" />
+          </svg>
+          Search events
+        </button>
+        {trayOpen ? (
+          <ul className="hey-stack mt-3 pb-4">
+            {EVENTS.slice(0, 5).map((e, i) => (
+              <li key={e.id}>
+                <TrayCard index={i} title={e.title} price={e.priceCents} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div
+            aria-hidden="true"
+            className="hey-stack mt-3 h-[88px] overflow-hidden"
+          >
+            {EVENTS.slice(0, 2).map((e, i) => (
+              <TrayCard
+                key={e.id}
+                index={i}
+                title={e.title}
+                price={e.priceCents}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Dock: blob logo left, add button right. Always visible. */}
+      <nav
+        aria-label="Home actions"
+        className="sticky bottom-0 flex items-center justify-between px-5 bg-transparent"
+        style={{
+          height: 'calc(76px + env(safe-area-inset-bottom, 0px))',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          zIndex: 'var(--layer-dock)',
+        }}
+      >
+        <BlobLogo surface="deep" size={56} />
+        <Link
+          href="/pods/create"
+          aria-label="Create a new pod"
+          className="grid place-items-center w-14 h-14 rounded-full bg-[var(--white)] text-[var(--deep)]"
+        >
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 26 26"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+          >
+            <path d="M13 5v16M5 13h16" strokeDasharray="4 3" />
+          </svg>
+        </Link>
+      </nav>
+
+      {/* Search overlay as a dialog. */}
+      <dialog
+        ref={searchDialog}
+        aria-label="Search events"
+        className="hey-menu-dialog"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) searchDialog.current?.close();
+        }}
+      >
+        <div className="hey-menu-scrim" aria-hidden="true" />
+        <div className="fixed inset-x-0 top-0 mx-auto max-w-[430px] bg-[var(--deep)] px-5 pt-16 pb-8 rounded-b-[32px]">
+          <form
+            role="search"
+            onSubmit={(e) => e.preventDefault()}
+            className="flex flex-col gap-3"
+          >
+            <label
+              htmlFor="home-search"
+              className="text-sm font-semibold text-[var(--mist)]"
+            >
+              Search events
+            </label>
+            <input
+              id="home-search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Tonight, free, food, music"
+              className="hey-dot-input"
+            />
+          </form>
+          <ul className="hey-stack mt-4 max-h-[50dvh] overflow-y-auto">
+            {results.map((e, i) => (
+              <li key={e.id}>
+                <TrayCard index={i} title={e.title} price={e.priceCents} />
+              </li>
+            ))}
+          </ul>
+          {results.length === 0 && (
+            <p className="mt-4 text-base text-[var(--mist)]">
+              Nothing matches. Try another word.
+            </p>
+          )}
+          <div className="mt-4 flex items-center justify-between">
+            <Link
+              href="/hub/events"
+              className="text-base font-semibold text-[var(--white)] underline underline-offset-4"
+            >
+              All events
+            </Link>
+            <button
+              type="button"
+              onClick={() => searchDialog.current?.close()}
+              className="text-base font-semibold text-[var(--mist)]"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </dialog>
     </main>
   );
 }
 
-function PodBubble({
-  pod,
-  tone,
-  position,
-}: {
-  pod: DemoPod;
-  tone: number;
-  position: { top: string; left: string };
-}) {
-  const hasStage = pod.stage !== 'none';
-  return (
-    <a
-      href={`/pods/${pod.id}`}
-      className={`bubble bubble--${tone} absolute flex flex-col items-center justify-center text-center px-3`}
-      style={{ ...position, width: 132, height: 132 }}
-      aria-label={`${pod.name}, ${pod.memberCount} members${hasStage ? `, ${STAGE_LABEL[pod.stage]}` : ''}`}
-    >
-      <span className="text-base font-semibold leading-tight">{pod.name}</span>
-      <span className="text-xs text-[var(--color-ink-muted)]">
-        {pod.memberCount} people
-      </span>
-      {hasStage && (
-        <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium">
-          <span aria-hidden="true">●</span>
-          {STAGE_LABEL[pod.stage]}
-        </span>
-      )}
-    </a>
-  );
+function podNeedsReason(podId: string): string {
+  const pod = PODS.find((p) => p.id === podId);
+  const plan = podsNeedingMe().find((p) => p.id === podId);
+  if (!plan || !pod) return 'Needs your answer';
+  if (pod.stage === 'Vote open') return 'Vote open, needs your vote';
+  if (pod.stage === 'Ready check') return 'Ready check, needs your answer';
+  return 'A payment needs you';
 }
 
-// Bottom dock, in thumb reach: create a pod (centre) and the hub (right).
-function Dock() {
-  const hub = useRef<HTMLDialogElement>(null);
-  return (
-    <>
-      <nav
-        aria-label="Home actions"
-        className="sticky bottom-0 grid grid-cols-3 items-center px-[var(--gutter)] bg-[var(--color-paper)]"
-        style={{
-          height: 'calc(var(--dock-height) + var(--safe-bottom))',
-          paddingBottom: 'var(--safe-bottom)',
-        }}
-      >
-        <span />
-        <a
-          href="/pods/create"
-          className="justify-self-center w-14 h-14 rounded-full bg-[var(--color-action)] text-[var(--color-on-action)] flex items-center justify-center shadow-[var(--shadow-card)] active:bg-[var(--color-action-pressed)]"
-          aria-label="Create a new pod"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        </a>
-        <button
-          type="button"
-          onClick={() => hub.current?.showModal()}
-          className="justify-self-end relative inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 min-h-[48px] text-sm font-medium text-[var(--color-ink)]"
-          aria-haspopup="dialog"
-          aria-label={PRIVATE_ASKS ? `Hub, ${PRIVATE_ASKS} private ask` : 'Hub'}
-        >
-          Hub
-          {PRIVATE_ASKS > 0 && (
-            <span
-              className="w-2.5 h-2.5 rounded-full bg-[var(--color-private)]"
-              aria-hidden="true"
-            />
-          )}
-        </button>
-      </nav>
-      <HubSheet dialog={hub} />
-    </>
-  );
-}
-
-// The hub (spec P5, P15–P22) as a bottom sheet. <dialog> gives focus
-// containment, Escape to close and focus return to the Hub button.
-function HubSheet({
-  dialog,
+function TrayCard({
+  index,
+  title,
+  price,
 }: {
-  dialog: React.RefObject<HTMLDialogElement | null>;
+  index: number;
+  title: string;
+  price: number | null;
 }) {
-  const items = [
-    ...(PRIVATE_ASKS
-      ? [
-          {
-            href: '/hub/planner',
-            label: 'Private planner chat',
-            note: `${PRIVATE_ASKS} private ask waiting`,
-          },
-        ]
-      : []),
-    { href: '/money', label: 'Money', note: 'What you owe and are owed' },
-    { href: '/hub/events', label: 'Events', note: 'Things to do in NYC' },
-    {
-      href: '/hub/calendar',
-      label: 'Calendar',
-      note: 'Your week and hangouts',
-    },
-    {
-      href: '/hub/profile',
-      label: 'Profile',
-      note: 'Interests and private limits',
-    },
-    ...(PRIVATE_ASKS
-      ? []
-      : [
-          {
-            href: '/hub/planner',
-            label: 'Private planner chat',
-            note: 'Just you and your planner',
-          },
-        ]),
-    {
-      href: '/hub/payment-methods',
-      label: 'Payment methods',
-      note: 'Your linked PayPal',
-    },
-    {
-      href: '/hub/settings',
-      label: 'Settings',
-      note: 'Notifications, privacy, plan',
-    },
-  ];
+  const fills = ['var(--card-deep)', 'var(--card-royal)', 'var(--card-sky)'];
+  const texts = ['var(--white)', 'var(--white)', 'var(--ink)'];
+  const fill = fills[index % fills.length] ?? 'var(--card-sky)';
+  const text = texts[index % texts.length] ?? 'var(--ink)';
   return (
-    <dialog
-      ref={dialog}
-      aria-labelledby="hub-title"
-      className="m-0 mt-auto w-full max-w-[var(--layout-max)] mx-auto rounded-t-[var(--radius-sheet)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-sheet)] backdrop:bg-black/30"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) e.currentTarget.close();
-      }}
-    >
-      <div className="flex items-center justify-between px-[var(--gutter)] pt-4 pb-2">
-        <h2 id="hub-title" className="text-xl font-semibold">
-          Hub
-        </h2>
-        <button
-          type="button"
-          onClick={() => dialog.current?.close()}
-          className="rounded-full px-4 min-h-[44px] text-sm font-medium text-[var(--color-ink)]"
-        >
-          Close
-        </button>
+    <div className="hey-stack-card" style={{ background: fill, color: text }}>
+      <p className="text-[13px] font-semibold">NYC</p>
+      <div className="flex items-end justify-between gap-2">
+        <p className="text-[22px] font-bold leading-tight">{title}</p>
+        <p className="text-[22px] font-bold tabular">
+          {price === null ? 'Free' : `$${(price / 100).toFixed(0)}`}
+        </p>
       </div>
-      <ul className="pb-[calc(16px+var(--safe-bottom))]">
-        {items.map((item) => (
-          <li key={item.href}>
-            <a
-              href={item.href}
-              className="flex flex-col justify-center px-[var(--gutter)] min-h-[56px] border-t border-[var(--color-hairline)]"
-            >
-              <span className="text-base font-medium text-[var(--color-ink)]">
-                {item.label}
-              </span>
-              <span className="text-xs text-[var(--color-ink-muted)]">
-                {item.note}
-              </span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </dialog>
+    </div>
   );
 }
