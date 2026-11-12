@@ -70,10 +70,9 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 
 ## IN PROGRESS
 
-| ID     | Title                                    | Role          | Depends on | Acceptance criteria                                                                                                | Claimed by                                                                                                  | Branch/PR                            |
-| ------ | ---------------------------------------- | ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| YT-026 | ∥ Phase 2: abuse and coercion assessment | trust-safety  | YT-014     | Host misuse, exclusion, harassment, financial coercion and safe exit scenarios with mitigation/test owners         | Human: Vid — IN PROGRESS (trust-safety, claude-opus-5-5), taken over from Alan at Vid's request 2026-11-12  | `trust-safety/yt-026-abuse-coercion` |
-| YT-027 | ∥ Phase 2: market and positioning        | growth-market | YT-014     | Dated primary sources, sourced sizing and competitor comparisons; ethical revenue hypotheses; no invented traction | Human: Vid — IN PROGRESS (growth-market, claude-opus-5-5), taken over from Alan at Vid's request 2026-11-12 | `growth-market/yt-027-market`        |
+| ID     | Title                             | Role          | Depends on | Acceptance criteria                                                                                                | Claimed by                                                                                                  | Branch/PR                     |
+| ------ | --------------------------------- | ------------- | ---------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| YT-027 | ∥ Phase 2: market and positioning | growth-market | YT-014     | Dated primary sources, sourced sizing and competitor comparisons; ethical revenue hypotheses; no invented traction | Human: Vid — IN PROGRESS (growth-market, claude-opus-5-5), taken over from Alan at Vid's request 2026-11-12 | `growth-market/yt-027-market` |
 
 | US-019 | Phase 2: HTTP routes for the contract | backend | US-001, US-002, US-013, YT-007 (stack ratification) | Every openapi.json operation is served under /api/v1; requests and responses are validated against the contract; errors match the contract Error / PaymentGateError shapes; createSettlementPayment stays gated closed (409 payment_gate_blocked) | Human: Shaahid — IN PROGRESS | — |
 
@@ -81,9 +80,10 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 
 Alan's Lane A tasks taken over by Vid, awaiting independent review:
 
-| ID     | Title                                           | Role    | Depends on | Acceptance criteria                                                                                                                                               | Claimed by                                                                         | Branch/PR                       |
-| ------ | ----------------------------------------------- | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------- |
-| UN-009 | ∥ Phase 2: tally privacy boundary and retention | privacy | UN-001     | Per-member answers held in memory only, never persisted or logged; documented as architectural not cryptographic privacy; inference-over-rounds risk written down | Human: Vid — IN REVIEW (privacy, claude-opus-5-5), taken over from Alan 2026-11-12 | `privacy/un-009-tally-boundary` |
+| ID     | Title                                           | Role         | Depends on | Acceptance criteria                                                                                                                                               | Claimed by                                                                              | Branch/PR                            |
+| ------ | ----------------------------------------------- | ------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------ |
+| UN-009 | ∥ Phase 2: tally privacy boundary and retention | privacy      | UN-001     | Per-member answers held in memory only, never persisted or logged; documented as architectural not cryptographic privacy; inference-over-rounds risk written down | Human: Vid — IN REVIEW (privacy, claude-opus-5-5), taken over from Alan 2026-11-12      | `privacy/un-009-tally-boundary`      |
+| YT-026 | ∥ Phase 2: abuse and coercion assessment        | trust-safety | YT-014     | Host misuse, exclusion, harassment, financial coercion and safe exit scenarios with mitigation/test owners                                                        | Human: Vid — IN REVIEW (trust-safety, claude-opus-5-5), taken over from Alan 2026-11-12 | `trust-safety/yt-026-abuse-coercion` |
 
 Vid's reassigned backend tasks awaiting independent review (Rohan reviews, per the Lane S reassignment):
 
@@ -796,6 +796,19 @@ Not done:
   Deviation: UN-009 said answers are "never persisted". That is true for feasibility answers, but **not** for the stretch ask, which is stored deliberately and kept private by scope. The doc states this.
   How to verify: `npm run check`; `node --test tests/privacy-boundary.test.mjs`.
   Next step: an independent review; Architect and Backend decide PV-09; Content adds the PV-10 copy.
+
+### Handoff YT-026: trust-safety (Vid, taken over from Alan) → reviewer, backend, LLM engineer, product manager, behavioral
+
+Done: `docs/05-risk/TRUST_SAFETY.md` is rewritten for Unspoken, replacing the YourTurn stub. It has 19 scenarios (TS-01 to TS-19) across payer misuse, exclusion, harassment, coercion, private hardship and safe exit, plus sections on retaliatory ranking and moderation boundaries. Each scenario has a severity, the control verified in code, the gap, and a requirement with an owner, and there is a table of tests to add. `tests/trust-safety.test.mjs` (3) checks coverage and severities, and that the verified controls hold in code.
+Open, High:
+
+- **TS-01:** the payer's `setActualTotal` has no cap and needs no consent.
+- **TS-12:** there is no frequency limit on stretch asks.
+- **TS-16:** `STRETCH_ASKS` is visible to the pod (PRIVACY PV-09).
+
+Not done: fixes. The requirements belong to Backend, LLM Engineer, Product Manager and Behavioral. Reporting, blocking and message deletion are listed for LATER, not the demo.
+How to verify: `npm run check`; `node --test tests/trust-safety.test.mjs`.
+Next step: a reviewer, then the owners take TS-01, TS-12 and TS-16.
 
 ## Human Phase 1 authorization and coordinated ownership
 
