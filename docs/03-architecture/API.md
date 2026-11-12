@@ -41,28 +41,28 @@ While the status is `draft`, no role may treat these routes as settled: Backend 
 
 Full schemas are in `openapi.json`. Summary, grouped by tag:
 
-| Method and path                                                  | Operation                   | Notes                                            |
-| ---------------------------------------------------------------- | --------------------------- | ------------------------------------------------ |
-| `POST /sessions`                                                 | `createSession`             | Demo identity only; returns CSRF token           |
-| `DELETE /sessions`                                               | `endSession`                | Clears session                                   |
-| `GET /me`                                                        | `getCurrentMember`          | Caller's own record and memberships              |
-| `GET /venues`                                                    | `listVenues`                | Fixed list; `availabilityKnown: false`           |
-| `GET /circles/{circleId}`                                        | `getCircle`                 | Peer view, `potCentsDerived`, `readyForPlanning` |
-| `POST /circles/{circleId}/invitations/{invitationId}/acceptance` | `acceptInvitation`          | `409 circle_full` above six accepted             |
-| `GET`/`POST /circles/{circleId}/contribution-proposals`          | proposal read/create        | Amount 100–1500 cents, default 500               |
-| `POST …/contribution-proposals/{proposalId}/agreements`          | `agreeContributionProposal` | Version-bound; `409 version_stale`               |
-| `PUT /circles/{circleId}/members/me/consent`                     | `setOwnTrackingConsent`     | Default off; withdrawal excludes incident edges  |
-| `POST …/members/me/pause`                                        | `pauseOwnParticipation`     | **No reason field exists**                       |
-| `POST …/members/me/leave`                                        | `leaveCircle`               | One confirmation; no retention offer             |
-| `GET /circles/{circleId}/turns`                                  | `listTurns`                 | Deterministic order + advancement state          |
-| `POST …/turns/{turnId}/plan-suggestions`                         | `createPlanSuggestions`     | Exactly three plans or explicit unavailable      |
-| `POST …/turns/{turnId}/approvals`                                | `approvePlan`               | Records exact plan version; not a payment        |
-| `PUT …/turns/{turnId}/attendance`                                | `setOwnAttendance`          | `penaltyApplied: false` always                   |
-| `GET /circles/{circleId}/ledger`                                 | `getLedger`                 | Derived pot + append-only entries                |
-| `GET`/`POST /circles/{circleId}/subscriptions`                   | subscription state/start    | Start is gate-blocked                            |
-| `GET`/`POST …/turns/{turnId}/venue-payments`                     | payment state/create        | Create is gate-blocked                           |
-| `POST /webhooks/paypal`                                          | `receiveProviderWebhook`    | Verify signature before any effect               |
-| `GET /demo/graph`                                                | `getSyntheticDemoGraph`     | Only numeric-edge endpoint; synthetic fixture    |
+| Method and path                                                  | Operation                   | Notes                                                   |
+| ---------------------------------------------------------------- | --------------------------- | ------------------------------------------------------- |
+| `POST /sessions`                                                 | `createSession`             | Demo identity only; returns CSRF token                  |
+| `DELETE /sessions`                                               | `endSession`                | Clears session                                          |
+| `GET /me`                                                        | `getCurrentMember`          | Caller's own record and memberships                     |
+| `GET /venues`                                                    | `listVenues`                | Fixed list; `availabilityKnown: false`                  |
+| `GET /circles/{circleId}`                                        | `getCircle`                 | Peer view, `potCentsDerived`, `readyForPlanning`        |
+| `POST /circles/{circleId}/invitations/{invitationId}/acceptance` | `acceptInvitation`          | `409 circle_full` above six accepted                    |
+| `GET`/`POST /circles/{circleId}/contribution-proposals`          | proposal read/create        | Amount 100–1500 cents, default 500                      |
+| `POST …/contribution-proposals/{proposalId}/agreements`          | `agreeContributionProposal` | Version-bound; `409 version_stale`                      |
+| `PUT /circles/{circleId}/members/me/consent`                     | `setOwnTrackingConsent`     | Default off; withdrawal excludes incident edges         |
+| `POST …/members/me/pause`                                        | `pauseOwnParticipation`     | **No reason field exists**                              |
+| `POST …/members/me/leave`                                        | `leaveCircle`               | One confirmation; no retention offer                    |
+| `GET /circles/{circleId}/turns`                                  | `listTurns`                 | Deterministic order + advancement state                 |
+| `POST …/turns/{turnId}/plan-suggestions`                         | `createPlanSuggestions`     | Exactly three plans or explicit unavailable             |
+| `POST …/turns/{turnId}/approvals`                                | `approvePlan`               | Records exact plan version; not a payment               |
+| `PUT …/turns/{turnId}/attendance`                                | `setOwnAttendance`          | `penaltyApplied: false` always                          |
+| `GET /circles/{circleId}/ledger`                                 | `getLedger`                 | Derived pot + append-only entries                       |
+| `GET`/`POST /circles/{circleId}/subscriptions`                   | subscription state/start    | Start is gate-blocked                                   |
+| `GET`/`POST …/turns/{turnId}/venue-payments`                     | payment state/create        | Payouts from the pot (ADR 0005); create is gate-blocked |
+| `POST /webhooks/paypal`                                          | `receiveProviderWebhook`    | Verify signature before any effect                      |
+| `GET /demo/graph`                                                | `getSyntheticDemoGraph`     | Only numeric-edge endpoint; synthetic fixture           |
 
 ### Invariants the schema enforces
 
@@ -73,7 +73,8 @@ Full schemas are in `openapi.json`. Summary, grouped by tag:
 5. **Synthetic graph only.** `SyntheticGraph.synthetic` is `const: true`, node ids must match `^synthetic-`, and every edge carries a `textEquivalent` alongside `stateLabel`. No other response schema contains a numeric tie value. The data source is the route, not a request flag.
 6. **No hardship reasons.** `PauseRequest` has `additionalProperties: false` and no reason field, so there is no wire format in which a reason could arrive.
 7. **Honest pending states.** `ConsentState.ownDataAccess`, `ParticipationState.collectionEffect` and `LeaveResult.forfeitPolicy` are enums whose only value names the unresolved decision, instead of asserting a settled outcome.
-8. **Distinct provider states.** Subscription (`created`/`approved`/`active`/`payment_received`) and payment (`order_created`/`payer_approved`/`captured`) states are separate enum members; `blocked` and `failed` are distinct from both.
+8. **Distinct provider states.** Subscription (`created`/`approved`/`active`/`payment_received`) and payout (`payout_pending`/`payout_success`/`payout_denied`) states are separate enum members; `blocked` and `failed` are distinct from both. `payout_pending` is what a create returns, so it is never displayed as success.
+9. **Fees are explicit.** `PaymentState.feeCents` is required and `LedgerEntry.kind` includes `provider_fee`: one payout writes a venue-amount entry and a fee entry, both keyed to one verified event, so the derived pot cannot drift from the real balance (ADR 0005).
 
 ## Errors and idempotency
 

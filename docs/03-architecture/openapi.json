@@ -4,12 +4,15 @@
     "title": "YourTurn API",
     "version": "0.1.0-draft",
     "summary": "Draft contract for a sandbox-only rotating-host demo.",
-    "description": "DRAFT. Not frozen, not implemented, and not approved for money movement. Payment-executing operations are gated closed and return payment_gate_blocked until YT-006 sandbox evidence and human money-flow approval exist. Graph numbers come only from labelled synthetic fixtures. See docs/decisions/0004-phase-1-contracts.md.",
+    "description": "DRAFT. Not frozen, not implemented, and not approved for money movement. Payment-executing operations are gated closed and return payment_gate_blocked until human money-flow approval exists. The venue is paid with the Payouts API from the collector balance, not with Orders/Checkout (ADR 0005, verified in sandbox). Graph numbers come only from labelled synthetic fixtures. See docs/decisions/0004-phase-1-contracts.md and 0005-venue-payment-via-payouts.md.",
     "x-contract-status": "draft",
     "x-frozen": false,
     "x-owner": "architect",
     "x-task": "YT-009",
-    "license": { "name": "UNLICENSED", "identifier": "LicenseRef-Proprietary" }
+    "license": {
+      "name": "UNLICENSED",
+      "identifier": "LicenseRef-Proprietary"
+    }
   },
   "servers": [
     {
@@ -26,8 +29,14 @@
       "name": "circle",
       "description": "Circle membership and contribution agreement."
     },
-    { "name": "turn", "description": "Host rotation, plans and approval." },
-    { "name": "privacy", "description": "Consent, pause and exit controls." },
+    {
+      "name": "turn",
+      "description": "Host rotation, plans and approval."
+    },
+    {
+      "name": "privacy",
+      "description": "Consent, pause and exit controls."
+    },
     {
       "name": "money",
       "description": "Ledger reads and gated payment operations."
@@ -37,7 +46,11 @@
       "description": "Explicitly synthetic demonstration data."
     }
   ],
-  "security": [{ "sessionCookie": [] }],
+  "security": [
+    {
+      "sessionCookie": []
+    }
+  ],
   "paths": {
     "/sessions": {
       "post": {
@@ -50,7 +63,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateSessionRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionRequest"
+              }
             }
           }
         },
@@ -58,27 +73,45 @@
           "201": {
             "description": "Session created.",
             "headers": {
-              "Set-Cookie": { "$ref": "#/components/headers/SetSessionCookie" }
+              "Set-Cookie": {
+                "$ref": "#/components/headers/SetSessionCookie"
+              }
             },
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Session" }
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ValidationFailed" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "delete": {
         "tags": ["session"],
         "operationId": "endSession",
         "summary": "End the current session.",
-        "parameters": [{ "$ref": "#/components/parameters/CsrfToken" }],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CsrfToken"
+          }
+        ],
         "responses": {
-          "204": { "description": "Session ended." },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "403": { "$ref": "#/components/responses/CsrfRejected" }
+          "204": {
+            "description": "Session ended."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/CsrfRejected"
+          }
         }
       }
     },
@@ -93,11 +126,15 @@
             "description": "Current member.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CurrentMember" }
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentMember"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthenticated" }
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
         }
       }
     },
@@ -112,16 +149,24 @@
             "description": "Venues.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/VenueList" }
+                "schema": {
+                  "$ref": "#/components/schemas/VenueList"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthenticated" }
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
         }
       }
     },
     "/circles/{circleId}": {
-      "parameters": [{ "$ref": "#/components/parameters/CircleId" }],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CircleId"
+        }
+      ],
       "get": {
         "tags": ["circle"],
         "operationId": "getCircle",
@@ -132,21 +177,35 @@
             "description": "Circle.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Circle" }
+                "schema": {
+                  "$ref": "#/components/schemas/Circle"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/circles/{circleId}/invitations/{invitationId}/acceptance": {
       "parameters": [
-        { "$ref": "#/components/parameters/CircleId" },
-        { "$ref": "#/components/parameters/InvitationId" },
-        { "$ref": "#/components/parameters/CsrfToken" },
-        { "$ref": "#/components/parameters/IdempotencyKey" }
+        {
+          "$ref": "#/components/parameters/CircleId"
+        },
+        {
+          "$ref": "#/components/parameters/InvitationId"
+        },
+        {
+          "$ref": "#/components/parameters/CsrfToken"
+        },
+        {
+          "$ref": "#/components/parameters/IdempotencyKey"
+        }
       ],
       "post": {
         "tags": ["circle"],
@@ -158,18 +217,28 @@
             "description": "Membership accepted.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Membership" }
+                "schema": {
+                  "$ref": "#/components/schemas/Membership"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "403": { "$ref": "#/components/responses/CsrfRejected" },
-          "404": { "$ref": "#/components/responses/NotFound" },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/CsrfRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "409": {
             "description": "Circle is full at six accepted members, or the invitation is already resolved.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -178,9 +247,15 @@
     },
     "/circles/{circleId}/contribution-proposals": {
       "parameters": [
-        { "$ref": "#/components/parameters/CircleId" },
-        { "$ref": "#/components/parameters/CsrfToken" },
-        { "$ref": "#/components/parameters/IdempotencyKey" }
+        {
+          "$ref": "#/components/parameters/CircleId"
+        },
+        {
+          "$ref": "#/components/parameters/CsrfToken"
+        },
+        {
+          "$ref": "#/components/parameters/IdempotencyKey"
+        }
       ],
       "get": {
         "tags": ["circle"],
@@ -198,8 +273,12 @@
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "post": {
@@ -228,19 +307,35 @@
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ValidationFailed" },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "403": { "$ref": "#/components/responses/CsrfRejected" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/CsrfRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/circles/{circleId}/contribution-proposals/{proposalId}/agreements": {
       "parameters": [
-        { "$ref": "#/components/parameters/CircleId" },
-        { "$ref": "#/components/parameters/ProposalId" },
-        { "$ref": "#/components/parameters/CsrfToken" },
-        { "$ref": "#/components/parameters/IdempotencyKey" }
+        {
+          "$ref": "#/components/parameters/CircleId"
+        },
+        {
+          "$ref": "#/components/parameters/ProposalId"
+        },
+        {
+          "$ref": "#/components/parameters/CsrfToken"
+        },
+        {
+          "$ref": "#/components/parameters/IdempotencyKey"
+        }
       ],
       "post": {
         "tags": ["circle"],
@@ -268,15 +363,25 @@
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ValidationFailed" },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "403": { "$ref": "#/components/responses/CsrfRejected" },
-          "404": { "$ref": "#/components/responses/NotFound" },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/CsrfRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "409": {
             "description": "Proposal or membership version is stale and must be re-read before agreeing.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -285,9 +390,15 @@
     },
     "/circles/{circleId}/members/me/consent": {
       "parameters": [
-        { "$ref": "#/components/parameters/CircleId" },
-        { "$ref": "#/components/parameters/CsrfToken" },
-        { "$ref": "#/components/parameters/IdempotencyKey" }
+        {
+          "$ref": "#/components/parameters/CircleId"
+        },
+        {
+          "$ref": "#/components/parameters/CsrfToken"
+        },
+        {
+          "$ref": "#/components/parameters/IdempotencyKey"
+        }
       ],
       "put": {
         "tags": ["privacy"],
@@ -298,7 +409,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/SetConsentRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/SetConsentRequest"
+              }
             }
           }
         },
@@ -307,22 +420,38 @@
             "description": "Consent state after the change.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ConsentState" }
+                "schema": {
+                  "$ref": "#/components/schemas/ConsentState"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ValidationFailed" },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "403": { "$ref": "#/components/responses/CsrfRejected" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/CsrfRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/circles/{circleId}/members/me/pause": {
       "parameters": [
-        { "$ref": "#/components/parameters/CircleId" },
-        { "$ref": "#/components/parameters/CsrfToken" },
-        { "$ref": "#/components/parameters/IdempotencyKey" }
+        {
+          "$ref": "#/components/parameters/CircleId"
+        },
+        {
+          "$ref": "#/components/parameters/CsrfToken"
+        },
+        {
+          "$ref": "#/components/parameters/IdempotencyKey"
+        }
       ],
       "post": {
         "tags": ["privacy"],
@@ -333,7 +462,9 @@
           "required": false,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/PauseRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/PauseRequest"
+              }
             }
           }
         },
@@ -342,22 +473,38 @@
             "description": "Pause state after the change.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ParticipationState" }
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipationState"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ValidationFailed" },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "403": { "$ref": "#/components/responses/CsrfRejected" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/CsrfRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/circles/{circleId}/members/me/leave": {
       "parameters": [
-        { "$ref": "#/components/parameters/CircleId" },
-        { "$ref": "#/components/parameters/CsrfToken" },
-        { "$ref": "#/components/parameters/IdempotencyKey" }
+        {
+          "$ref": "#/components/parameters/CircleId"
+        },
+        {
+          "$ref": "#/components/parameters/CsrfToken"
+        },
+        {
+          "$ref": "#/components/parameters/IdempotencyKey"
+        }
       ],
       "post": {
         "tags": ["privacy"],
@@ -368,7 +515,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/LeaveRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/LeaveRequest"
+              }
             }
           }
         },
@@ -377,19 +526,33 @@
             "description": "Participation ended in the demo.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/LeaveResult" }
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveResult"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ValidationFailed" },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "403": { "$ref": "#/components/responses/CsrfRejected" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/CsrfRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/circles/{circleId}/turns": {
-      "parameters": [{ "$ref": "#/components/parameters/CircleId" }],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CircleId"
+        }
+      ],
       "get": {
         "tags": ["turn"],
         "operationId": "listTurns",
@@ -400,21 +563,35 @@
             "description": "Turns.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/TurnList" }
+                "schema": {
+                  "$ref": "#/components/schemas/TurnList"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/circles/{circleId}/turns/{turnId}/plan-suggestions": {
       "parameters": [
-        { "$ref": "#/components/parameters/CircleId" },
-        { "$ref": "#/components/parameters/TurnId" },
-        { "$ref": "#/components/parameters/CsrfToken" },
-        { "$ref": "#/components/parameters/IdempotencyKey" }
+        {
+          "$ref": "#/components/parameters/CircleId"
+        },
+        {
+          "$ref": "#/components/parameters/TurnId"
+        },
+        {
+          "$ref": "#/components/parameters/CsrfToken"
+        },
+        {
+          "$ref": "#/components/parameters/IdempotencyKey"
+        }
       ],
       "post": {
         "tags": ["turn"],
@@ -436,26 +613,38 @@
             "description": "Suggestion set: either exactly three plans or an explicit unavailable outcome.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SuggestionSet" }
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionSet"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ValidationFailed" },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
           "403": {
             "description": "Caller is not the host of this turn, or CSRF validation failed.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "409": {
             "description": "Circle is not ready: fewer than three accepted members, or no agreed contribution version.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -464,10 +653,18 @@
     },
     "/circles/{circleId}/turns/{turnId}/approvals": {
       "parameters": [
-        { "$ref": "#/components/parameters/CircleId" },
-        { "$ref": "#/components/parameters/TurnId" },
-        { "$ref": "#/components/parameters/CsrfToken" },
-        { "$ref": "#/components/parameters/IdempotencyKey" }
+        {
+          "$ref": "#/components/parameters/CircleId"
+        },
+        {
+          "$ref": "#/components/parameters/TurnId"
+        },
+        {
+          "$ref": "#/components/parameters/CsrfToken"
+        },
+        {
+          "$ref": "#/components/parameters/IdempotencyKey"
+        }
       ],
       "post": {
         "tags": ["turn"],
@@ -478,7 +675,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/ApprovePlanRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/ApprovePlanRequest"
+              }
             }
           }
         },
@@ -487,26 +686,38 @@
             "description": "Approval recorded.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/PlanApproval" }
+                "schema": {
+                  "$ref": "#/components/schemas/PlanApproval"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ValidationFailed" },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
           "403": {
             "description": "Caller is not the host of this turn, or CSRF validation failed.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "409": {
             "description": "Plan version, venue or amount no longer matches the approved snapshot.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           },
@@ -514,7 +725,9 @@
             "description": "Plan total exceeds the derived conceptual budget.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -523,10 +736,18 @@
     },
     "/circles/{circleId}/turns/{turnId}/attendance": {
       "parameters": [
-        { "$ref": "#/components/parameters/CircleId" },
-        { "$ref": "#/components/parameters/TurnId" },
-        { "$ref": "#/components/parameters/CsrfToken" },
-        { "$ref": "#/components/parameters/IdempotencyKey" }
+        {
+          "$ref": "#/components/parameters/CircleId"
+        },
+        {
+          "$ref": "#/components/parameters/TurnId"
+        },
+        {
+          "$ref": "#/components/parameters/CsrfToken"
+        },
+        {
+          "$ref": "#/components/parameters/IdempotencyKey"
+        }
       ],
       "put": {
         "tags": ["turn"],
@@ -537,7 +758,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/SetAttendanceRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/SetAttendanceRequest"
+              }
             }
           }
         },
@@ -546,19 +769,33 @@
             "description": "Attendance state after the change.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AttendanceState" }
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceState"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ValidationFailed" },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "403": { "$ref": "#/components/responses/CsrfRejected" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/CsrfRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/circles/{circleId}/ledger": {
-      "parameters": [{ "$ref": "#/components/parameters/CircleId" }],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CircleId"
+        }
+      ],
       "get": {
         "tags": ["money"],
         "operationId": "getLedger",
@@ -569,20 +806,32 @@
             "description": "Ledger.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Ledger" }
+                "schema": {
+                  "$ref": "#/components/schemas/Ledger"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/circles/{circleId}/subscriptions": {
       "parameters": [
-        { "$ref": "#/components/parameters/CircleId" },
-        { "$ref": "#/components/parameters/CsrfToken" },
-        { "$ref": "#/components/parameters/IdempotencyKey" }
+        {
+          "$ref": "#/components/parameters/CircleId"
+        },
+        {
+          "$ref": "#/components/parameters/CsrfToken"
+        },
+        {
+          "$ref": "#/components/parameters/IdempotencyKey"
+        }
       ],
       "post": {
         "tags": ["money"],
@@ -594,14 +843,24 @@
             "description": "Accepted for provider interaction. Unreachable while the gate is closed.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SubscriptionState" }
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionState"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "403": { "$ref": "#/components/responses/CsrfRejected" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": { "$ref": "#/components/responses/PaymentGateBlocked" }
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/CsrfRejected"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/PaymentGateBlocked"
+          }
         }
       },
       "get": {
@@ -614,27 +873,41 @@
             "description": "Subscription state.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SubscriptionState" }
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionState"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
     "/circles/{circleId}/turns/{turnId}/venue-payments": {
       "parameters": [
-        { "$ref": "#/components/parameters/CircleId" },
-        { "$ref": "#/components/parameters/TurnId" },
-        { "$ref": "#/components/parameters/CsrfToken" },
-        { "$ref": "#/components/parameters/IdempotencyKey" }
+        {
+          "$ref": "#/components/parameters/CircleId"
+        },
+        {
+          "$ref": "#/components/parameters/TurnId"
+        },
+        {
+          "$ref": "#/components/parameters/CsrfToken"
+        },
+        {
+          "$ref": "#/components/parameters/IdempotencyKey"
+        }
       ],
       "post": {
         "tags": ["money"],
         "operationId": "createVenuePayment",
-        "summary": "Create a venue payment from a recorded host approval (gated closed).",
-        "description": "Deterministic code only, from a non-stale approval. Returns payment_gate_blocked while the gate is closed. Capture never implies a reservation; funding feasibility is unverified (Q-001).",
+        "summary": "Pay the venue from the pot with Payouts (gated closed).",
+        "description": "Deterministic code only, from a non-stale approval. Sends a Payouts batch from the collector balance to the venue account; Orders/Checkout cannot spend collected funds (ADR 0005). Returns payment_gate_blocked while the gate is closed. A create returns PENDING: only a readback or a signature-verified event may record a ledger effect. A provider fee applies and is recorded as its own ledger entry. Success never implies a venue reservation.",
         "requestBody": {
           "required": true,
           "content": {
@@ -650,27 +923,41 @@
             "description": "Accepted for provider interaction. Unreachable while the gate is closed.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/PaymentState" }
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentState"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ValidationFailed" },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
           "403": {
             "description": "Caller is not the host of this turn, or CSRF validation failed.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": { "$ref": "#/components/responses/PaymentGateBlocked" },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/PaymentGateBlocked"
+          },
           "422": {
             "description": "Approval is stale, or the amount exceeds the derived budget.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -680,18 +967,24 @@
         "tags": ["money"],
         "operationId": "getVenuePaymentState",
         "summary": "Venue payment state for a turn.",
-        "description": "order_created, payer_approved, captured, failed and blocked are distinct. No state asserts a reservation or attendance.",
+        "description": "payout_pending, payout_success, payout_denied, failed and blocked are distinct. PENDING is not success. No state asserts a reservation or attendance.",
         "responses": {
           "200": {
             "description": "Payment state.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/PaymentState" }
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentState"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthenticated" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
@@ -706,7 +999,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/ProviderEvent" }
+              "schema": {
+                "$ref": "#/components/schemas/ProviderEvent"
+              }
             }
           }
         },
@@ -725,7 +1020,9 @@
             "description": "Malformed payload. No side effects.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           },
@@ -733,7 +1030,9 @@
             "description": "Signature missing or invalid. No side effects.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -764,12 +1063,18 @@
             "description": "Synthetic graph scene.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SyntheticGraph" }
+                "schema": {
+                  "$ref": "#/components/schemas/SyntheticGraph"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ValidationFailed" },
-          "401": { "$ref": "#/components/responses/Unauthenticated" }
+          "400": {
+            "$ref": "#/components/responses/ValidationFailed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
         }
       }
     }
@@ -786,7 +1091,9 @@
     "headers": {
       "SetSessionCookie": {
         "description": "HttpOnly; SameSite=Strict session cookie.",
-        "schema": { "type": "string" }
+        "schema": {
+          "type": "string"
+        }
       }
     },
     "parameters": {
@@ -794,39 +1101,55 @@
         "name": "circleId",
         "in": "path",
         "required": true,
-        "schema": { "$ref": "#/components/schemas/Ulid" }
+        "schema": {
+          "$ref": "#/components/schemas/Ulid"
+        }
       },
       "InvitationId": {
         "name": "invitationId",
         "in": "path",
         "required": true,
-        "schema": { "$ref": "#/components/schemas/Ulid" }
+        "schema": {
+          "$ref": "#/components/schemas/Ulid"
+        }
       },
       "ProposalId": {
         "name": "proposalId",
         "in": "path",
         "required": true,
-        "schema": { "$ref": "#/components/schemas/Ulid" }
+        "schema": {
+          "$ref": "#/components/schemas/Ulid"
+        }
       },
       "TurnId": {
         "name": "turnId",
         "in": "path",
         "required": true,
-        "schema": { "$ref": "#/components/schemas/Ulid" }
+        "schema": {
+          "$ref": "#/components/schemas/Ulid"
+        }
       },
       "CsrfToken": {
         "name": "X-CSRF-Token",
         "in": "header",
         "required": true,
         "description": "Token issued with the session; required on every mutating request.",
-        "schema": { "type": "string", "minLength": 20, "maxLength": 200 }
+        "schema": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 200
+        }
       },
       "IdempotencyKey": {
         "name": "Idempotency-Key",
         "in": "header",
         "required": false,
         "description": "Caller-generated key for one logical operation. The server stores key to first-response per actor and operation and replays the stored response on retry. Independent of any provider's own header semantics, which are unverified (Q-005).",
-        "schema": { "type": "string", "minLength": 8, "maxLength": 128 }
+        "schema": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128
+        }
       }
     },
     "responses": {
@@ -834,7 +1157,9 @@
         "description": "Request failed schema or bounds validation. No state changed.",
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/Error" }
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
           }
         }
       },
@@ -842,7 +1167,9 @@
         "description": "No valid session.",
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/Error" }
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
           }
         }
       },
@@ -850,7 +1177,9 @@
         "description": "CSRF token missing or invalid. No state changed.",
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/Error" }
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
           }
         }
       },
@@ -858,7 +1187,9 @@
         "description": "Resource does not exist, or the caller is not a member of it. Deliberately indistinguishable so membership is not disclosed.",
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/Error" }
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
           }
         }
       },
@@ -866,7 +1197,9 @@
         "description": "Payment execution is blocked pending genuine sandbox evidence (YT-006) and human money-flow approval. No simulated success is returned.",
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/PaymentGateError" }
+            "schema": {
+              "$ref": "#/components/schemas/PaymentGateError"
+            }
           }
         }
       }
@@ -889,7 +1222,10 @@
         "maximum": 1500,
         "default": 500
       },
-      "Currency": { "type": "string", "const": "USD" },
+      "Currency": {
+        "type": "string",
+        "const": "USD"
+      },
       "Timestamp": {
         "type": "string",
         "format": "date-time",
@@ -923,10 +1259,14 @@
               "payment_gate_blocked",
               "webhook_signature_invalid",
               "rate_limited",
-              "internal_error"
+              "internal_error",
+              "insufficient_sender_balance",
+              "payout_denied"
             ]
           },
-          "message": { "type": "string" },
+          "message": {
+            "type": "string"
+          },
           "details": {
             "type": "array",
             "description": "Field-level problems. Never contains another member's data, a hardship reason or a tie score.",
@@ -935,8 +1275,12 @@
               "additionalProperties": false,
               "required": ["field", "problem"],
               "properties": {
-                "field": { "type": "string" },
-                "problem": { "type": "string" }
+                "field": {
+                  "type": "string"
+                },
+                "problem": {
+                  "type": "string"
+                }
               }
             }
           },
@@ -949,7 +1293,9 @@
       },
       "PaymentGateError": {
         "allOf": [
-          { "$ref": "#/components/schemas/Error" },
+          {
+            "$ref": "#/components/schemas/Error"
+          },
           {
             "type": "object",
             "required": ["gate"],
@@ -959,13 +1305,21 @@
                 "additionalProperties": false,
                 "required": ["open", "blockingTasks", "humanApprovalRecorded"],
                 "properties": {
-                  "open": { "type": "boolean", "const": false },
+                  "open": {
+                    "type": "boolean",
+                    "const": false
+                  },
                   "blockingTasks": {
                     "type": "array",
-                    "items": { "type": "string" },
+                    "items": {
+                      "type": "string"
+                    },
                     "minItems": 1
                   },
-                  "humanApprovalRecorded": { "type": "boolean", "const": false }
+                  "humanApprovalRecorded": {
+                    "type": "boolean",
+                    "const": false
+                  }
                 }
               }
             }
@@ -977,7 +1331,9 @@
         "additionalProperties": false,
         "required": ["seededMemberId"],
         "properties": {
-          "seededMemberId": { "$ref": "#/components/schemas/Ulid" }
+          "seededMemberId": {
+            "$ref": "#/components/schemas/Ulid"
+          }
         }
       },
       "Session": {
@@ -985,10 +1341,20 @@
         "additionalProperties": false,
         "required": ["memberId", "csrfToken", "expiresAt", "demoSession"],
         "properties": {
-          "memberId": { "$ref": "#/components/schemas/Ulid" },
-          "csrfToken": { "type": "string", "minLength": 20 },
-          "expiresAt": { "$ref": "#/components/schemas/Timestamp" },
-          "demoSession": { "type": "boolean", "const": true }
+          "memberId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "csrfToken": {
+            "type": "string",
+            "minLength": 20
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "demoSession": {
+            "type": "boolean",
+            "const": true
+          }
         }
       },
       "CurrentMember": {
@@ -996,11 +1362,17 @@
         "additionalProperties": false,
         "required": ["memberId", "firstName", "memberships"],
         "properties": {
-          "memberId": { "$ref": "#/components/schemas/Ulid" },
-          "firstName": { "$ref": "#/components/schemas/FirstName" },
+          "memberId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "firstName": {
+            "$ref": "#/components/schemas/FirstName"
+          },
           "memberships": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/Membership" }
+            "items": {
+              "$ref": "#/components/schemas/Membership"
+            }
           }
         }
       },
@@ -1015,15 +1387,26 @@
           "membershipVersion"
         ],
         "properties": {
-          "circleId": { "$ref": "#/components/schemas/Ulid" },
-          "memberId": { "$ref": "#/components/schemas/Ulid" },
+          "circleId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "memberId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
           "state": {
             "type": "string",
             "enum": ["invited", "accepted", "paused", "left"]
           },
-          "joinedAt": { "$ref": "#/components/schemas/Timestamp" },
-          "membershipVersion": { "type": "integer", "minimum": 1 },
-          "ownConsent": { "$ref": "#/components/schemas/ConsentState" }
+          "joinedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "membershipVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "ownConsent": {
+            "$ref": "#/components/schemas/ConsentState"
+          }
         }
       },
       "Circle": {
@@ -1040,8 +1423,14 @@
           "currency"
         ],
         "properties": {
-          "circleId": { "$ref": "#/components/schemas/Ulid" },
-          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "circleId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
           "members": {
             "type": "array",
             "minItems": 1,
@@ -1052,8 +1441,12 @@
               "required": ["memberId", "firstName", "state"],
               "description": "Peer view. Contains no consent state, no pause reason, no contact details and no tie value.",
               "properties": {
-                "memberId": { "$ref": "#/components/schemas/Ulid" },
-                "firstName": { "$ref": "#/components/schemas/FirstName" },
+                "memberId": {
+                  "$ref": "#/components/schemas/Ulid"
+                },
+                "firstName": {
+                  "$ref": "#/components/schemas/FirstName"
+                },
                 "state": {
                   "type": "string",
                   "enum": ["invited", "accepted", "paused", "left"]
@@ -1061,19 +1454,30 @@
               }
             }
           },
-          "membershipVersion": { "type": "integer", "minimum": 1 },
+          "membershipVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
           "readyForPlanning": {
             "type": "boolean",
             "description": "True only with at least three accepted members and a complete contribution agreement for the current version."
           },
           "agreedContribution": {
             "anyOf": [
-              { "$ref": "#/components/schemas/ContributionProposal" },
-              { "type": "null" }
+              {
+                "$ref": "#/components/schemas/ContributionProposal"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
-          "potCentsDerived": { "$ref": "#/components/schemas/AmountCents" },
-          "currency": { "$ref": "#/components/schemas/Currency" },
+          "potCentsDerived": {
+            "$ref": "#/components/schemas/AmountCents"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
           "potLabel": {
             "type": "string",
             "description": "Human-facing label stating that the pot is a conceptual budget with no verified provider funding."
@@ -1088,7 +1492,10 @@
           "amountCents": {
             "$ref": "#/components/schemas/ContributionAmountCents"
           },
-          "membershipVersion": { "type": "integer", "minimum": 1 }
+          "membershipVersion": {
+            "type": "integer",
+            "minimum": 1
+          }
         }
       },
       "AgreeContributionRequest": {
@@ -1097,8 +1504,14 @@
         "required": ["proposalVersion", "membershipVersion", "amountCents"],
         "description": "All three fields are echoed back by the client so a stale agreement cannot bind a changed proposal.",
         "properties": {
-          "proposalVersion": { "type": "integer", "minimum": 1 },
-          "membershipVersion": { "type": "integer", "minimum": 1 },
+          "proposalVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "membershipVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
           "amountCents": {
             "$ref": "#/components/schemas/ContributionAmountCents"
           }
@@ -1119,14 +1532,26 @@
           "createdAt"
         ],
         "properties": {
-          "proposalId": { "$ref": "#/components/schemas/Ulid" },
-          "circleId": { "$ref": "#/components/schemas/Ulid" },
+          "proposalId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "circleId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
           "amountCents": {
             "$ref": "#/components/schemas/ContributionAmountCents"
           },
-          "currency": { "$ref": "#/components/schemas/Currency" },
-          "proposalVersion": { "type": "integer", "minimum": 1 },
-          "membershipVersion": { "type": "integer", "minimum": 1 },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "proposalVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "membershipVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
           "state": {
             "type": "string",
             "enum": [
@@ -1142,12 +1567,22 @@
             "required": ["agreedCount", "requiredCount", "ownAgreement"],
             "description": "Aggregate only. Which named member has not agreed is never disclosed.",
             "properties": {
-              "agreedCount": { "type": "integer", "minimum": 0 },
-              "requiredCount": { "type": "integer", "minimum": 1 },
-              "ownAgreement": { "type": "boolean" }
+              "agreedCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "requiredCount": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "ownAgreement": {
+                "type": "boolean"
+              }
             }
           },
-          "createdAt": { "$ref": "#/components/schemas/Timestamp" }
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
         }
       },
       "ContributionProposalList": {
@@ -1157,7 +1592,9 @@
         "properties": {
           "proposals": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/ContributionProposal" }
+            "items": {
+              "$ref": "#/components/schemas/ContributionProposal"
+            }
           }
         }
       },
@@ -1166,7 +1603,9 @@
         "additionalProperties": false,
         "required": ["trackingEnabled"],
         "properties": {
-          "trackingEnabled": { "type": "boolean" }
+          "trackingEnabled": {
+            "type": "boolean"
+          }
         }
       },
       "ConsentState": {
@@ -1174,8 +1613,13 @@
         "additionalProperties": false,
         "required": ["trackingEnabled", "updatedAt", "incidentEdgesExcluded"],
         "properties": {
-          "trackingEnabled": { "type": "boolean", "default": false },
-          "updatedAt": { "$ref": "#/components/schemas/Timestamp" },
+          "trackingEnabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
           "incidentEdgesExcluded": {
             "type": "boolean",
             "description": "True whenever tracking is off, asserting that edges incident to this member are excluded from computation and downstream use, including reconstruction from other members' records."
@@ -1192,7 +1636,10 @@
         "additionalProperties": false,
         "description": "Deliberately has no reason field, so no hardship reason can be collected, stored or disclosed.",
         "properties": {
-          "paused": { "type": "boolean", "default": true }
+          "paused": {
+            "type": "boolean",
+            "default": true
+          }
         }
       },
       "ParticipationState": {
@@ -1205,8 +1652,14 @@
           "collectionEffect"
         ],
         "properties": {
-          "state": { "type": "string", "enum": ["active", "paused", "left"] },
-          "reasonCollected": { "type": "boolean", "const": false },
+          "state": {
+            "type": "string",
+            "enum": ["active", "paused", "left"]
+          },
+          "reasonCollected": {
+            "type": "boolean",
+            "const": false
+          },
           "peerVisibleDetail": {
             "type": "string",
             "description": "At most a neutral state word; never a reason or a comparison.",
@@ -1225,7 +1678,10 @@
         "required": ["confirm"],
         "description": "Single explicit confirmation. No reason field exists and none may be required.",
         "properties": {
-          "confirm": { "type": "boolean", "const": true }
+          "confirm": {
+            "type": "boolean",
+            "const": true
+          }
         }
       },
       "LeaveResult": {
@@ -1239,14 +1695,23 @@
           "rotationEffect"
         ],
         "properties": {
-          "state": { "type": "string", "const": "left" },
+          "state": {
+            "type": "string",
+            "const": "left"
+          },
           "forfeitPolicy": {
             "type": "string",
             "description": "The forfeit text is a disclosed proposal, not an enforceable outcome (Q-006).",
             "enum": ["disclosed_proposal_pending_review"]
           },
-          "providerCancellationClaimed": { "type": "boolean", "const": false },
-          "refundClaimed": { "type": "boolean", "const": false },
+          "providerCancellationClaimed": {
+            "type": "boolean",
+            "const": false
+          },
+          "refundClaimed": {
+            "type": "boolean",
+            "const": false
+          },
           "rotationEffect": {
             "type": "string",
             "enum": ["advancement_suspended_pending_rule"]
@@ -1264,8 +1729,13 @@
           "advancement"
         ],
         "properties": {
-          "circleId": { "$ref": "#/components/schemas/Ulid" },
-          "cycleIndex": { "type": "integer", "minimum": 1 },
+          "circleId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "cycleIndex": {
+            "type": "integer",
+            "minimum": 1
+          },
           "orderBasis": {
             "type": "string",
             "description": "Fixed basis statement; closeness, attendance and payment history are never inputs.",
@@ -1273,7 +1743,9 @@
           },
           "turns": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/Turn" }
+            "items": {
+              "$ref": "#/components/schemas/Turn"
+            }
           },
           "advancement": {
             "type": "string",
@@ -1287,17 +1759,28 @@
         "additionalProperties": false,
         "required": ["turnId", "hostMemberId", "sequence", "state"],
         "properties": {
-          "turnId": { "$ref": "#/components/schemas/Ulid" },
-          "hostMemberId": { "$ref": "#/components/schemas/Ulid" },
-          "sequence": { "type": "integer", "minimum": 1 },
+          "turnId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "hostMemberId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
           "state": {
             "type": "string",
             "enum": ["upcoming", "current", "completed", "skipped", "suspended"]
           },
           "approval": {
             "anyOf": [
-              { "$ref": "#/components/schemas/PlanApproval" },
-              { "type": "null" }
+              {
+                "$ref": "#/components/schemas/PlanApproval"
+              },
+              {
+                "type": "null"
+              }
             ]
           }
         }
@@ -1307,10 +1790,15 @@
         "additionalProperties": false,
         "required": ["fixedList", "venues"],
         "properties": {
-          "fixedList": { "type": "boolean", "const": true },
+          "fixedList": {
+            "type": "boolean",
+            "const": true
+          },
           "venues": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/Venue" }
+            "items": {
+              "$ref": "#/components/schemas/Venue"
+            }
           }
         }
       },
@@ -1325,11 +1813,25 @@
           "currency"
         ],
         "properties": {
-          "venueId": { "$ref": "#/components/schemas/Ulid" },
-          "name": { "type": "string", "minLength": 1, "maxLength": 80 },
-          "category": { "type": "string", "minLength": 1, "maxLength": 40 },
-          "estimatedCostCents": { "$ref": "#/components/schemas/AmountCents" },
-          "currency": { "$ref": "#/components/schemas/Currency" },
+          "venueId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "estimatedCostCents": {
+            "$ref": "#/components/schemas/AmountCents"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
           "availabilityKnown": {
             "type": "boolean",
             "const": false,
@@ -1342,13 +1844,22 @@
         "additionalProperties": false,
         "required": ["budgetCents"],
         "properties": {
-          "budgetCents": { "$ref": "#/components/schemas/AmountCents" },
-          "availabilityNote": { "type": "string", "maxLength": 200 },
+          "budgetCents": {
+            "$ref": "#/components/schemas/AmountCents"
+          },
+          "availabilityNote": {
+            "type": "string",
+            "maxLength": 200
+          },
           "preferences": {
             "type": "array",
             "maxItems": 10,
             "description": "Plan-relevant preferences only. Emails, payment data, hardship information and tie scores are never accepted here.",
-            "items": { "type": "string", "minLength": 1, "maxLength": 40 }
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
           }
         }
       },
@@ -1360,26 +1871,38 @@
         "oneOf": [
           {
             "required": ["plans"],
-            "not": { "required": ["unavailableReason"] }
+            "not": {
+              "required": ["unavailableReason"]
+            }
           },
           {
             "required": ["unavailableReason"],
-            "not": { "required": ["plans"] }
+            "not": {
+              "required": ["plans"]
+            }
           }
         ],
         "properties": {
-          "suggestionSetId": { "$ref": "#/components/schemas/Ulid" },
-          "turnId": { "$ref": "#/components/schemas/Ulid" },
+          "suggestionSetId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "turnId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
           "outcome": {
             "type": "string",
             "enum": ["three_plans", "unavailable"]
           },
-          "generatedAt": { "$ref": "#/components/schemas/Timestamp" },
+          "generatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
           "plans": {
             "type": "array",
             "minItems": 3,
             "maxItems": 3,
-            "items": { "$ref": "#/components/schemas/Plan" }
+            "items": {
+              "$ref": "#/components/schemas/Plan"
+            }
           },
           "unavailableReason": {
             "type": "string",
@@ -1389,7 +1912,11 @@
               "no_plan_within_budget"
             ]
           },
-          "retriesUsed": { "type": "integer", "minimum": 0, "maximum": 1 },
+          "retriesUsed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1
+          },
           "manualAlternative": {
             "type": "string",
             "const": "browse_fixed_venues_or_defer",
@@ -1410,17 +1937,32 @@
         ],
         "description": "Immutable once suggested. Any edit produces a new planVersion and invalidates an approval of the previous one.",
         "properties": {
-          "planId": { "$ref": "#/components/schemas/Ulid" },
-          "planVersion": { "type": "integer", "minimum": 1 },
-          "venueId": { "$ref": "#/components/schemas/Ulid" },
-          "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "planId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "planVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "venueId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
           "rationale": {
             "type": "string",
             "maxLength": 240,
             "description": "Positive framing about a shared plan. Never a warning, score or diagnosis about named people."
           },
-          "totalCents": { "$ref": "#/components/schemas/AmountCents" },
-          "currency": { "$ref": "#/components/schemas/Currency" },
+          "totalCents": {
+            "$ref": "#/components/schemas/AmountCents"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
           "source": {
             "type": "string",
             "enum": ["copilot", "manual_fixed_list"]
@@ -1432,10 +1974,19 @@
         "additionalProperties": false,
         "required": ["planId", "planVersion", "venueId", "totalCents"],
         "properties": {
-          "planId": { "$ref": "#/components/schemas/Ulid" },
-          "planVersion": { "type": "integer", "minimum": 1 },
-          "venueId": { "$ref": "#/components/schemas/Ulid" },
-          "totalCents": { "$ref": "#/components/schemas/AmountCents" }
+          "planId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "planVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "venueId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "totalCents": {
+            "$ref": "#/components/schemas/AmountCents"
+          }
         }
       },
       "PlanApproval": {
@@ -1455,22 +2006,50 @@
           "isReservation"
         ],
         "properties": {
-          "approvalId": { "$ref": "#/components/schemas/Ulid" },
-          "turnId": { "$ref": "#/components/schemas/Ulid" },
-          "hostMemberId": { "$ref": "#/components/schemas/Ulid" },
-          "planId": { "$ref": "#/components/schemas/Ulid" },
-          "planVersion": { "type": "integer", "minimum": 1 },
-          "venueId": { "$ref": "#/components/schemas/Ulid" },
-          "totalCents": { "$ref": "#/components/schemas/AmountCents" },
-          "currency": { "$ref": "#/components/schemas/Currency" },
-          "approvedAt": { "$ref": "#/components/schemas/Timestamp" },
+          "approvalId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "turnId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "hostMemberId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "planId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "planVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "venueId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "totalCents": {
+            "$ref": "#/components/schemas/AmountCents"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "approvedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
           "approvedBy": {
             "type": "string",
             "const": "deterministic_host_action"
           },
-          "isPayment": { "type": "boolean", "const": false },
-          "isReservation": { "type": "boolean", "const": false },
-          "stale": { "type": "boolean", "default": false }
+          "isPayment": {
+            "type": "boolean",
+            "const": false
+          },
+          "isReservation": {
+            "type": "boolean",
+            "const": false
+          },
+          "stale": {
+            "type": "boolean",
+            "default": false
+          }
         }
       },
       "SetAttendanceRequest": {
@@ -1482,7 +2061,10 @@
             "type": "string",
             "enum": ["going", "not_going", "undecided"]
           },
-          "checkedIn": { "type": "boolean", "default": false }
+          "checkedIn": {
+            "type": "boolean",
+            "default": false
+          }
         }
       },
       "AttendanceState": {
@@ -1490,14 +2072,24 @@
         "additionalProperties": false,
         "required": ["turnId", "memberId", "response", "penaltyApplied"],
         "properties": {
-          "turnId": { "$ref": "#/components/schemas/Ulid" },
-          "memberId": { "$ref": "#/components/schemas/Ulid" },
+          "turnId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "memberId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
           "response": {
             "type": "string",
             "enum": ["going", "not_going", "undecided"]
           },
-          "checkedIn": { "type": "boolean", "default": false },
-          "penaltyApplied": { "type": "boolean", "const": false }
+          "checkedIn": {
+            "type": "boolean",
+            "default": false
+          },
+          "penaltyApplied": {
+            "type": "boolean",
+            "const": false
+          }
         }
       },
       "Ledger": {
@@ -1511,13 +2103,24 @@
           "entries"
         ],
         "properties": {
-          "circleId": { "$ref": "#/components/schemas/Ulid" },
-          "currency": { "$ref": "#/components/schemas/Currency" },
-          "potCentsDerived": { "$ref": "#/components/schemas/AmountCents" },
-          "derivedFromEntryCount": { "type": "integer", "minimum": 0 },
+          "circleId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "potCentsDerived": {
+            "$ref": "#/components/schemas/AmountCents"
+          },
+          "derivedFromEntryCount": {
+            "type": "integer",
+            "minimum": 0
+          },
           "entries": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/LedgerEntry" }
+            "items": {
+              "$ref": "#/components/schemas/LedgerEntry"
+            }
           }
         }
       },
@@ -1532,25 +2135,40 @@
           "occurredAt",
           "synthetic"
         ],
-        "description": "Append-only. Corrections are new compensating entries, never edits or deletes.",
+        "description": "Append-only. Corrections are new compensating entries, never edits or deletes. Uniqueness is (provider_event_id, kind), so one verified event may produce exactly one amount entry and one fee entry.",
         "properties": {
-          "entryId": { "$ref": "#/components/schemas/Ulid" },
+          "entryId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
           "kind": {
             "type": "string",
             "enum": [
               "contribution_received",
-              "venue_payment_captured",
+              "venue_payment_sent",
+              "provider_fee",
               "correction"
-            ]
+            ],
+            "description": "One payout writes two entries: venue_payment_sent and provider_fee, both negative and both keyed to one verified provider event."
           },
           "amountCents": {
             "type": "integer",
             "description": "Signed whole cents; outflows are negative."
           },
-          "currency": { "$ref": "#/components/schemas/Currency" },
-          "occurredAt": { "$ref": "#/components/schemas/Timestamp" },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "occurredAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
           "providerEventId": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Set only for entries derived from a signature-verified provider event."
           },
           "synthetic": {
@@ -1571,8 +2189,12 @@
           "environment"
         ],
         "properties": {
-          "memberId": { "$ref": "#/components/schemas/Ulid" },
-          "circleId": { "$ref": "#/components/schemas/Ulid" },
+          "memberId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
+          "circleId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
           "state": {
             "type": "string",
             "description": "Distinct states; none is inferred from another.",
@@ -1588,10 +2210,22 @@
           "amountCents": {
             "$ref": "#/components/schemas/ContributionAmountCents"
           },
-          "currency": { "$ref": "#/components/schemas/Currency" },
-          "environment": { "type": "string", "const": "sandbox" },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "environment": {
+            "type": "string",
+            "const": "sandbox"
+          },
           "providerSubscriptionId": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }]
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -1600,7 +2234,9 @@
         "additionalProperties": false,
         "required": ["approvalId"],
         "properties": {
-          "approvalId": { "$ref": "#/components/schemas/Ulid" }
+          "approvalId": {
+            "$ref": "#/components/schemas/Ulid"
+          }
         }
       },
       "PaymentState": {
@@ -1610,35 +2246,74 @@
           "turnId",
           "state",
           "amountCents",
+          "feeCents",
           "currency",
           "environment",
           "reservationConfirmed",
           "attendanceConfirmed"
         ],
         "properties": {
-          "turnId": { "$ref": "#/components/schemas/Ulid" },
+          "turnId": {
+            "$ref": "#/components/schemas/Ulid"
+          },
           "state": {
             "type": "string",
             "enum": [
               "blocked",
-              "order_created",
-              "payer_approved",
-              "captured",
+              "payout_pending",
+              "payout_success",
+              "payout_denied",
               "failed"
-            ]
+            ],
+            "description": "Payouts batch lifecycle. A create yields payout_pending; only a terminal readback or verified event may advance it."
           },
-          "amountCents": { "$ref": "#/components/schemas/AmountCents" },
-          "currency": { "$ref": "#/components/schemas/Currency" },
-          "environment": { "type": "string", "const": "sandbox" },
-          "providerOrderId": {
-            "anyOf": [{ "type": "string" }, { "type": "null" }]
+          "amountCents": {
+            "$ref": "#/components/schemas/AmountCents"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "environment": {
+            "type": "string",
+            "const": "sandbox"
           },
           "reservationConfirmed": {
             "type": "boolean",
             "const": false,
             "description": "Capture never implies a venue reservation in this demo."
           },
-          "attendanceConfirmed": { "type": "boolean", "const": false }
+          "attendanceConfirmed": {
+            "type": "boolean",
+            "const": false
+          },
+          "providerPayoutBatchId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Provider payout batch id, present once the batch exists."
+          },
+          "providerTransactionId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "feeCents": {
+            "$ref": "#/components/schemas/AmountCents"
+          },
+          "senderBatchId": {
+            "type": "string",
+            "description": "Internally generated; the provider rejects reuse, which is the duplicate-payout guard."
+          }
         }
       },
       "ProviderEvent": {
@@ -1646,10 +2321,20 @@
         "required": ["id", "event_type"],
         "description": "Provider-shaped envelope. Only signature-verified events may cause effects; fields beyond these are ignored rather than trusted.",
         "properties": {
-          "id": { "type": "string", "minLength": 1 },
-          "event_type": { "type": "string", "minLength": 1 },
-          "create_time": { "type": "string" },
-          "resource": { "type": "object" }
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "event_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "create_time": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "object"
+          }
         }
       },
       "WebhookAcknowledgement": {
@@ -1657,8 +2342,13 @@
         "additionalProperties": false,
         "required": ["signatureVerified", "duplicate", "effectsApplied"],
         "properties": {
-          "signatureVerified": { "type": "boolean", "const": true },
-          "duplicate": { "type": "boolean" },
+          "signatureVerified": {
+            "type": "boolean",
+            "const": true
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
           "effectsApplied": {
             "type": "boolean",
             "description": "False for a duplicate or for an event recognised but not yet actionable."
@@ -1677,9 +2367,18 @@
           "edges"
         ],
         "properties": {
-          "synthetic": { "type": "boolean", "const": true },
-          "fixtureRevision": { "type": "string", "minLength": 1 },
-          "scene": { "type": "string", "enum": ["before", "after"] },
+          "synthetic": {
+            "type": "boolean",
+            "const": true
+          },
+          "fixtureRevision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scene": {
+            "type": "string",
+            "enum": ["before", "after"]
+          },
           "notice": {
             "type": "string",
             "description": "Human-facing statement that the people are fictional and the change is scripted."
@@ -1691,9 +2390,17 @@
               "additionalProperties": false,
               "required": ["nodeId", "firstName", "synthetic"],
               "properties": {
-                "nodeId": { "type": "string", "pattern": "^synthetic-" },
-                "firstName": { "$ref": "#/components/schemas/FirstName" },
-                "synthetic": { "type": "boolean", "const": true }
+                "nodeId": {
+                  "type": "string",
+                  "pattern": "^synthetic-"
+                },
+                "firstName": {
+                  "$ref": "#/components/schemas/FirstName"
+                },
+                "synthetic": {
+                  "type": "boolean",
+                  "const": true
+                }
               }
             }
           },
@@ -1711,9 +2418,19 @@
               ],
               "description": "Numeric strength exists only here, for fictional people.",
               "properties": {
-                "from": { "type": "string", "pattern": "^synthetic-" },
-                "to": { "type": "string", "pattern": "^synthetic-" },
-                "strength": { "type": "number", "minimum": 0, "maximum": 1 },
+                "from": {
+                  "type": "string",
+                  "pattern": "^synthetic-"
+                },
+                "to": {
+                  "type": "string",
+                  "pattern": "^synthetic-"
+                },
+                "strength": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
                 "stateLabel": {
                   "type": "string",
                   "enum": ["fading", "steady", "reconnected"]
