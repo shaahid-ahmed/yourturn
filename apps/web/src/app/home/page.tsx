@@ -149,7 +149,7 @@ export default function HomePage() {
             height: 130,
           }}
         >
-          <NewPodBubble onOpen={() => router.push('/pods/create')} />
+          <NewPodBlob onOpen={() => router.push('/pods/create')} />
         </div>
       </section>
 

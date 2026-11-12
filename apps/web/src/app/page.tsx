@@ -38,9 +38,11 @@ export default function SplashPage() {
           aria-hidden="true"
           className="inline-block transition-all duration-700"
           style={
-            payGone
-              ? { transform: 'translateY(-120px)', opacity: 0 }
-              : undefined
+            heyIn
+              ? undefined
+              : payGone
+                ? { transform: 'translateY(-120px)', opacity: 0 }
+                : undefined
           }
         >
           {heyIn ? 'Hey' : 'Pay'}
