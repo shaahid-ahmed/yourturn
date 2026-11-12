@@ -52,7 +52,27 @@ The kind names match the US-005 IOU ledger (PR #51) plus `adjustment`, so the du
 
 ## Hangout lifecycle
 
-Columns and constraints are fixed: the 12 ADR 0007 states, with every change recorded in the append-only `hangout_transition` (from, to, event, actor, time). **The transition table itself is not in this migration.** It has to agree with both the contract (any number of yeses is enough; `NO_PLAN` and `BOOKING_FAILED` lead to a planner offer; the payer confirms the booking) and the state machine in US-005 (PR #51). Which module owns it is an open question for the human; until then the database accepts any ADR 0007 state and the application must call one transition function.
+`services/api/src/hangout-lifecycle.mjs` is the transition table. It follows the contract exactly, and the contract is the source of truth. `services/api/src/db/hangout-store.mjs` applies an event durably: one transaction checks `hangout.version`, computes the next state, updates the row and appends a `hangout_transition` (from, to, event, actor, time). The schema imports its state list from the lifecycle module, so the two cannot drift. The ADR 0006 `hangout.mjs` is retired and unchanged.
+
+| From                    | Event                                                      | To                                           | Guard                                                             |
+| ----------------------- | ---------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------- |
+| (new)                   | `started`                                                  | `PLANNING`                                   | —                                                                 |
+| `PLANNING`              | `stretchAsksSent` / `shortlistPosted` / `noOptionFits`     | `STRETCH_ASKS` / `ACTIVITY_VOTE` / `NO_PLAN` | —                                                                 |
+| `STRETCH_ASKS`          | `stretchAsksResolved`                                      | `PLANNING`                                   | Answers and expiries stay private                                 |
+| `ACTIVITY_VOTE`         | `activityChosen` / `activityPollClosedWithoutVotes`        | `TIME_VOTE` / `NO_PLAN`                      | —                                                                 |
+| `TIME_VOTE`             | `timeChosen` / `timePollClosedWithoutVotes` / `noSlotFits` | `READY_CHECK` / `NO_PLAN`                    | —                                                                 |
+| `READY_CHECK`           | `readyCheckClosedWithYes`                                  | `AWAITING_CONFIRMATION`                      | At least one yes; **any number is enough**                        |
+| `READY_CHECK`           | `readyCheckClosedWithNoYes`                                | `NO_PLAN`                                    | Zero yeses; a single "no" is never an event                       |
+| `AWAITING_CONFIRMATION` | `bookingConfirmed`                                         | `BOOKING`                                    | A payer has volunteered **and** the actor is that payer (Q-011.6) |
+| `BOOKING`               | `bookingSucceeded` / `bookingFailed`                       | `BOOKED` / `BOOKING_FAILED`                  | The booking is simulated                                          |
+| `BOOKED`                | `splitConfirmed`                                           | `BALANCES_OPEN`                              | The actor is the payer                                            |
+| `BALANCES_OPEN`         | `allBalancesPaid`                                          | `SETTLED`                                    | —                                                                 |
+| `NO_PLAN`               | `plannerOfferAccepted`                                     | `PLANNING`                                   | Offer is `widen_window`, `widen_area` or `next_best`              |
+| `BOOKING_FAILED`        | `plannerOfferAccepted`                                     | `PLANNING`                                   | Offer is `next_best`                                              |
+
+`SETTLED` is the only terminal state. `NO_PLAN` and `BOOKING_FAILED` are resting states: the planner offers a way back, and a new hangout may start in the pod. The Home cue (`PodStage`) is derived from the state alone and never describes a single member. A refused event carries the contract error code (`wrong_hangout_state` or `not_payer`).
+
+**Not modelled, because the spec leaves them open:** the payer dropping out after booking (decision 19) and a pod falling below three members (decision 11).
 
 ## Concurrency and idempotency
 
