@@ -54,7 +54,10 @@ export function checkBudget(input, session) {
   }
 
   const stretchCeiling = Math.floor(budgetCapCents * STRETCH_RATIO);
-  if (estCostPerPersonCents <= stretchCeiling && session?.hasApproval(memberId)) {
+  if (
+    estCostPerPersonCents <= stretchCeiling &&
+    session?.hasApproval(memberId)
+  ) {
     return { memberId, feasible: true };
   }
 
@@ -70,8 +73,8 @@ export function checkBudget(input, session) {
  * @returns {{ feasibleCount: number, totalCount: number, allFeasible: boolean }}
  */
 export function checkBudgetGroup(inputs, session) {
-  const results = inputs.map(i => checkBudget(i, session));
-  const feasibleCount = results.filter(r => r.feasible).length;
+  const results = inputs.map((i) => checkBudget(i, session));
+  const feasibleCount = results.filter((r) => r.feasible).length;
   return {
     feasibleCount,
     totalCount: results.length,
@@ -174,6 +177,8 @@ export class StretchSession {
 /** @param {unknown} v @param {string} name */
 function assertCents(v, name) {
   if (!Number.isInteger(v) || v < 0) {
-    throw new TypeError(`${name} must be a non-negative integer (cents); received ${v}`);
+    throw new TypeError(
+      `${name} must be a non-negative integer (cents); received ${v}`,
+    );
   }
 }

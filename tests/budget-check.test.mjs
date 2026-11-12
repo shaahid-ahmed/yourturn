@@ -11,30 +11,45 @@ import {
 
 describe('checkBudget', () => {
   it('feasible when cost equals hard cap', () => {
-    const r = checkBudget({ memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3000 }, null);
+    const r = checkBudget(
+      { memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3000 },
+      null,
+    );
     assert.deepEqual(r, { memberId: 'm1', feasible: true });
   });
 
   it('feasible when cost is below hard cap', () => {
-    const r = checkBudget({ memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 1000 }, null);
+    const r = checkBudget(
+      { memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 1000 },
+      null,
+    );
     assert.deepEqual(r, { memberId: 'm1', feasible: true });
   });
 
   it('not feasible when cost exceeds hard cap with no stretch approval', () => {
-    const r = checkBudget({ memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3100 }, null);
+    const r = checkBudget(
+      { memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3100 },
+      null,
+    );
     assert.deepEqual(r, { memberId: 'm1', feasible: false });
   });
 
   it('not feasible when cost is in stretch range but no approval', () => {
     const session = new StretchSession();
-    const r = checkBudget({ memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3300 }, session);
+    const r = checkBudget(
+      { memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3300 },
+      session,
+    );
     assert.deepEqual(r, { memberId: 'm1', feasible: false });
   });
 
   it('feasible when cost is in stretch range and member has approved', () => {
     const session = new StretchSession();
     session.approve('m1', 'cand-1');
-    const r = checkBudget({ memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3300 }, session);
+    const r = checkBudget(
+      { memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3300 },
+      session,
+    );
     assert.deepEqual(r, { memberId: 'm1', feasible: true });
   });
 
@@ -42,45 +57,69 @@ describe('checkBudget', () => {
     const session = new StretchSession();
     session.approve('m1', 'cand-1');
     // 3600 > floor(3000 * 1.2) = 3600 — boundary: exactly 3600 is still within stretch
-    const r = checkBudget({ memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3601 }, session);
+    const r = checkBudget(
+      { memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3601 },
+      session,
+    );
     assert.deepEqual(r, { memberId: 'm1', feasible: false });
   });
 
   it('feasible at exact stretch ceiling with approval', () => {
     const session = new StretchSession();
     session.approve('m1', 'cand-1');
-    const r = checkBudget({ memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3600 }, session);
+    const r = checkBudget(
+      { memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3600 },
+      session,
+    );
     assert.deepEqual(r, { memberId: 'm1', feasible: true });
   });
 
   it('zero cost is always feasible', () => {
-    const r = checkBudget({ memberId: 'm1', budgetCapCents: 0, estCostPerPersonCents: 0 }, null);
+    const r = checkBudget(
+      { memberId: 'm1', budgetCapCents: 0, estCostPerPersonCents: 0 },
+      null,
+    );
     assert.deepEqual(r, { memberId: 'm1', feasible: true });
   });
 
   it('throws on missing memberId', () => {
     assert.throws(
-      () => checkBudget({ memberId: '', budgetCapCents: 1000, estCostPerPersonCents: 500 }, null),
+      () =>
+        checkBudget(
+          { memberId: '', budgetCapCents: 1000, estCostPerPersonCents: 500 },
+          null,
+        ),
       /memberId is required/,
     );
   });
 
   it('throws on fractional budgetCapCents', () => {
     assert.throws(
-      () => checkBudget({ memberId: 'm1', budgetCapCents: 10.5, estCostPerPersonCents: 500 }, null),
+      () =>
+        checkBudget(
+          { memberId: 'm1', budgetCapCents: 10.5, estCostPerPersonCents: 500 },
+          null,
+        ),
       /budgetCapCents/,
     );
   });
 
   it('throws on negative cost', () => {
     assert.throws(
-      () => checkBudget({ memberId: 'm1', budgetCapCents: 1000, estCostPerPersonCents: -1 }, null),
+      () =>
+        checkBudget(
+          { memberId: 'm1', budgetCapCents: 1000, estCostPerPersonCents: -1 },
+          null,
+        ),
       /estCostPerPersonCents/,
     );
   });
 
   it('result reveals only feasible boolean — no reason or score', () => {
-    const r = checkBudget({ memberId: 'm1', budgetCapCents: 1000, estCostPerPersonCents: 2000 }, null);
+    const r = checkBudget(
+      { memberId: 'm1', budgetCapCents: 1000, estCostPerPersonCents: 2000 },
+      null,
+    );
     assert.ok(!('reason' in r), 'must not expose reason');
     assert.ok(!('score' in r), 'must not expose score');
     assert.ok(!('cap' in r), 'must not expose cap');
@@ -107,7 +146,11 @@ describe('checkBudgetGroup', () => {
       { memberId: 'm2', budgetCapCents: 1500, estCostPerPersonCents: 2000 },
     ];
     const r = checkBudgetGroup(inputs, null);
-    assert.deepEqual(r, { feasibleCount: 1, totalCount: 2, allFeasible: false });
+    assert.deepEqual(r, {
+      feasibleCount: 1,
+      totalCount: 2,
+      allFeasible: false,
+    });
   });
 
   it('no per-member attribution in result', () => {
@@ -129,27 +172,45 @@ describe('checkBudgetGroup', () => {
 
 describe('isStretchAsk', () => {
   it('false when cost within hard cap', () => {
-    assert.equal(isStretchAsk({ budgetCapCents: 3000, estCostPerPersonCents: 3000 }), false);
+    assert.equal(
+      isStretchAsk({ budgetCapCents: 3000, estCostPerPersonCents: 3000 }),
+      false,
+    );
   });
 
   it('true when cost is 1 cent above cap but within stretch ceiling', () => {
-    assert.equal(isStretchAsk({ budgetCapCents: 3000, estCostPerPersonCents: 3001 }), true);
+    assert.equal(
+      isStretchAsk({ budgetCapCents: 3000, estCostPerPersonCents: 3001 }),
+      true,
+    );
   });
 
   it('true at exact stretch ceiling', () => {
-    assert.equal(isStretchAsk({ budgetCapCents: 3000, estCostPerPersonCents: 3600 }), true);
+    assert.equal(
+      isStretchAsk({ budgetCapCents: 3000, estCostPerPersonCents: 3600 }),
+      true,
+    );
   });
 
   it('false when cost exceeds stretch ceiling', () => {
-    assert.equal(isStretchAsk({ budgetCapCents: 3000, estCostPerPersonCents: 3601 }), false);
+    assert.equal(
+      isStretchAsk({ budgetCapCents: 3000, estCostPerPersonCents: 3601 }),
+      false,
+    );
   });
 
   it('false when cost is zero and cap is zero', () => {
-    assert.equal(isStretchAsk({ budgetCapCents: 0, estCostPerPersonCents: 0 }), false);
+    assert.equal(
+      isStretchAsk({ budgetCapCents: 0, estCostPerPersonCents: 0 }),
+      false,
+    );
   });
 
   it('throws on fractional cap', () => {
-    assert.throws(() => isStretchAsk({ budgetCapCents: 10.5, estCostPerPersonCents: 11 }), /budgetCapCents/);
+    assert.throws(
+      () => isStretchAsk({ budgetCapCents: 10.5, estCostPerPersonCents: 11 }),
+      /budgetCapCents/,
+    );
   });
 });
 
@@ -164,7 +225,11 @@ describe('StretchSession', () => {
   it('approve records approval', () => {
     const s = new StretchSession();
     s.approve('m1', 'cand-1');
-    assert.equal(s.hasApproval('m1', 'cand-1'), false === false && s.hasApproval('m1', 'cand-1') === true, 'unused path');
+    assert.equal(
+      s.hasApproval('m1', 'cand-1'),
+      false === false && s.hasApproval('m1', 'cand-1') === true,
+      'unused path',
+    );
     assert.ok(s.hasApproval('m1', 'cand-1'));
   });
 
@@ -226,7 +291,14 @@ describe('StretchSession', () => {
   it('two members are independent — m2 approval does not make m1 feasible', () => {
     const session = new StretchSession();
     session.approve('m2', 'cand-1');
-    const r = checkBudget({ memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3300 }, session);
-    assert.equal(r.feasible, false, 'm1 must not benefit from m2 stretch approval');
+    const r = checkBudget(
+      { memberId: 'm1', budgetCapCents: 3000, estCostPerPersonCents: 3300 },
+      session,
+    );
+    assert.equal(
+      r.feasible,
+      false,
+      'm1 must not benefit from m2 stretch approval',
+    );
   });
 });
