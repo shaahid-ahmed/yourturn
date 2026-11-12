@@ -9,15 +9,24 @@ The human authorized Phase 1 documentation on November 11, 2026 after approving 
 ## Non-negotiable safety limits
 
 - PayPal sandbox only; no live credentials, charges, deployments or paid resources.
-- Existing circles of 3–6; default 500 USD cents monthly, maximum 1500; whole-group agreement.
-- Host receives no cash. Deterministic code after explicit host approval is the only future order-creation path.
+- Existing groups of **3–8**; minimum three so no single refusal can be traced to one person. Each member authorizes only **their own share** (ADR 0006).
+- **No pooled funds.** The venue is the payee on each member's order, so the platform never holds money. If the Payouts fallback is ever used the platform holds funds again, which is a **new human decision**, not a code path.
+- **All-or-nothing, both directions.** Capture only when every share is held; void every hold on a decline or deadline; refund successful captures if one fails irrecoverably.
+- The commit deadline must sit **below PayPal's authorization honor period**, read from live documentation rather than assumed.
+- Deterministic code after explicit member approval is the only path that creates, captures or voids anything.
 - Integer cents, ledger-derived balances, verified and replay-safe webhooks. No floating-point money, no LLM payment tools.
-- Only consented and minimized graph inputs. Never real public scores, rankings or warnings; host suggestions must be positive.
-- The red-to-green graph demonstration uses synthetic people and must say so. Real-user visibility is blocked on Q-002.
+- **No friendship inference of any kind** — no tie strength, no drift, no graph (ADR 0006). Each agent reasons only over constraints its own member stated about themselves.
+- Only the **winning** plan is revealed. Rejected candidates, per-member answers and reasons are never shown or stored. Group progress is a **count**, never names.
+- Hard constraints (budget, availability, dietary, travel) are **plain code**. An LLM may change ranking only and can never turn a reject into an accept.
+- **Phone-first.** Unspoken is used on a phone: the private agent chat, the group view and the approve-your-share step are all one-handed, single-column, thumb-reachable interactions. Desktop is a scaled-up courtesy, not the design target. Design system and flows are Lane A (`docs/02-design/**`, `apps/web/**`).
+- **A phone cannot return to `127.0.0.1`.** PayPal approval on a real device leaves the browser (often to the PayPal app) and returns via the `return_url`. A loopback URL only works on the machine running the server, so a phone demo needs a **public HTTPS return URL** — see UN-014. This is a prerequisite for demoing on a handset, not a polish item.
+- Privacy is **architectural and policy-based, not cryptographic**: the tally sees per-member answers in memory. Never describe it as cryptographically private, and state the inference-over-rounds limit wherever the claim appears.
 - Fixed demo venue list; no fake successful booking or successful sandbox evidence.
 - No real user research recruitment, external messages or public release without human approval.
 
 ## Release blockers
+
+0. **Unspoken (ADR 0006) is the live product.** Blockers 1–3 below are YourTurn history, kept because they record what was actually tested. The live blockers are: **Q-008** — captured funds have not been observed landing in the venue account, only accepted at order creation; the **payer-approval** steps (authorize, capture, void, refund) each need a human in a browser; the **webhook leg** needs a public HTTPS listener; and the YourTurn contract (`openapi.json`, `DATA_MODEL.md`, `API.md`) is **stale** until UN-001 rewrites it. The payment gate stays closed.
 
 1. Subscription → pot → venue funding mechanism is not verified. Sandbox credentials, merchant setup, buyer approvals and signature-verified webhook evidence are required in YT-006.
 2. If the merchant Order actually fails, Payments/Architect propose ADR 0003 for a clearly labelled simulated venue payment. A missing credential is not an observed failure. No fallback has been approved.

@@ -202,9 +202,19 @@ test('board has six state tables, 42 unique tasks, valid dependencies and no dep
       /\| ID +\| Title +\| Role +\| Depends on +\| Acceptance criteria +\| Claimed by +\| Branch\/PR +\|/,
     );
   }
+  // YourTurn rows are history (ADR 0006 pivoted the product); Unspoken rows are live.
+  // Both must satisfy the same structural rules, so a pivot cannot smuggle in a malformed row.
   const rows = board
     .split('\n')
-    .filter((line) => /^\| YT-\d{3}\s*\|/.test(line));
+    .filter((line) => /^\| (?:YT|UN)-\d{3}\s*\|/.test(line));
+  const legacy = rows.filter((line) => line.startsWith('| YT-'));
+  const current = rows.filter((line) => line.startsWith('| UN-'));
+  assert.equal(
+    legacy.length,
+    42,
+    'the 42 YourTurn rows are history and must not be deleted',
+  );
+  assert.ok(current.length > 0, 'Unspoken tasks must exist after ADR 0006');
   const parsed = rows.map((line) =>
     line
       .split('|')
@@ -212,14 +222,17 @@ test('board has six state tables, 42 unique tasks, valid dependencies and no dep
       .map((cell) => cell.trim()),
   );
   const ids = parsed.map((cells) => cells[0]);
-  assert.equal(ids.length, 42);
-  assert.equal(new Set(ids).size, 42);
+  assert.equal(
+    new Set(ids).size,
+    ids.length,
+    'task ids must be unique across both series',
+  );
   /** @type {Map<string, string[]>} */
   const deps = new Map();
   for (const cells of parsed) {
     assert.equal(cells.length, 7);
     for (const cell of cells) assert.ok(cell);
-    const needed = cells[3].match(/YT-\d{3}/g) ?? [];
+    const needed = cells[3].match(/(?:YT|UN)-\d{3}/g) ?? [];
     for (const dependency of needed)
       assert.ok(ids.includes(dependency), `${cells[0]}: missing ${dependency}`);
     deps.set(cells[0], needed);
