@@ -2,7 +2,7 @@
 
 **Task:** US-201 · **Owner:** Product Designer (Vid) · **Status:** draft for review. Tokens are implemented in [`apps/web/src/styles/tokens.css`](../../apps/web/src/styles/tokens.css) and enforced by [`tests/design-tokens.test.mjs`](../../tests/design-tokens.test.mjs). No screen is built yet; the screens are specified in [FLOWS.md](FLOWS.md) (US-202).
 
-**Source of truth:** [Unspoken Experience and Pages Spec](source/Unspoken%20Experience%20and%20Pages%20Spec.pdf) (18 pages, ADR 0007). Where this document and the PDF disagree, the PDF wins and this document is the defect. Strings belong to the Content Designer ([VOICE_AND_TONE.md](VOICE_AND_TONE.md)); quoted copy here is placeholder intent, not approved text.
+**Source of truth:** [Unspoken Experience and Pages Spec](source/Unspoken%20Experience%20and%20Pages%20Spec.pdf) (18 pages, ADR 0007). Where this document and the PDF disagree, the PDF wins and this document is the defect. Audit: [ACCESSIBILITY.md](ACCESSIBILITY.md) (US-204). Strings belong to the Content Designer ([VOICE_AND_TONE.md](VOICE_AND_TONE.md)); quoted copy here is placeholder intent, not approved text.
 
 This replaces the YourTurn design system (circles, pot, drift graph). None of those components exist in Unspoken.
 
@@ -17,16 +17,18 @@ This replaces the YourTurn design system (circles, pot, drift graph). None of th
 
 ## Layout
 
-| Token                         | Value                      | Use                                                                                        |
-| ----------------------------- | -------------------------- | ------------------------------------------------------------------------------------------ |
-| `--layout-min`                | 360px                      | Narrowest designed width. Nothing truncates or overflows here; long names wrap.            |
-| `--layout-max`                | 430px                      | Widest designed width. Wider viewports centre a 430px column on `--color-paper`.           |
-| `--gutter`                    | `clamp(16px, 4.5vw, 20px)` | Left/right page padding.                                                                   |
-| `--safe-top`, `--safe-bottom` | `env(safe-area-inset-*)`   | Added to the app bar and bottom dock so nothing sits under a notch or home indicator.      |
-| `--bar-height`                | 56px                       | Top app bar: back, title, one trailing action.                                             |
-| `--dock-height`               | 72px                       | Bottom dock: the screen's primary action, or the chat composer. Always inside thumb reach. |
+| Token                         | Value                      | Use                                                                                                                                                               |
+| ----------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--layout-min`                | 360px                      | Narrowest designed width. Nothing truncates or overflows here; long names wrap.                                                                                   |
+| `--layout-max`                | 430px                      | Widest designed width. Wider viewports centre a 430px column on `--color-paper`.                                                                                  |
+| `--layout-floor`              | 320px                      | Not a design target: the functional floor. At 320px (a small phone, or 200% zoom) everything still reflows into one column with no sideways scroll (WCAG 1.4.10). |
+| `--scroll-padding-bottom`     | dock + safe area + 8px     | Set as `scroll-padding-bottom` on the scroller, so a focused control is never hidden under the dock or composer (WCAG 2.4.11).                                    |
+| `--gutter`                    | `clamp(16px, 4.5vw, 20px)` | Left/right page padding.                                                                                                                                          |
+| `--safe-top`, `--safe-bottom` | `env(safe-area-inset-*)`   | Added to the app bar and bottom dock so nothing sits under a notch or home indicator.                                                                             |
+| `--bar-height`                | 56px                       | Top app bar: back, title, one trailing action.                                                                                                                    |
+| `--dock-height`               | 72px                       | Bottom dock: the screen's primary action, or the chat composer. Always inside thumb reach.                                                                        |
 
-**Rules.** One column, no side-by-side panes. Horizontal scroll only inside a clearly bounded carousel (none planned). Sheets rise from the bottom; full-screen modals are only for the P4 stepper and PayPal hand-off. At 200% text size the layout reflows vertically. Nothing clips, and the primary action stays reachable by scrolling.
+**Rules.** One column, no side-by-side panes. Horizontal scroll only inside a clearly bounded carousel (none planned). Sheets rise from the bottom; full-screen modals are only for the P4 stepper and PayPal hand-off. At 200% text size the layout reflows vertically. Nothing clips, and the primary action stays reachable by scrolling. Orientation is never locked: landscape shows the same centred column (WCAG 1.3.4).
 
 ## Touch
 
@@ -132,7 +134,7 @@ Six decorative fills, assigned to a pod at creation and never re-coloured by sta
 
 ## Focus
 
-A visible ring on every focusable element: `--focus-ring-width` 3px of `--color-focus`, offset by `--focus-ring-offset` 2px of `--color-focus-gap`. It is never removed without an equivalent. Focus order follows reading order. A sheet traps focus while it is open, closes on Escape or the system back gesture, and returns focus to the control that opened it.
+A visible ring on every focusable element: `--focus-ring-width` 3px of `--color-focus`, offset by `--focus-ring-offset` 2px of `--color-focus-gap`. It is never removed without an equivalent, and never hidden under the sticky dock or composer (`--scroll-padding-bottom`). Focus order follows reading order. A sheet traps focus while it is open, closes on Escape or the system back gesture, and returns focus to the control that opened it.
 
 ## Components
 

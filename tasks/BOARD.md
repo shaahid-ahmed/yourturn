@@ -99,9 +99,8 @@ Rows RV-002–RV-011 are review findings for the owners, not new product scope. 
 
 ## IN PROGRESS
 
-| ID     | Title                        | Role          | Depends on | Acceptance criteria                                | Claimed by                                                                 | Branch/PR                    |
-| ------ | ---------------------------- | ------------- | ---------- | -------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------- |
-| US-204 | Phase 3: accessibility audit | accessibility | US-202     | WCAG 2.2 AA evidence; colour never the only signal | Human: Vid — IN PROGRESS (accessibility, claude-opus-5-5) since 2026-11-12 | `accessibility/us-204-audit` |
+| ID  | Title | Role | Depends on | Acceptance criteria | Claimed by | Branch/PR |
+| --- | ----- | ---- | ---------- | ------------------- | ---------- | --------- |
 
 ## IN REVIEW
 
@@ -143,9 +142,10 @@ Bootstrap artifact tasks closed on verified review, hosted CI and human main pro
 
 ## BLOCKED
 
-| ID     | Title                       | Role         | Depends on                                                                | Acceptance criteria                                                                                                                                                | Claimed by                 | Branch/PR |
-| ------ | --------------------------- | ------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------- | --------- |
-| YT-007 | Phase 0: human release gate | orchestrator | YT-001, YT-002, YT-003, YT-004, YT-005, YT-006; real GitHub owners/remote | Independent review, green hosted CI, initial rules/stack ratification, protected main/merge approval and explicit human Phase 1 authorization; resolve Q-001–Q-005 | Human: Shaahid — Unclaimed | —         |
+| ID     | Title                        | Role          | Depends on                                                                | Acceptance criteria                                                                                                                                                | Claimed by                                                                                                                                | Branch/PR                    |
+| ------ | ---------------------------- | ------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| YT-007 | Phase 0: human release gate  | orchestrator  | YT-001, YT-002, YT-003, YT-004, YT-005, YT-006; real GitHub owners/remote | Independent review, green hosted CI, initial rules/stack ratification, protected main/merge approval and explicit human Phase 1 authorization; resolve Q-001–Q-005 | Human: Shaahid — Unclaimed                                                                                                                | —                            |
+| US-204 | Phase 3: accessibility audit | accessibility | US-202                                                                    | WCAG 2.2 AA evidence; colour never the only signal                                                                                                                 | Human: Vid — BLOCKED (accessibility, claude-opus-5-5): design-stage audit done, app-stage audit waits on runnable screens (US-101–US-105) | `accessibility/us-204-audit` |
 
 ## LATER
 
@@ -493,6 +493,26 @@ Not done: Logo and line-drawing assets are still to come from the designer. The 
 How to verify: `npm run check`. Mutation check: deleting the booking pop's reduced-motion line fails with "Booking pop … reduced motion".
 Risks / gotchas: The 5 s ambient rest is a design decision to meet 2.2.2 without adding a P20 setting; the reviewer should confirm it is acceptable.
 Next step: Independent review. Alan implements using the tokens, and US-204 verifies reduced motion on built screens.
+
+### Handoff US-204: accessibility (Vid) → frontend (Alan), product-manager, reviewer — PARTIAL, BLOCKED
+
+Done: the **design-stage** audit, in new `docs/02-design/ACCESSIBILITY.md`. It has an evidence table, a 16-row "colour is never the only signal" register, a 36-criterion WCAG 2.2 AA map (Designed / Fixed here / Open / App) and ten findings with owners. Four high and medium findings are fixed in the design here:
+
+- A-03: reflow at 320px, via `--layout-floor`.
+- A-04: orientation stays unlocked.
+- A-06: focus is not hidden under the dock, via `--scroll-padding-bottom`.
+- A-09: the SMS code allows paste and autofill (3.3.8).
+  A-05 (map alt text) is also fixed. `tests/accessibility.test.mjs` checks that:
+- every colour meaning has a non-colour cue;
+- the six WCAG 2.2 additions are mapped;
+- the fixes stay in tokens and FLOWS;
+- findings carry an owner;
+- the doc makes no conformance claim.
+
+Not done: the **app-stage audit** (VoiceOver, TalkBack, keyboard, 320px/200% zoom, reduced motion and rendered contrast on real screens). No screen exists; US-101–US-105 are unclaimed. The acceptance criterion "WCAG 2.2 AA evidence" is therefore only half met, so the task is BLOCKED rather than IN REVIEW. Open: A-07 (2.2.1 deadlines, needs Product Manager sign-off) and A-08 (consistent help).
+How to verify: `npm run check` (77 tests pass locally).
+Risks / gotchas: designer and auditor are the same person at this stage. The app-stage audit should be run or re-checked by someone else.
+Next step: unblocks when Alan's screens run. Then follow the "App-stage audit plan" in ACCESSIBILITY.md and record the results there.
 
 ## Human Phase 1 authorization and coordinated ownership
 
