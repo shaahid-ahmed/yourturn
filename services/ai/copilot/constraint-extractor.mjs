@@ -23,18 +23,44 @@
 // ── Closed vocabularies ──────────────────────────────────────────────────────
 
 export const KNOWN_TAGS = Object.freeze([
-  'active', 'art', 'comedy', 'cultural', 'food', 'indoor', 'nightlife', 'outdoor',
+  'active',
+  'art',
+  'comedy',
+  'cultural',
+  'food',
+  'indoor',
+  'nightlife',
+  'outdoor',
 ]);
 
 export const KNOWN_DIETARY = Object.freeze([
-  'gluten-free', 'halal', 'kosher', 'vegan', 'vegetarian',
+  'gluten-free',
+  'halal',
+  'kosher',
+  'vegan',
+  'vegetarian',
 ]);
 
 export const KNOWN_DISLIKES = Object.freeze([
-  'active', 'art', 'comedy', 'cultural', 'food', 'indoor', 'nightlife', 'outdoor',
+  'active',
+  'art',
+  'comedy',
+  'cultural',
+  'food',
+  'indoor',
+  'nightlife',
+  'outdoor',
 ]);
 
-const DOW_VALUES = Object.freeze(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
+const DOW_VALUES = Object.freeze([
+  'mon',
+  'tue',
+  'wed',
+  'thu',
+  'fri',
+  'sat',
+  'sun',
+]);
 
 // ── Schema validation ────────────────────────────────────────────────────────
 
@@ -61,14 +87,22 @@ export function extractConstraints(profile) {
   const warnings = [];
 
   if (!profile.memberId) throw new TypeError('memberId is required');
-  if (!profile.firstName || typeof profile.firstName !== 'string' || profile.firstName.includes('@')) {
-    throw new TypeError('firstName must be a plain first name, not an email or phone');
+  if (
+    !profile.firstName ||
+    typeof profile.firstName !== 'string' ||
+    profile.firstName.includes('@')
+  ) {
+    throw new TypeError(
+      'firstName must be a plain first name, not an email or phone',
+    );
   }
 
   // Budget
   assertCents(profile.budgetCapCents, 'budgetCapCents');
   if (profile.budgetCapCents < 100 || profile.budgetCapCents > 20000) {
-    throw new RangeError('budgetCapCents must be between 100 and 20000 cents ($1–$200)');
+    throw new RangeError(
+      'budgetCapCents must be between 100 and 20000 cents ($1–$200)',
+    );
   }
 
   // Interests → preferenceWeights (1.0 for each known interest)
@@ -104,7 +138,10 @@ export function extractConstraints(profile) {
   // Max travel
   let maxTravelMinutes;
   if (profile.maxTravelMinutes !== undefined) {
-    if (!Number.isInteger(profile.maxTravelMinutes) || profile.maxTravelMinutes <= 0) {
+    if (
+      !Number.isInteger(profile.maxTravelMinutes) ||
+      profile.maxTravelMinutes <= 0
+    ) {
       warnings.push('maxTravelMinutes ignored: must be a positive integer');
     } else {
       maxTravelMinutes = profile.maxTravelMinutes;
@@ -119,14 +156,18 @@ export function extractConstraints(profile) {
       continue;
     }
     if (!/^\d{2}:\d{2}$/.test(slot.from) || !/^\d{2}:\d{2}$/.test(slot.to)) {
-      warnings.push(`availability slot dropped: malformed time (${slot.from}–${slot.to})`);
+      warnings.push(
+        `availability slot dropped: malformed time (${slot.from}–${slot.to})`,
+      );
       continue;
     }
     availability.push({ dow: slot.dow, from: slot.from, to: slot.to });
   }
 
   if (availability.length === 0) {
-    warnings.push('no valid availability windows; planner will find no feasible slots');
+    warnings.push(
+      'no valid availability windows; planner will find no feasible slots',
+    );
   }
 
   const constraints = {
@@ -135,7 +176,8 @@ export function extractConstraints(profile) {
     dietary: dietary.length > 0 ? dietary : undefined,
     dislikes: dislikes.length > 0 ? dislikes : undefined,
     maxTravelMinutes,
-    preferenceWeights: Object.keys(preferenceWeights).length > 0 ? preferenceWeights : undefined,
+    preferenceWeights:
+      Object.keys(preferenceWeights).length > 0 ? preferenceWeights : undefined,
   };
 
   return { constraints, warnings };
@@ -154,7 +196,9 @@ export function extractConstraints(profile) {
  */
 export function buildPromptContext(firstName, constraints) {
   if (!firstName || typeof firstName !== 'string' || firstName.includes('@')) {
-    throw new TypeError('firstName must be a plain first name, not an email or phone');
+    throw new TypeError(
+      'firstName must be a plain first name, not an email or phone',
+    );
   }
   return {
     firstName,
@@ -193,7 +237,10 @@ export function validateSuggestionSet(raw) {
     return { valid: false, reason: 'suggestion set must be an array' };
   }
   if (raw.length !== 3) {
-    return { valid: false, reason: `expected exactly 3 plans, got ${raw.length}` };
+    return {
+      valid: false,
+      reason: `expected exactly 3 plans, got ${raw.length}`,
+    };
   }
 
   const ids = new Set();
@@ -202,26 +249,52 @@ export function validateSuggestionSet(raw) {
     if (typeof p !== 'object' || p === null) {
       return { valid: false, reason: `plan[${i}] is not an object` };
     }
-    for (const field of ['candidateId', 'eventId', 'title', 'venue', 'dow', 'startsAt', 'endsAt']) {
+    for (const field of [
+      'candidateId',
+      'eventId',
+      'title',
+      'venue',
+      'dow',
+      'startsAt',
+      'endsAt',
+    ]) {
       if (typeof p[field] !== 'string' || !p[field]) {
-        return { valid: false, reason: `plan[${i}].${field} is missing or not a string` };
+        return {
+          valid: false,
+          reason: `plan[${i}].${field} is missing or not a string`,
+        };
       }
     }
-    if (!Number.isInteger(p.estCostPerPersonCents) || p.estCostPerPersonCents < 0) {
-      return { valid: false, reason: `plan[${i}].estCostPerPersonCents must be a non-negative integer` };
+    if (
+      !Number.isInteger(p.estCostPerPersonCents) ||
+      p.estCostPerPersonCents < 0
+    ) {
+      return {
+        valid: false,
+        reason: `plan[${i}].estCostPerPersonCents must be a non-negative integer`,
+      };
     }
     if (!Array.isArray(p.tags)) {
       return { valid: false, reason: `plan[${i}].tags must be an array` };
     }
     if (!Array.isArray(p.dietaryOptions)) {
-      return { valid: false, reason: `plan[${i}].dietaryOptions must be an array` };
+      return {
+        valid: false,
+        reason: `plan[${i}].dietaryOptions must be an array`,
+      };
     }
     // No invented venues: eventId must look like a known fixture id
     if (!/^evt-\d{3}$/.test(p.eventId)) {
-      return { valid: false, reason: `plan[${i}].eventId does not match fixture pattern (evt-NNN)` };
+      return {
+        valid: false,
+        reason: `plan[${i}].eventId does not match fixture pattern (evt-NNN)`,
+      };
     }
     if (ids.has(p.candidateId)) {
-      return { valid: false, reason: `duplicate candidateId: ${p.candidateId}` };
+      return {
+        valid: false,
+        reason: `duplicate candidateId: ${p.candidateId}`,
+      };
     }
     ids.add(p.candidateId);
   }
@@ -259,13 +332,23 @@ export function coordinateSuggestions(attempt) {
  */
 export function findForbiddenFields(context) {
   const FORBIDDEN = [
-    'email', 'phone', 'budgetCapCents', 'budgetDollars', 'budget', 'maxTravelMinutes',
-    'hardship', 'paypal', 'payment', 'score', 'tieScore', 'drift',
+    'email',
+    'phone',
+    'budgetCapCents',
+    'budgetDollars',
+    'budget',
+    'maxTravelMinutes',
+    'hardship',
+    'paypal',
+    'payment',
+    'score',
+    'tieScore',
+    'drift',
     'availability',
   ];
   const found = [];
   for (const key of Object.keys(context)) {
-    if (FORBIDDEN.some(f => key.toLowerCase().includes(f.toLowerCase()))) {
+    if (FORBIDDEN.some((f) => key.toLowerCase().includes(f.toLowerCase()))) {
       found.push(key);
     }
   }
@@ -280,9 +363,42 @@ export const FIXTURE_EVALS = Object.freeze([
     id: 'eval-001',
     description: 'Valid 3-plan response — passes validation',
     input: [
-      { candidateId: 'c1', eventId: 'evt-001', title: 'Open Bowl Night', venue: 'Brooklyn Bowl', dow: 'fri', startsAt: '2026-11-20T19:00:00-05:00', endsAt: '2026-11-20T22:00:00-05:00', estCostPerPersonCents: 3500, tags: ['active', 'food'], dietaryOptions: ['vegetarian'] },
-      { candidateId: 'c2', eventId: 'evt-007', title: 'Friday Escape Challenge', venue: 'Clue Chase', dow: 'fri', startsAt: '2026-11-20T20:00:00-05:00', endsAt: '2026-11-20T21:30:00-05:00', estCostPerPersonCents: 3000, tags: ['active', 'indoor'], dietaryOptions: [] },
-      { candidateId: 'c3', eventId: 'evt-004', title: 'Friday Evening Swing Suite', venue: 'Topgolf', dow: 'fri', startsAt: '2026-11-20T18:00:00-05:00', endsAt: '2026-11-20T21:00:00-05:00', estCostPerPersonCents: 4500, tags: ['active', 'food'], dietaryOptions: ['vegetarian'] },
+      {
+        candidateId: 'c1',
+        eventId: 'evt-001',
+        title: 'Open Bowl Night',
+        venue: 'Brooklyn Bowl',
+        dow: 'fri',
+        startsAt: '2026-11-20T19:00:00-05:00',
+        endsAt: '2026-11-20T22:00:00-05:00',
+        estCostPerPersonCents: 3500,
+        tags: ['active', 'food'],
+        dietaryOptions: ['vegetarian'],
+      },
+      {
+        candidateId: 'c2',
+        eventId: 'evt-007',
+        title: 'Friday Escape Challenge',
+        venue: 'Clue Chase',
+        dow: 'fri',
+        startsAt: '2026-11-20T20:00:00-05:00',
+        endsAt: '2026-11-20T21:30:00-05:00',
+        estCostPerPersonCents: 3000,
+        tags: ['active', 'indoor'],
+        dietaryOptions: [],
+      },
+      {
+        candidateId: 'c3',
+        eventId: 'evt-004',
+        title: 'Friday Evening Swing Suite',
+        venue: 'Topgolf',
+        dow: 'fri',
+        startsAt: '2026-11-20T18:00:00-05:00',
+        endsAt: '2026-11-20T21:00:00-05:00',
+        estCostPerPersonCents: 4500,
+        tags: ['active', 'food'],
+        dietaryOptions: ['vegetarian'],
+      },
     ],
     expected: { valid: true },
     actual: 'PASS',
@@ -291,8 +407,30 @@ export const FIXTURE_EVALS = Object.freeze([
     id: 'eval-002',
     description: 'Only 2 plans — fails validation (must be exactly 3)',
     input: [
-      { candidateId: 'c1', eventId: 'evt-001', title: 'Open Bowl Night', venue: 'Brooklyn Bowl', dow: 'fri', startsAt: '2026-11-20T19:00:00-05:00', endsAt: '2026-11-20T22:00:00-05:00', estCostPerPersonCents: 3500, tags: [], dietaryOptions: [] },
-      { candidateId: 'c2', eventId: 'evt-007', title: 'Escape Challenge', venue: 'Clue Chase', dow: 'fri', startsAt: '2026-11-20T20:00:00-05:00', endsAt: '2026-11-20T21:30:00-05:00', estCostPerPersonCents: 3000, tags: [], dietaryOptions: [] },
+      {
+        candidateId: 'c1',
+        eventId: 'evt-001',
+        title: 'Open Bowl Night',
+        venue: 'Brooklyn Bowl',
+        dow: 'fri',
+        startsAt: '2026-11-20T19:00:00-05:00',
+        endsAt: '2026-11-20T22:00:00-05:00',
+        estCostPerPersonCents: 3500,
+        tags: [],
+        dietaryOptions: [],
+      },
+      {
+        candidateId: 'c2',
+        eventId: 'evt-007',
+        title: 'Escape Challenge',
+        venue: 'Clue Chase',
+        dow: 'fri',
+        startsAt: '2026-11-20T20:00:00-05:00',
+        endsAt: '2026-11-20T21:30:00-05:00',
+        estCostPerPersonCents: 3000,
+        tags: [],
+        dietaryOptions: [],
+      },
     ],
     expected: { valid: false },
     actual: 'PASS',
@@ -301,9 +439,42 @@ export const FIXTURE_EVALS = Object.freeze([
     id: 'eval-003',
     description: 'Invented venue ID — fails validation',
     input: [
-      { candidateId: 'c1', eventId: 'invented-venue-xyz', title: 'Secret bar', venue: 'Some Bar', dow: 'fri', startsAt: '2026-11-20T19:00:00-05:00', endsAt: '2026-11-20T22:00:00-05:00', estCostPerPersonCents: 2000, tags: [], dietaryOptions: [] },
-      { candidateId: 'c2', eventId: 'evt-007', title: 'Escape', venue: 'Clue Chase', dow: 'fri', startsAt: '2026-11-20T20:00:00-05:00', endsAt: '2026-11-20T21:30:00-05:00', estCostPerPersonCents: 3000, tags: [], dietaryOptions: [] },
-      { candidateId: 'c3', eventId: 'evt-004', title: 'Golf', venue: 'Topgolf', dow: 'fri', startsAt: '2026-11-20T18:00:00-05:00', endsAt: '2026-11-20T21:00:00-05:00', estCostPerPersonCents: 4500, tags: [], dietaryOptions: [] },
+      {
+        candidateId: 'c1',
+        eventId: 'invented-venue-xyz',
+        title: 'Secret bar',
+        venue: 'Some Bar',
+        dow: 'fri',
+        startsAt: '2026-11-20T19:00:00-05:00',
+        endsAt: '2026-11-20T22:00:00-05:00',
+        estCostPerPersonCents: 2000,
+        tags: [],
+        dietaryOptions: [],
+      },
+      {
+        candidateId: 'c2',
+        eventId: 'evt-007',
+        title: 'Escape',
+        venue: 'Clue Chase',
+        dow: 'fri',
+        startsAt: '2026-11-20T20:00:00-05:00',
+        endsAt: '2026-11-20T21:30:00-05:00',
+        estCostPerPersonCents: 3000,
+        tags: [],
+        dietaryOptions: [],
+      },
+      {
+        candidateId: 'c3',
+        eventId: 'evt-004',
+        title: 'Golf',
+        venue: 'Topgolf',
+        dow: 'fri',
+        startsAt: '2026-11-20T18:00:00-05:00',
+        endsAt: '2026-11-20T21:00:00-05:00',
+        estCostPerPersonCents: 4500,
+        tags: [],
+        dietaryOptions: [],
+      },
     ],
     expected: { valid: false },
     actual: 'PASS',
@@ -312,9 +483,42 @@ export const FIXTURE_EVALS = Object.freeze([
     id: 'eval-004',
     description: 'Duplicate candidateId — fails validation',
     input: [
-      { candidateId: 'c1', eventId: 'evt-001', title: 'Bowl', venue: 'Brooklyn Bowl', dow: 'fri', startsAt: '2026-11-20T19:00:00-05:00', endsAt: '2026-11-20T22:00:00-05:00', estCostPerPersonCents: 3500, tags: [], dietaryOptions: [] },
-      { candidateId: 'c1', eventId: 'evt-007', title: 'Escape', venue: 'Clue Chase', dow: 'fri', startsAt: '2026-11-20T20:00:00-05:00', endsAt: '2026-11-20T21:30:00-05:00', estCostPerPersonCents: 3000, tags: [], dietaryOptions: [] },
-      { candidateId: 'c3', eventId: 'evt-004', title: 'Golf', venue: 'Topgolf', dow: 'fri', startsAt: '2026-11-20T18:00:00-05:00', endsAt: '2026-11-20T21:00:00-05:00', estCostPerPersonCents: 4500, tags: [], dietaryOptions: [] },
+      {
+        candidateId: 'c1',
+        eventId: 'evt-001',
+        title: 'Bowl',
+        venue: 'Brooklyn Bowl',
+        dow: 'fri',
+        startsAt: '2026-11-20T19:00:00-05:00',
+        endsAt: '2026-11-20T22:00:00-05:00',
+        estCostPerPersonCents: 3500,
+        tags: [],
+        dietaryOptions: [],
+      },
+      {
+        candidateId: 'c1',
+        eventId: 'evt-007',
+        title: 'Escape',
+        venue: 'Clue Chase',
+        dow: 'fri',
+        startsAt: '2026-11-20T20:00:00-05:00',
+        endsAt: '2026-11-20T21:30:00-05:00',
+        estCostPerPersonCents: 3000,
+        tags: [],
+        dietaryOptions: [],
+      },
+      {
+        candidateId: 'c3',
+        eventId: 'evt-004',
+        title: 'Golf',
+        venue: 'Topgolf',
+        dow: 'fri',
+        startsAt: '2026-11-20T18:00:00-05:00',
+        endsAt: '2026-11-20T21:00:00-05:00',
+        estCostPerPersonCents: 4500,
+        tags: [],
+        dietaryOptions: [],
+      },
     ],
     expected: { valid: false },
     actual: 'PASS',
@@ -323,9 +527,42 @@ export const FIXTURE_EVALS = Object.freeze([
     id: 'eval-005',
     description: 'Injection attempt: fractional cents — fails validation',
     input: [
-      { candidateId: 'c1', eventId: 'evt-001', title: 'Bowl', venue: 'Brooklyn Bowl', dow: 'fri', startsAt: '2026-11-20T19:00:00-05:00', endsAt: '2026-11-20T22:00:00-05:00', estCostPerPersonCents: 35.5, tags: [], dietaryOptions: [] },
-      { candidateId: 'c2', eventId: 'evt-007', title: 'Escape', venue: 'Clue Chase', dow: 'fri', startsAt: '2026-11-20T20:00:00-05:00', endsAt: '2026-11-20T21:30:00-05:00', estCostPerPersonCents: 3000, tags: [], dietaryOptions: [] },
-      { candidateId: 'c3', eventId: 'evt-004', title: 'Golf', venue: 'Topgolf', dow: 'fri', startsAt: '2026-11-20T18:00:00-05:00', endsAt: '2026-11-20T21:00:00-05:00', estCostPerPersonCents: 4500, tags: [], dietaryOptions: [] },
+      {
+        candidateId: 'c1',
+        eventId: 'evt-001',
+        title: 'Bowl',
+        venue: 'Brooklyn Bowl',
+        dow: 'fri',
+        startsAt: '2026-11-20T19:00:00-05:00',
+        endsAt: '2026-11-20T22:00:00-05:00',
+        estCostPerPersonCents: 35.5,
+        tags: [],
+        dietaryOptions: [],
+      },
+      {
+        candidateId: 'c2',
+        eventId: 'evt-007',
+        title: 'Escape',
+        venue: 'Clue Chase',
+        dow: 'fri',
+        startsAt: '2026-11-20T20:00:00-05:00',
+        endsAt: '2026-11-20T21:30:00-05:00',
+        estCostPerPersonCents: 3000,
+        tags: [],
+        dietaryOptions: [],
+      },
+      {
+        candidateId: 'c3',
+        eventId: 'evt-004',
+        title: 'Golf',
+        venue: 'Topgolf',
+        dow: 'fri',
+        startsAt: '2026-11-20T18:00:00-05:00',
+        endsAt: '2026-11-20T21:00:00-05:00',
+        estCostPerPersonCents: 4500,
+        tags: [],
+        dietaryOptions: [],
+      },
     ],
     expected: { valid: false },
     actual: 'PASS',
@@ -333,7 +570,12 @@ export const FIXTURE_EVALS = Object.freeze([
   {
     id: 'eval-006',
     description: 'Red-team: prompt context must not contain budget or email',
-    input: { firstName: 'Sam', budgetCapCents: 3000, availability: [{ dow: 'fri', from: '17:00', to: '22:00' }], interests: ['active'] },
+    input: {
+      firstName: 'Sam',
+      budgetCapCents: 3000,
+      availability: [{ dow: 'fri', from: '17:00', to: '22:00' }],
+      interests: ['active'],
+    },
     expected: { forbiddenFieldsFound: 0 },
     actual: 'PASS',
   },
@@ -341,6 +583,8 @@ export const FIXTURE_EVALS = Object.freeze([
 
 function assertCents(v, name) {
   if (!Number.isInteger(v) || v < 0) {
-    throw new TypeError(`${name} must be a non-negative integer (cents); received ${v}`);
+    throw new TypeError(
+      `${name} must be a non-negative integer (cents); received ${v}`,
+    );
   }
 }

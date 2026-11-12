@@ -23,9 +23,42 @@ const VALID_PROFILE = {
 };
 
 const VALID_PLANS = [
-  { candidateId: 'c1', eventId: 'evt-001', title: 'Bowl', venue: 'Brooklyn Bowl', dow: 'fri', startsAt: '2026-11-20T19:00:00-05:00', endsAt: '2026-11-20T22:00:00-05:00', estCostPerPersonCents: 3500, tags: ['active'], dietaryOptions: ['vegetarian'] },
-  { candidateId: 'c2', eventId: 'evt-007', title: 'Escape', venue: 'Clue Chase', dow: 'fri', startsAt: '2026-11-20T20:00:00-05:00', endsAt: '2026-11-20T21:30:00-05:00', estCostPerPersonCents: 3000, tags: ['active'], dietaryOptions: [] },
-  { candidateId: 'c3', eventId: 'evt-004', title: 'Golf', venue: 'Topgolf', dow: 'fri', startsAt: '2026-11-20T18:00:00-05:00', endsAt: '2026-11-20T21:00:00-05:00', estCostPerPersonCents: 4500, tags: ['active', 'food'], dietaryOptions: ['vegetarian'] },
+  {
+    candidateId: 'c1',
+    eventId: 'evt-001',
+    title: 'Bowl',
+    venue: 'Brooklyn Bowl',
+    dow: 'fri',
+    startsAt: '2026-11-20T19:00:00-05:00',
+    endsAt: '2026-11-20T22:00:00-05:00',
+    estCostPerPersonCents: 3500,
+    tags: ['active'],
+    dietaryOptions: ['vegetarian'],
+  },
+  {
+    candidateId: 'c2',
+    eventId: 'evt-007',
+    title: 'Escape',
+    venue: 'Clue Chase',
+    dow: 'fri',
+    startsAt: '2026-11-20T20:00:00-05:00',
+    endsAt: '2026-11-20T21:30:00-05:00',
+    estCostPerPersonCents: 3000,
+    tags: ['active'],
+    dietaryOptions: [],
+  },
+  {
+    candidateId: 'c3',
+    eventId: 'evt-004',
+    title: 'Golf',
+    venue: 'Topgolf',
+    dow: 'fri',
+    startsAt: '2026-11-20T18:00:00-05:00',
+    endsAt: '2026-11-20T21:00:00-05:00',
+    estCostPerPersonCents: 4500,
+    tags: ['active', 'food'],
+    dietaryOptions: ['vegetarian'],
+  },
 ];
 
 // ── extractConstraints ────────────────────────────────────────────────────────
@@ -49,7 +82,7 @@ describe('extractConstraints', () => {
     });
     assert.ok(constraints.preferenceWeights?.['active']);
     assert.ok(!constraints.preferenceWeights?.['unknown-tag-xyz']);
-    assert.ok(warnings.some(w => w.includes('unknown-tag-xyz')));
+    assert.ok(warnings.some((w) => w.includes('unknown-tag-xyz')));
   });
 
   it('drops unknown dietary tags with a warning', () => {
@@ -57,7 +90,7 @@ describe('extractConstraints', () => {
       ...VALID_PROFILE,
       dietary: ['vegetarian', 'breatharian'],
     });
-    assert.ok(warnings.some(w => w.includes('breatharian')));
+    assert.ok(warnings.some((w) => w.includes('breatharian')));
   });
 
   it('drops malformed availability windows with a warning', () => {
@@ -71,8 +104,8 @@ describe('extractConstraints', () => {
     });
     assert.equal(constraints.availability.length, 1);
     assert.equal(constraints.availability[0].dow, 'fri');
-    assert.ok(warnings.some(w => w.includes('xyz')));
-    assert.ok(warnings.some(w => w.includes('bad')));
+    assert.ok(warnings.some((w) => w.includes('xyz')));
+    assert.ok(warnings.some((w) => w.includes('bad')));
   });
 
   it('warns when no valid availability windows', () => {
@@ -80,7 +113,7 @@ describe('extractConstraints', () => {
       ...VALID_PROFILE,
       availability: [{ dow: 'invalid', from: '10:00', to: '20:00' }],
     });
-    assert.ok(warnings.some(w => w.includes('no valid availability')));
+    assert.ok(warnings.some((w) => w.includes('no valid availability')));
   });
 
   it('throws when memberId is missing', () => {
@@ -92,7 +125,8 @@ describe('extractConstraints', () => {
 
   it('throws when firstName looks like an email', () => {
     assert.throws(
-      () => extractConstraints({ ...VALID_PROFILE, firstName: 'sam@example.com' }),
+      () =>
+        extractConstraints({ ...VALID_PROFILE, firstName: 'sam@example.com' }),
       /plain first name/,
     );
   });
@@ -117,11 +151,14 @@ describe('extractConstraints', () => {
       maxTravelMinutes: -5,
     });
     assert.equal(constraints.maxTravelMinutes, undefined);
-    assert.ok(warnings.some(w => w.includes('maxTravelMinutes')));
+    assert.ok(warnings.some((w) => w.includes('maxTravelMinutes')));
   });
 
   it('profile with empty interests produces no preferenceWeights', () => {
-    const { constraints } = extractConstraints({ ...VALID_PROFILE, interests: [] });
+    const { constraints } = extractConstraints({
+      ...VALID_PROFILE,
+      interests: [],
+    });
     assert.equal(constraints.preferenceWeights, undefined);
   });
 });
@@ -136,7 +173,10 @@ describe('buildPromptContext', () => {
     assert.ok(Array.isArray(ctx.interests));
     assert.ok(Array.isArray(ctx.dietary));
     assert.ok(Array.isArray(ctx.dislikes));
-    assert.equal(Object.keys(ctx).sort().join(','), 'dietary,dislikes,firstName,interests');
+    assert.equal(
+      Object.keys(ctx).sort().join(','),
+      'dietary,dislikes,firstName,interests',
+    );
   });
 
   it('throws when firstName contains @', () => {
@@ -159,12 +199,18 @@ describe('findForbiddenFields', () => {
   });
 
   it('detects budget field', () => {
-    const found = findForbiddenFields({ firstName: 'Sam', budgetCapCents: 3000 });
+    const found = findForbiddenFields({
+      firstName: 'Sam',
+      budgetCapCents: 3000,
+    });
     assert.ok(found.length > 0, 'budget field must be flagged');
   });
 
   it('detects email field', () => {
-    const found = findForbiddenFields({ firstName: 'Sam', email: 'sam@example.com' });
+    const found = findForbiddenFields({
+      firstName: 'Sam',
+      email: 'sam@example.com',
+    });
     assert.ok(found.length > 0, 'email field must be flagged');
   });
 
@@ -200,32 +246,41 @@ describe('validateSuggestionSet', () => {
   });
 
   it('fails when more than 3 plans', () => {
-    const r = validateSuggestionSet([...VALID_PLANS, { ...VALID_PLANS[0], candidateId: 'c4', eventId: 'evt-002' }]);
+    const r = validateSuggestionSet([
+      ...VALID_PLANS,
+      { ...VALID_PLANS[0], candidateId: 'c4', eventId: 'evt-002' },
+    ]);
     assert.equal(r.valid, false);
   });
 
   it('fails on invented venue ID', () => {
-    const bad = VALID_PLANS.map((p, i) => i === 0 ? { ...p, eventId: 'invented-xyz' } : p);
+    const bad = VALID_PLANS.map((p, i) =>
+      i === 0 ? { ...p, eventId: 'invented-xyz' } : p,
+    );
     const r = validateSuggestionSet(bad);
     assert.equal(r.valid, false);
     assert.ok(r.reason?.includes('eventId'));
   });
 
   it('fails on duplicate candidateId', () => {
-    const bad = VALID_PLANS.map((p, i) => i === 1 ? { ...p, candidateId: 'c1' } : p);
+    const bad = VALID_PLANS.map((p, i) =>
+      i === 1 ? { ...p, candidateId: 'c1' } : p,
+    );
     const r = validateSuggestionSet(bad);
     assert.equal(r.valid, false);
     assert.ok(r.reason?.includes('duplicate'));
   });
 
   it('fails on fractional cents', () => {
-    const bad = VALID_PLANS.map((p, i) => i === 0 ? { ...p, estCostPerPersonCents: 35.5 } : p);
+    const bad = VALID_PLANS.map((p, i) =>
+      i === 0 ? { ...p, estCostPerPersonCents: 35.5 } : p,
+    );
     const r = validateSuggestionSet(bad);
     assert.equal(r.valid, false);
   });
 
   it('fails on missing required string field', () => {
-    const bad = VALID_PLANS.map((p, i) => i === 0 ? { ...p, title: '' } : p);
+    const bad = VALID_PLANS.map((p, i) => (i === 0 ? { ...p, title: '' } : p));
     const r = validateSuggestionSet(bad);
     assert.equal(r.valid, false);
   });
@@ -236,7 +291,10 @@ describe('validateSuggestionSet', () => {
 describe('coordinateSuggestions', () => {
   it('returns plans when first attempt is valid', () => {
     let calls = 0;
-    const r = coordinateSuggestions(() => { calls++; return VALID_PLANS; });
+    const r = coordinateSuggestions(() => {
+      calls++;
+      return VALID_PLANS;
+    });
     assert.equal(r.available, true);
     assert.equal(r.plans?.length, 3);
     assert.equal(calls, 1);
@@ -254,14 +312,20 @@ describe('coordinateSuggestions', () => {
 
   it('returns unavailable after two failures', () => {
     let calls = 0;
-    const r = coordinateSuggestions(() => { calls++; return []; });
+    const r = coordinateSuggestions(() => {
+      calls++;
+      return [];
+    });
     assert.equal(r.available, false);
     assert.equal(calls, 2);
   });
 
   it('never makes more than 2 attempts', () => {
     let calls = 0;
-    coordinateSuggestions(() => { calls++; return 'invalid'; });
+    coordinateSuggestions(() => {
+      calls++;
+      return 'invalid';
+    });
     assert.equal(calls, 2);
   });
 });
@@ -271,7 +335,11 @@ describe('coordinateSuggestions', () => {
 describe('fixture evals', () => {
   it('all recorded evals have PASS status', () => {
     for (const ev of FIXTURE_EVALS) {
-      assert.equal(ev.actual, 'PASS', `eval ${ev.id} (${ev.description}) not marked PASS`);
+      assert.equal(
+        ev.actual,
+        'PASS',
+        `eval ${ev.id} (${ev.description}) not marked PASS`,
+      );
     }
   });
 
@@ -288,7 +356,7 @@ describe('fixture evals', () => {
   });
 
   it('eval-006 red-team: buildPromptContext produces zero forbidden fields', () => {
-    const ev = FIXTURE_EVALS.find(e => e.id === 'eval-006');
+    const ev = FIXTURE_EVALS.find((e) => e.id === 'eval-006');
     assert.ok(ev);
     const { constraints } = extractConstraints({
       memberId: 'm-eval',
@@ -299,7 +367,11 @@ describe('fixture evals', () => {
     });
     const ctx = buildPromptContext(ev.input.firstName, constraints);
     const found = findForbiddenFields(ctx);
-    assert.equal(found.length, 0, `forbidden fields in prompt context: ${found.join(', ')}`);
+    assert.equal(
+      found.length,
+      0,
+      `forbidden fields in prompt context: ${found.join(', ')}`,
+    );
   });
 });
 
