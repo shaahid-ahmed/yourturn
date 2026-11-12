@@ -320,7 +320,7 @@ test('local markdown links in requested documents resolve', () => {
   for (const path of requiredPaths.filter((path) => path.endsWith('.md'))) {
     const text = readFileSync(path, 'utf8');
     for (const match of text.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
-      const target = match[1].split('#')[0];
+      const target = decodeURIComponent(match[1].split('#')[0]);
       if (!target || /^(https?:|mailto:)/.test(target)) continue;
       assert.ok(
         existsSync(resolve(dirname(path), target)),
