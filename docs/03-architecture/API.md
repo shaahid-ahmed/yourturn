@@ -91,6 +91,14 @@ Each open Q-011 decision is an `x-open-decision` object (`question`, `decision`,
 
 Spec decisions outside Q-011 that the draft adopts from the spec's own recommendation are marked `x-spec-recommendation` (decisions 3, 7, 8, 10, 11, 12, 13, 18, 20). They are not final decisions.
 
+**Open spec decisions that are not modelled.** These are open and have no default in the contract or the code. They are listed here and on the board, not in `info.x-open-decisions`.
+
+| Spec decision | Question                                      | Spec recommendation                         | State in the draft                                                                                                       |
+| ------------- | --------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 11 (part)     | What happens when a pod drops below 3 members | Open (the 3-minimum came from hidden votes) | **Open.** Joining is capped at 3–8; planning needs 3 joined; nothing happens to an existing hangout when a member leaves |
+| 19            | The payer drops out after booking             | The pod picks a new payer                   | **Open.** No route or transition replaces a payer                                                                        |
+| 17            | Only one member says yes                      | The planner checks before going ahead       | **Open.** One yes moves the ready check on like any other count; there is no double-check step                           |
+
 ## Invariants the schema enforces
 
 1. **Money.** Every `*Cents` field is a non-negative integer (`AmountCents`); signed ledger adjustments are internal to US-002 and never cross the API; `Currency` is `const: "USD"`. Private budgets are `BudgetCents`, a multiple of 100, because screens show whole dollars. The only `number` fields are the NYC map coordinates.
