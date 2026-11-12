@@ -58,6 +58,9 @@ import {
 } from '../chat.mjs';
 import { getBooking } from '../booking.mjs';
 import { volunteerAsPayer, confirmBooking } from '../booking.mjs';
+import { getSplit, confirmSplit } from '../split.mjs';
+import { getOwnStretchAsk, answerOwnStretchAsk } from '../stretch.mjs';
+import { canonicalize } from '../idempotency.mjs';
 import {
   listOwnPods,
   listOwnInvitations,
@@ -112,6 +115,7 @@ const STATUS_BY_CODE = {
   wrong_hangout_state: 409,
   payer_already_chosen: 409,
   paypal_link_required: 409,
+  stretch_ask_closed: 409,
   not_yes_member: 403,
   not_payer: 403,
   option_unknown: 404,
@@ -1208,6 +1212,17 @@ export function buildApp({
         at: now,
       });
     },
+    getOwnStretchAsk: async ({ params, userId }) =>
+      getOwnStretchAsk(database, {
+        stretchAskId: params.stretchAskId,
+        userId,
+      }),
+    answerOwnStretchAsk: async ({ req, params, userId }) =>
+      answerOwnStretchAsk(database, {
+        stretchAskId: params.stretchAskId,
+        userId,
+        accept: req.body.accept,
+      }),
     volunteerAsPayer: async ({ params, userId }) => {
       const now = new Date().toISOString();
       volunteerAsPayer(database, {
@@ -1240,6 +1255,56 @@ export function buildApp({
         userId,
         now,
       );
+    },
+    getSplit: async ({ params, userId }) =>
+      getSplit(database, {
+        podId: params.podId,
+        hangoutId: params.hangoutId,
+        userId,
+      }),
+    confirmSplit: async ({ req, params, userId }) => {
+      const key = /** @type {string} */ (req.headers['idempotency-key']);
+      const target = String(params.hangoutId);
+      const bodyDigest = canonicalize(req.body);
+      const prior =
+        /** @type {{ target: string, body_digest: string, status_code: number, response_json: string } | undefined} */ (
+          database
+            .prepare(
+              'SELECT target, body_digest, status_code, response_json FROM idempotency_record WHERE actor_user_id = ? AND operation = ? AND key = ?',
+            )
+            .get(userId, 'confirmSplit', key)
+        );
+      if (prior) {
+        if (prior.target !== target || prior.body_digest !== bodyDigest) {
+          const err = /** @type {any} */ (
+            new Error('idempotency key was used for a different request')
+          );
+          err.code = 'idempotency_key_conflict';
+          throw err;
+        }
+        return JSON.parse(prior.response_json);
+      }
+      const split = confirmSplit(database, {
+        podId: params.podId,
+        hangoutId: params.hangoutId,
+        userId,
+        totalCents: req.body.totalCents,
+        at: new Date().toISOString(),
+      });
+      database
+        .prepare(
+          `INSERT INTO idempotency_record (actor_user_id, operation, key, target, body_digest, status_code, response_json, created_at)
+           VALUES (?, 'confirmSplit', ?, ?, ?, 201, ?, ?)`,
+        )
+        .run(
+          userId,
+          key,
+          target,
+          bodyDigest,
+          JSON.stringify(split),
+          new Date().toISOString(),
+        );
+      return split;
     },
     receiveProviderWebhook: async ({ req }) => {
       const presented =
